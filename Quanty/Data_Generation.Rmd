@@ -1,0 +1,210 @@
+---
+title: "Data_Generation"
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages.
+
+```{r libraries}
+# This chunk loads the packages used in this workbook
+library(xaringan) #Allows active preview of report in RStudio
+library(mvtnorm)  #Generates multivariate-normal data
+library(magrittr) #Used for piping
+library(purrr)    #Used for mapping functions efficiently
+```
+
+And this function generates values from the g-and-h distribution. See CITE for more information.
+
+```{r g-and-h distr function , eval = TRUE}
+# Function for generating values from the g-and-h distribution
+# # Taken from {CITE ROBUST PACKAGE}
+ghdist<-function(n,g=0,h=0){
+       #
+       # generate n observations from a g-and-h dist.
+       #
+       x<-rnorm(n)
+       if (g>0){
+              ghdist<-(exp(g*x)-1)*exp(h*x^2/2)/g
+       }
+       if(g==0)ghdist<-x*exp(h*x^2/2)
+       ghdist
+}
+```
+
+## Setting up data conditions
+
+### Dataframe of unique conditions
+
+The following code chunk generates a dataframe with each unique combination of data conditions. The current data will include the following characteristics:
+
+* n = sample size
+  * Levels simulated: 38, 75, 150, 300
+* p = number of potential predictors
+  * Levels simulated: 8, 30
+* eta_x = proportion of outlier contamination in the potential predictor variables
+  * Levels simulated: 0.0, 0.1, 0.2 (0\%, 10\%, 20\%)
+* eta_y = proportion of outlier contamination in response variable
+  * Levels simulated: 0.0, 0.1, 0.2 (0\%, 10\%, 20\%)
+* g = amount of skew as imposed by the g-and-h distribution
+  * Levels simulated: 0.0, 0.2
+* h = amount of kurtosis/"peakedness" as imposed by the g-and-h distribution
+  * Levels simulated: 0.0, 0.2
+  
+For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.
+* Outliers: 4 x 2 x 3 x 3 = 72 conditions
+* Skew/Kurtosis: 4 x 2 x 3 = 24 conditions
+
+
+
+```{r generate data conditions , eval = T}
+# create an empty dataframe to fill with data conditions
+sim_structure.df <- as.data.frame(matrix(ncol = 6 , nrow = 96))
+{
+       colnames(sim_structure.df) <- c("n" , "p" , 
+                                    "eta_x" , "eta_y" , 
+                                    "g" , "h")
+       sim_structure.df[ , "eta_x"] <- c(rep(c(0.0 , 0.1 , 0.2) , 24) , 
+                                         rep(0 , 24))
+       sim_structure.df[ , "eta_y"] <- c(rep(c(rep(0.0 , 3) , rep(0.1 , 3) , 
+                                               rep(0.2 , 3)) , 8) , 
+                                         rep(0 , 24))
+       sim_structure.df[ , "p"] <- c(rep(c(rep(8 , 9) , rep(30 , 9)) , 4) , 
+                                     rep(c(rep(8 , 3) , rep(30 , 3)) , 4))
+       sim_structure.df[ , "n"] <- c(rep(38 , 18) , rep(75 , 18) , 
+                                     rep(150 , 18) , rep(300 , 18) , 
+                                     rep(38 , 6) , rep(75 , 6) , 
+                                     rep(150 , 6) , rep(300 , 6))
+       sim_structure.df[ , "g"] <- c(rep(0 , 72) , rep(c(0.2 , 0.0 , 0.2) , 
+                                                       8))
+       sim_structure.df[ , "h"] <- c(rep(0 , 72) , rep(c(0.0 , 0.2 , 0.2) , 
+                                                       8))
+}
+```
+
+And you can take a look at the resulting dataframe. This chunk is not evaluated in the report and is for use within RStudio.
+
+```{r view sim conditions , eval = F}
+View(sim_structure.df)
+```
+
+### Create repeated dataframe
+
+The following chunks will generate a dataframe with multiple rows per data condition. Each data condition will therefore have a number of rows equal to the number of simulated iterations. This is primarily used for convenience with the data-generating functions.
+
+The resulting dataframe should have a number of rows equal to the number of unique conditions times the number of iterations being simulated for each condition. Here, there are 72 + 24 = 96 unique conditions and we are simulating 500 iterations of each condition, resulting in 48000. We are also adding an additional column for the data-generating seed.
+
+```{r create empty dataframe}
+# create empty df
+sim_repped.df <- as.data.frame(matrix(ncol = 7 , nrow = (96*500)))
+# set column names of df
+colnames(sim_repped.df) <- c("n" , "p" , "eta.x" , "eta.y" , "g" , "h" , 
+                                    "seed")
+```
+
+Now fill the empty dataframe with repeated conditions
+
+```{r fill empty dataframe with conditions}
+# fill empty df with repeated data conditions
+for(i in 1:nrow(sim_structure.df)) {
+       sim_repped.df[ ((500*(i - 1)) + 1): (500*i), (1:6)] <- 
+              purrr::map_dfr(seq_len(500) , ~sim_structure.df[i , ])
+}
+```
+
+Finally, generate a seed for each iteration.
+
+```{r fill seeds column}
+# generate random seeds
+sim_repped.df[ , "seed"] <- runif(n = 96*500 , 
+                                  min = -1e10 , 
+                                  max = 1e10)
+```
+
+## Generating Simulated data
+
+The chunks in this section will generate the data based on the initial steps conducted above. This function is specific to the data characteristics chosen and varied above. 
+
+### Data-generating function
+
+This function will generate our simulation data on which we will run the models of interest.
+
+```{r data-generating function}
+data.gen <- function(n , p , eta_x , eta_y , g , h , seed) {      
+       conditions <- data.frame(n = n , p = p , 
+                                eta_x = eta_x , eta_y = eta_y , 
+                                g = g , h = h , seed = seed)
+
+       betas <- matrix(0 , nrow = p , ncol = 1)
+       betas[1,1] <- 0.5
+       betas[2,1] <- 1.0
+       betas[3,1] <- 1.5
+       betas[4,1] <- 2.0
+       
+       # set seed for random process
+       seed <- seed                       
+       
+       #generate covariance matrix
+       covar.X <- matrix(rep(0 , p^2) , ncol = p)  
+       # # put 1's along diagonal of covariance matrix
+       diag(covar.X) <- 1 
+       
+       # generate uncontam. X values
+       X.UC <- rmvnorm(floor((1 - eta_x)*n) , 
+                       mean = rep(0 , p) , 
+                       sigma = covar.X)
+       
+       # generate contaminated X/predictor values
+       if(((g == 0) & (h == 0))){
+              # if there is predictor contamination, generate the
+              # # contaminated values
+              if(eta_x > 0) {                             
+                     X.C <- rmvnorm(ceiling(eta_x*n) , 
+                                    mean <- rep(10 , p) , 
+                                    sigma = covar.X)
+                     X <- rbind(X.UC , X.C)
+              # otherwise, set the uncontaminated values to the
+              # # full X dataset
+              } else {
+                     X.C <- 0
+                     X <- X.UC
+              }
+              
+              
+              err.UC <- rnorm(floor((1-eta_y)*n) , mean = 0 , sd = 1)   #generate uncontom. residuals
+              if(eta_y > 0) {                                           #generate contam. residuals
+                     err.C <- rnorm(ceiling(eta_y*n) , mean = 2 , sd = 5)
+                     err <- c(err.UC , err.C)
+              } else {
+                     err.c <- 0
+                     err <- err.UC
+              }
+       } else if(((g != 0) | (h != 0))) {
+              X <- X.UC
+              err <- ghdist(n = n , g = g , h = h)
+       }
+       Y <- X %*% betas[ , 1] + err                                    #generate Y values
+       combine <- list(conditions = conditions ,
+                       seed = seed , 
+                       betas = betas , 
+                       Y = Y[floor((n * .667) + 1) : n] , 
+                       X = X[floor((n * .667) + 1) : n , ] , 
+                       err = err[floor((n * .667) + 1) : n])        #create combined list of all values
+       return(combine)                       #save combined list of all values
+}
+```
