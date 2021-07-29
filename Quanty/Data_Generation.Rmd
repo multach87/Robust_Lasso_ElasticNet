@@ -247,3 +247,9 @@ Finally, let's map the data-generating function over all data conditions and ite
 full.data <- sim_repped.dt %>%   
        pmap(data_gen)
 ```
+
+And if you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path).
+
+```{r save simulated data , eval = F}
+saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME.RData")
+```
