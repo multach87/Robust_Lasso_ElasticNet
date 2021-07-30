@@ -248,8 +248,21 @@ full.data <- sim_repped.dt %>%
        pmap(data_gen)
 ```
 
-And if you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path).
+And if you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path). 
 
 ```{r save simulated data , eval = F}
 saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME.RData")
+```
+
+For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10 random datasets from this full dataset. I've also included the vector of 10 random indices and the vector-generating seed for those indices for transparency.
+
+```{r save 10 random datasets , eval = F}
+#set the seed
+set.seed(501)
+
+#vector of 10 indices
+data.10 <- sample(x = c(1:48000) , size = 10 , replace = F)
+
+#save 10 from full data
+saveRDS(full.data[data.10] , "/FILEPATH/Testing10.RData")
 ```
