@@ -1,0 +1,140 @@
+---
+title: 'Single-Model Demo: Adaptive LAD Lasso'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages.
+
+```{r libraries}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+```
+
+## Data Loading
+
+First, let's load the singular dataset we created.
+
+```{r load data , echo = F}
+demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData")
+```
+
+## Model-Application Function
+
+The function in the code chunk below applies the adaptive LAD lasso to any applied dataset.
+
+UPDATE TO INCLUDE X and Y ARGUMENTS
+
+```{r ladlasso model application function , echo = F}
+
+#elnet5 application function
+ladlasso.sim.fnct <- function(data) {
+        #create simulation tracker
+        #tracker <- as.vector(unlist(data$conditions)) 
+        
+        #print tracker of status
+        cat("iteration = " , data$track , ";\n")
+      
+       #load X, Y, p, n
+       X <- as.matrix(data$train[ , -c(1 , 66 , 67)])
+       #cat("X = " , X , "\n")
+       #cat("class(X) = " , class(X) , "\n")
+       Y <- data$train[ , 66]
+       #cat("class(Y) = " , class(Y) , "\n")
+       n <- length(Y)
+       
+       #lambdas to try for regularization
+       lambda.try <- seq(log(1400) , log(0.01) , length.out = 100)
+       lambda.try <- exp(lambda.try)
+       
+       start <- Sys.time()
+       #nu/gamma selection cv
+       ##ridge coefs for weighting
+       ridge.model <- cv.glmnet(x = X , y = Y , lambda = lambda.try , alpha = 0)
+       lambda.ridge.opt <- ridge.model$lambda.min
+       best.ridge.coefs <- predict(ridge.model , type = "coefficients" ,
+                                   s = lambda.ridge.opt)[-1]
+       ##grid of nu/gamma values to try
+       nu.try <- exp(seq(log(0.01) , log(10) , length.out = 100))
+       ##initialize full list of LAD elnet5 results from each nu/gamma
+       ladlasso.nu.cv.full <- list()
+       ##initialize matrices of metrics and minimizing results
+       ladlasso.nu.cv.lambda <- numeric()
+       ladlasso.nu.cv.mse <- numeric()
+       ladlasso.nu.cv.msesd <- numeric()
+       ladlasso.nu.cv.coefs <- list()
+       ##Loop over nu/gamma values for CV, storing minimizing lambda within each nu/gamma
+       for(i in 1:length(nu.try)) {
+         invisible(capture.output(ladlasso.nu.cv.full[[i]] <- cv.hqreg(X = X , y = Y , method = "quantile" , tau = 0.5 , 
+                                                                       lambda = lambda.try , alpha = 1 , preprocess = "standardize" , 
+                                                                       screen = "ASR" , penalty.factor = 1 / abs(best.ridge.coefs)^nu.try[i] , 
+                                                                       FUN = "hqreg" , type.measure = "mse")))
+         ladlasso.nu.cv.mse[i] <- min(ladlasso.nu.cv.full[[i]]$cve)
+         ladlasso.nu.cv.msesd[i] <- ladlasso.nu.cv.full[[i]]$cvse[which.min(ladlasso.nu.cv.full[[i]]$cve)]
+         ladlasso.nu.cv.lambda[i] <- ladlasso.nu.cv.full[[i]]$lambda.min
+         ladlasso.nu.cv.coefs[[i]] <- ladlasso.nu.cv.full[[i]]$fit$beta[ , which.min(ladlasso.nu.cv.full[[i]]$cve)]
+       }
+       
+       #specify minimizing nu value and resulting model info
+       nu.opt <- nu.try[which.min(ladlasso.nu.cv.mse)]
+       lambda.opt <- ladlasso.nu.cv.lambda[which.min(ladlasso.nu.cv.mse)]
+       weights.opt <- 1 / abs(best.ridge.coefs)^nu.opt
+       ladlasso.coefs <- ladlasso.nu.cv.coefs[[which.min(ladlasso.nu.cv.mse)]]
+       ladlasso.mse.min <- min(ladlasso.nu.cv.mse)
+       ladlasso.mse.min.se <- ladlasso.nu.cv.msesd[which.min(ladlasso.nu.cv.mse)]
+       #cat("post.predict.2 \n")
+       n.coefs <- sum(ladlasso.coefs[-1] != 0)
+       
+       #specify test data
+       test.X <- as.matrix(data$test[ , -c(1 , 66 , 67)])
+       #cat("class(test.X) = " , class(test.X) , "\n")
+       test.Y <- data$test[ , 66]
+       
+       #apply to test set
+       pred.y <- test.X %*% ladlasso.coefs[-1] + ladlasso.coefs[1]
+       #cat("pred.y = " , pred.y , "\n")
+       resid <- pred.y - test.Y
+       resid.sq <- resid^2
+       sum.resid.sq <- sum(resid.sq)
+       mse <- sum.resid.sq / n
+       
+       end <- Sys.time()
+       
+       time <- abs(as.numeric(difftime(start , end , units = "secs")))
+       cat("time = " , time , "\n")
+
+       #initialize important info dataframe
+       #put conditions, model info, and metrics into list
+       return(list(model = list(#full.model = ladlasso.model , 
+                                lambda = lambda.opt , 
+                                coefs = ladlasso.coefs) , 
+                   metrics = list(mse = mse , 
+                                   n.coefs = n.coefs , 
+                                  runtime = time
+                                  )
+                   )
+       )
+
+}
+```
