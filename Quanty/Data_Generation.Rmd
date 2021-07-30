@@ -241,28 +241,58 @@ data_gen <- function(n , p , eta_x , eta_y , g , h , seed) {
 }
 ```
 
-Finally, let's map the data-generating function over all data conditions and iterations.
+Finally, let's map the data-generating function over all data conditions and iterations. Note that I've set "eval = F" for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it's unnecessary to process that for the html walkthrough. This also means that the following chunks won't operate, but I've included them here to show what would follow. Those who are interested in seeing in action can set the "eval" arguments below to "eval = T". 
 
-```{r generate data}
+```{r generate data , eval = F}
 full.data <- sim_repped.dt %>%   
        pmap(data_gen)
 ```
 
-And if you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path). 
+### Saving the data
+
+If you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path). 
 
 ```{r save simulated data , eval = F}
-saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME.RData")
+saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME/fulldata.RData")
 ```
 
-For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10 random datasets from this full dataset. I've also included the vector of 10 random indices and the vector-generating seed for those indices for transparency.
+For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10/100 random datasets from this full dataset. I've also included the vector of 10/100 random indices and the vector-generating seed for those indices for transparency.
 
 ```{r save 10 random datasets , eval = F}
 #set the seed
 set.seed(501)
 
 #vector of 10 indices
-data.10 <- sample(x = c(1:48000) , size = 10 , replace = F)
+data.10 <- sample(x = c(1:48000) , size = 100 , replace = F)
 
 #save 10 from full data
-saveRDS(full.data[data.10] , "/FILEPATH/Testing10.RData")
+saveRDS(full.data[data.10] , "/FILE/PATH/Testing100.RData")
+```
+
+Finally, let's extract and process a single dataset. Since I'm going to be creating demos for use with applied datasets, let's make this is as close to a real dataset as possible. This mainly means I'm going to strip away the metadata I added for simulation purposes.
+
+```{r extract single applied dataset , eval = F}
+#set random seed
+set.seed(501)
+
+#random index for choosing dataset from full data
+data.1 <- sample(x = c(1:48000) , size = 1 , replace = F)
+
+#extract single dataset
+testing1 <- full.data[data.1]
+```
+
+```{r strip metadata , eval = F}
+#extract just our X and Y objects
+testing1 <- list(Y_train = testing1[[1]]["Y_train"] , 
+                 Y_hold = testing1[[1]]["Y_hold"] , 
+                 X_train = testing1[[1]]["X_train"] , 
+                 X_hold = testing1[[1]]["X_hold"])
+```
+
+And now we can save that resulting file.
+
+```{r save single applied dataset , eval = F}
+#save applied dataset
+saveRDS(testing1 , "/FILE/PATH/TestingApplied.RData")
 ```

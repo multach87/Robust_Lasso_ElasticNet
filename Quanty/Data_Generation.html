@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-07-29" />
+<meta name="date" content="2021-07-30" />
 
 <title>Data_Generation</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data_Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-07-29</h4>
+<h4 class="date">2021-07-30</h4>
 
 </div>
 
@@ -413,7 +413,7 @@ ghdist&lt;-function(n,g=0,h=0){
 </ul>
 <p>For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions. * Outliers: 4 x 2 x 3 x 3 = 72 conditions * Skew/Kurtosis: 4 x 2 x 3 = 24 conditions</p>
 <pre class="r"><code># create an empty data.table to fill with data conditions
-sim_structure.dt &lt;- as.data.frame(matrix(ncol = 6 , nrow = 96))
+sim_structure.dt &lt;- setDT(as.data.frame(matrix(ncol = 6 , nrow = 96)))
 {
        colnames(sim_structure.dt) &lt;- c(&quot;n&quot; , &quot;p&quot; , 
                                     &quot;eta_x&quot; , &quot;eta_y&quot; , 
@@ -440,23 +440,34 @@ sim_structure.dt &lt;- as.data.frame(matrix(ncol = 6 , nrow = 96))
 <div id="create-repeated-data.table" class="section level3">
 <h3>Create repeated data.table</h3>
 <p>The following chunks will generate a data.table with multiple rows per data condition. Each data condition will therefore have a number of rows equal to the number of simulated iterations. This is primarily used for convenience with the data-generating functions.</p>
-<p>The resulting data.table should have a number of rows equal to the number of unique conditions times the number of iterations being simulated for each condition. Here, there are 72 + 24 = 96 unique conditions and we are simulating 500 iterations of each condition, resulting in 48000. We are also adding an additional column for the data-generating seed.</p>
+<p>The resulting data.table should have a number of rows equal to the number of unique conditions times the number of iterations being simulated for each condition. Here, there are 72 + 24 = 96 unique conditions and we are simulating 500 iterations of each condition, resulting in 48000 total datasets/rows. We are also adding an additional column for the data-generating seed.</p>
 <pre class="r"><code># create empty df
-sim_repped.dt &lt;- as.data.frame(matrix(ncol = 7 , nrow = (96*500)))
+sim_repped.dt &lt;- setDT(as.data.frame(matrix(ncol = 1 , nrow = (96*500))))
 # set column names of df
-colnames(sim_repped.dt) &lt;- c(&quot;n&quot; , &quot;p&quot; , &quot;eta.x&quot; , &quot;eta.y&quot; , &quot;g&quot; , &quot;h&quot; , 
-                                    &quot;seed&quot;)</code></pre>
+#colnames(sim_repped.dt) &lt;- c(&quot;n&quot; , &quot;p&quot; , &quot;eta_x&quot; , &quot;eta_y&quot; , &quot;g&quot; , &quot;h&quot; , 
+#                                    &quot;seed&quot;)</code></pre>
 <p>Now fill the empty data.table with repeated conditions</p>
 <pre class="r"><code># fill empty df with repeated data conditions
 for(i in 1:nrow(sim_structure.dt)) {
-       sim_repped.dt[ ((500*(i - 1)) + 1): (500*i), (1:6)] &lt;- 
-              purrr::map_dfr(seq_len(500) , ~sim_structure.dt[i , ])
-}</code></pre>
-<p>Finally, generate a seed for each iteration.</p>
+       sim_repped.dt[ ((500*(i - 1)) + 1): (500*i) , 
+                      ':=' (n = sim_structure.dt[i , n] , 
+                            p = sim_structure.dt[i , p] , 
+                            eta_x = sim_structure.dt[i , eta_x] ,
+                            eta_y = sim_structure.dt[i , eta_y] , 
+                            g = sim_structure.dt[i , g] , 
+                            h = sim_structure.dt[i , h])]
+}
+
+#purrr::map(seq_len(500) , ~sim_structure.dt[i , (1:6)])</code></pre>
+<p>Finally, generate a seed for each iteration. Let’s also get rid of the blank column from initializing the data.table.</p>
 <pre class="r"><code># generate random seeds
-sim_repped.dt[ , &quot;seed&quot;] &lt;- runif(n = 96*500 , 
-                                  min = -1e10 , 
-                                  max = 1e10)</code></pre>
+set.seed(501)
+sim_repped.dt[ , seed := runif(n = nrow(sim_repped.dt) , 
+                               min = -1e10 , 
+                               max = 1e10)]
+
+# get rid of blank first column
+sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
 </div>
 </div>
 <div id="generating-simulated-data" class="section level2">
@@ -465,68 +476,121 @@ sim_repped.dt[ , &quot;seed&quot;] &lt;- runif(n = 96*500 ,
 <div id="data-generating-function" class="section level3">
 <h3>Data-generating function</h3>
 <p>This function will generate our simulation data on which we will run the models of interest.</p>
-<pre class="r"><code>data.gen &lt;- function(n , p , eta_x , eta_y , g , h , seed) {      
-       conditions &lt;- data.frame(n = n , p = p , 
-                                eta_x = eta_x , eta_y = eta_y , 
-                                g = g , h = h , seed = seed)
+<p>NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.</p>
+<pre class="r"><code>data_gen &lt;- function(n , p , eta_x , eta_y , g , h , seed) {      
+  conditions &lt;- setDT(data.frame(n = n , p = p , 
+                                 eta_x = eta_x , eta_y = eta_y , 
+                                 g = g , h = h , seed = seed))
 
-       betas &lt;- matrix(0 , nrow = p , ncol = 1)
-       betas[1,1] &lt;- 0.5
-       betas[2,1] &lt;- 1.0
-       betas[3,1] &lt;- 1.5
-       betas[4,1] &lt;- 2.0
+  betas &lt;- matrix(0 , nrow = p , ncol = 1)
+  betas[1,1] &lt;- 0.5
+  betas[2,1] &lt;- 1.0
+  betas[3,1] &lt;- 1.5
+  betas[4,1] &lt;- 2.0
        
-       # set seed for random process
-       seed &lt;- seed                       
+  # set seed for random process
+  seed &lt;- seed                       
        
-       #generate covariance matrix
-       covar.X &lt;- matrix(rep(0 , p^2) , ncol = p)  
-       # # put 1's along diagonal of covariance matrix
-       diag(covar.X) &lt;- 1 
+  #generate covariance matrix
+  covar.X &lt;- matrix(rep(0 , p^2) , ncol = p)  
+  # # put 1's along diagonal of covariance matrix
+  diag(covar.X) &lt;- 1 
        
-       # generate uncontam. X values
-       X.UC &lt;- rmvnorm(floor((1 - eta_x)*n) , 
-                       mean = rep(0 , p) , 
-                       sigma = covar.X)
+  # generate uncontam. X values
+  X.UC &lt;- rmvnorm(floor((1 - eta_x)*n) , 
+                  mean = rep(0 , p) , 
+                  sigma = covar.X)
        
-       # generate contaminated X/predictor values
-       if(((g == 0) &amp; (h == 0))){
-              # if there is predictor contamination, generate the
-              # # contaminated values
-              if(eta_x &gt; 0) {                             
-                     X.C &lt;- rmvnorm(ceiling(eta_x*n) , 
-                                    mean &lt;- rep(10 , p) , 
-                                    sigma = covar.X)
-                     X &lt;- rbind(X.UC , X.C)
-              # otherwise, set the uncontaminated values to the
-              # # full X dataset
-              } else {
-                     X.C &lt;- 0
-                     X &lt;- X.UC
-              }
+  # generate contaminated X/predictor values or 
+  # # g-and-h-based X/predictor values
+  if(((g == 0) &amp; (h == 0))){
+        # if there is predictor contamination, generate the
+        # # contaminated values
+        if(eta_x &gt; 0) {                             
+                X.C &lt;- rmvnorm(ceiling(eta_x*n) , 
+                               mean &lt;- rep(10 , p) , 
+                               sigma = covar.X)
+                X &lt;- rbind(X.UC , X.C)
+        # otherwise, set the uncontaminated values to the
+        # # full X dataset
+        } else {
+                X.C &lt;- 0
+                X &lt;- X.UC
+        }
               
-              
-              err.UC &lt;- rnorm(floor((1-eta_y)*n) , mean = 0 , sd = 1)   #generate uncontom. residuals
-              if(eta_y &gt; 0) {                                           #generate contam. residuals
-                     err.C &lt;- rnorm(ceiling(eta_y*n) , mean = 2 , sd = 5)
-                     err &lt;- c(err.UC , err.C)
+        #generate uncontom. residuals
+        err.UC &lt;- rnorm(floor((1-eta_y)*n) , mean = 0 , sd = 1)
+        if(eta_y &gt; 0) {  
+                # if there is response contamination, generate the
+                # # contaminated values
+                err.C &lt;- rnorm(ceiling(eta_y*n) , mean = 2 , sd = 5)
+                err &lt;- c(err.UC , err.C)
               } else {
-                     err.c &lt;- 0
-                     err &lt;- err.UC
+                # otherwise, set the uncontaminated values to the
+                # # final residuals
+                err.c &lt;- 0
+                err &lt;- err.UC
               }
        } else if(((g != 0) | (h != 0))) {
-              X &lt;- X.UC
-              err &lt;- ghdist(n = n , g = g , h = h)
+         # generates X/predictor values from g-and-h distribution
+         # # with no outlier contamination
+         X &lt;- X.UC
+         err &lt;- ghdist(n = n , g = g , h = h)
        }
-       Y &lt;- X %*% betas[ , 1] + err                                    #generate Y values
-       combine &lt;- list(conditions = conditions ,
-                       seed = seed , 
-                       betas = betas , 
-                       Y = Y[floor((n * .667) + 1) : n] , 
-                       X = X[floor((n * .667) + 1) : n , ] , 
-                       err = err[floor((n * .667) + 1) : n])        #create combined list of all values
-       return(combine)                       #save combined list of all values
+  
+  #generate Y values from X matrix, 
+  # # coefficients vector, and residuals vector
+  Y &lt;- X %*% betas[ , 1] + err                                    
+  
+  # Create list of separate components of generated data   
+  combine &lt;- list(conditions = conditions ,
+                  seed = seed , 
+                  betas = betas , 
+                  Y_train = Y[1 : floor((n * .667))] ,
+                  Y_hold = Y[floor((n * .667) + 1) : n] , 
+                  X_train = setDT(data.frame(X[1 : floor(n * .667) , 
+                                               ])) , 
+                  X_hold = setDT(data.frame(X[floor((n * .667) + 1) : n , 
+                                              ])) , 
+                  err = err[floor((n * .667) + 1) : n])        
+  
+  #save combined list of all generated data
+  return(combine)
 }</code></pre>
+<p>Finally, let’s map the data-generating function over all data conditions and iterations. Note that I’ve set “eval = F” for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it’s unnecessary to process that for the html walkthrough. This also means that the following chunks won’t operate, but I’ve included them here to show what would follow. Those who are interested in seeing in action can set the “eval” arguments below to “eval = T”.</p>
+<pre class="r"><code>full.data &lt;- sim_repped.dt %&gt;%   
+       pmap(data_gen)</code></pre>
+</div>
+<div id="saving-the-data" class="section level3">
+<h3>Saving the data</h3>
+<p>If you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to “eval = T” or run the code within the chunk independently (after specifying the appropriate path).</p>
+<pre class="r"><code>saveRDS(full.data , &quot;FILE/PATH/TO/DESIRED/FOLDER/NAME/fulldata.RData&quot;)</code></pre>
+<p>For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10/100 random datasets from this full dataset. I’ve also included the vector of 10/100 random indices and the vector-generating seed for those indices for transparency.</p>
+<pre class="r"><code>#set the seed
+set.seed(501)
+
+#vector of 10 indices
+data.10 &lt;- sample(x = c(1:48000) , size = 100 , replace = F)
+
+#save 10 from full data
+saveRDS(full.data[data.10] , &quot;/FILE/PATH/Testing100.RData&quot;)</code></pre>
+<p>Finally, let’s extract and process a single dataset. Since I’m going to be creating demos for use with applied datasets, let’s make this is as close to a real dataset as possible. This mainly means I’m going to strip away the metadata I added for simulation purposes.</p>
+<pre class="r"><code>#set random seed
+set.seed(501)
+
+#random index for choosing dataset from full data
+data.1 &lt;- sample(x = c(1:48000) , size = 1 , replace = F)
+
+#extract single dataset
+testing1 &lt;- full.data[data.1]</code></pre>
+<pre class="r"><code>#extract just our X and Y objects
+testing1 &lt;- list(Y_train = testing1[[1]][&quot;Y_train&quot;] , 
+                 Y_hold = testing1[[1]][&quot;Y_hold&quot;] , 
+                 X_train = testing1[[1]][&quot;X_train&quot;] , 
+                 X_hold = testing1[[1]][&quot;X_hold&quot;])</code></pre>
+<p>And now we can save that resulting file.</p>
+<pre class="r"><code>#save applied dataset
+saveRDS(testing1 , &quot;/FILE/PATH/TestingApplied.RData&quot;)</code></pre>
 </div>
 </div>
 
