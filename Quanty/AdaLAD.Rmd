@@ -36,105 +36,190 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 
 First, let's load the singular dataset we created.
 
-```{r load data , echo = F}
+```{r load data , echo = T}
 demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData")
 ```
 
 ## Model-Application Function
 
-The function in the code chunk below applies the adaptive LAD lasso to any applied dataset.
+The function in the code chunk below applies the adaptive LAD lasso to specified data for predictors and a single response. X's should be in some tabular format (matrix, dataframe, data.table). Y can be in a similar format, or just a vector, but it must contain a number of elements equal to the number of rows of "xtrain" if given in a vector. Likewise, if your desired "ytrain" is in tabular format, the number of rows should equal number of rows of "xtrain." Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.
 
-UPDATE TO INCLUDE X and Y ARGUMENTS
+There are separate arguments for the training predictors/response vs. the holdout predictors/response. The related functions and metrics (such as holdout prediction error) will only run if data is supplied to both of the holdout data arguments, "xhold" and "yhold."
 
-```{r ladlasso model application function , echo = F}
+```{r ladlasso model application function , echo = T}
 
-#elnet5 application function
-ladlasso.sim.fnct <- function(data) {
-        #create simulation tracker
-        #tracker <- as.vector(unlist(data$conditions)) 
-        
-        #print tracker of status
-        cat("iteration = " , data$track , ";\n")
-      
-       #load X, Y, p, n
-       X <- as.matrix(data$train[ , -c(1 , 66 , 67)])
-       #cat("X = " , X , "\n")
-       #cat("class(X) = " , class(X) , "\n")
-       Y <- data$train[ , 66]
-       #cat("class(Y) = " , class(Y) , "\n")
-       n <- length(Y)
-       
-       #lambdas to try for regularization
+# adaptive LAD lasso application function
+ladlasso.sim.fnct <- function(xtrain , ytrain , 
+                              xhold , yhold) {
+       # lambdas to try for regularization
        lambda.try <- seq(log(1400) , log(0.01) , length.out = 100)
        lambda.try <- exp(lambda.try)
        
+       # set a timer start point
        start <- Sys.time()
-       #nu/gamma selection cv
-       ##ridge coefs for weighting
-       ridge.model <- cv.glmnet(x = X , y = Y , lambda = lambda.try , alpha = 0)
+       
+       # cross-validated selection of adaptive lasso
+       # # tuning hyperparameter nu/gamma
+       
+       # # select ridge coefs for weighting
+       ridge.model <- cv.glmnet(x = xtrain , y = ytrain , 
+                                lambda = lambda.try , alpha = 0)
        lambda.ridge.opt <- ridge.model$lambda.min
-       best.ridge.coefs <- predict(ridge.model , type = "coefficients" ,
-                                   s = lambda.ridge.opt)[-1]
-       ##grid of nu/gamma values to try
+       best.ridge.coefs <- predict(ridge.model , 
+                                           type = "coefficients" ,
+                                           s = lambda.ridge.opt)[-1]
+
+       
+       # # grid of nu/gamma values to try for cross-validation
        nu.try <- exp(seq(log(0.01) , log(10) , length.out = 100))
-       ##initialize full list of LAD elnet5 results from each nu/gamma
+       
+       # # initialize full list of LAD lasso results from each nu/gamma
        ladlasso.nu.cv.full <- list()
-       ##initialize matrices of metrics and minimizing results
+       
+       # # initialize matrices of metrics and minimizing results
        ladlasso.nu.cv.lambda <- numeric()
        ladlasso.nu.cv.mse <- numeric()
        ladlasso.nu.cv.msesd <- numeric()
        ladlasso.nu.cv.coefs <- list()
-       ##Loop over nu/gamma values for CV, storing minimizing lambda within each nu/gamma
+       
+       # # Loop over nu/gamma values for CV, 
+       # # # storing minimizing lambda within each nu/gamma
        for(i in 1:length(nu.try)) {
-         invisible(capture.output(ladlasso.nu.cv.full[[i]] <- cv.hqreg(X = X , y = Y , method = "quantile" , tau = 0.5 , 
-                                                                       lambda = lambda.try , alpha = 1 , preprocess = "standardize" , 
-                                                                       screen = "ASR" , penalty.factor = 1 / abs(best.ridge.coefs)^nu.try[i] , 
-                                                                       FUN = "hqreg" , type.measure = "mse")))
+         invisible(
+                 capture.output(
+                         ladlasso.nu.cv.full[[i]] <- 
+                                 cv.hqreg(X = xtrain , y = ytrain , 
+                                          method = "quantile" , 
+                                          tau = 0.5 , 
+                                          lambda = lambda.try ,
+                                          alpha = 1 , 
+                                          preprocess = "standardize" , 
+                                          screen = "ASR" , 
+                                          penalty.factor = 
+                                                  1 /
+                                                  abs(best.ridge.coefs) ^
+                                                  nu.try[i] , 
+                                          FUN = "hqreg" , 
+                                          type.measure = "mse"
+                                          )
+                         )
+                 )
          ladlasso.nu.cv.mse[i] <- min(ladlasso.nu.cv.full[[i]]$cve)
-         ladlasso.nu.cv.msesd[i] <- ladlasso.nu.cv.full[[i]]$cvse[which.min(ladlasso.nu.cv.full[[i]]$cve)]
+         ladlasso.nu.cv.msesd[i] <-
+                 ladlasso.nu.cv.full[[i]]$cvse[
+                         which.min(ladlasso.nu.cv.full[[i]]$cve)
+                         ]
          ladlasso.nu.cv.lambda[i] <- ladlasso.nu.cv.full[[i]]$lambda.min
-         ladlasso.nu.cv.coefs[[i]] <- ladlasso.nu.cv.full[[i]]$fit$beta[ , which.min(ladlasso.nu.cv.full[[i]]$cve)]
+         ladlasso.nu.cv.coefs[[i]] <- 
+                 ladlasso.nu.cv.full[[i]]$fit$beta[ , 
+                         which.min(ladlasso.nu.cv.full[[i]]$cve)
+                         ]
        }
        
        #specify minimizing nu value and resulting model info
        nu.opt <- nu.try[which.min(ladlasso.nu.cv.mse)]
-       lambda.opt <- ladlasso.nu.cv.lambda[which.min(ladlasso.nu.cv.mse)]
-       weights.opt <- 1 / abs(best.ridge.coefs)^nu.opt
-       ladlasso.coefs <- ladlasso.nu.cv.coefs[[which.min(ladlasso.nu.cv.mse)]]
+       lambda.opt <- 
+               ladlasso.nu.cv.lambda[
+                       which.min(ladlasso.nu.cv.mse)
+                       ]
+       weights.opt <- 1 / abs(best.ridge.coefs) ^ nu.opt
+       ladlasso.coefs <-
+               ladlasso.nu.cv.coefs[[
+                       which.min(ladlasso.nu.cv.mse)
+                       ]]
        ladlasso.mse.min <- min(ladlasso.nu.cv.mse)
-       ladlasso.mse.min.se <- ladlasso.nu.cv.msesd[which.min(ladlasso.nu.cv.mse)]
-       #cat("post.predict.2 \n")
+       ladlasso.mse.min.se <-
+               ladlasso.nu.cv.msesd[
+                       which.min(ladlasso.nu.cv.mse)
+                       ]
        n.coefs <- sum(ladlasso.coefs[-1] != 0)
        
-       #specify test data
-       test.X <- as.matrix(data$test[ , -c(1 , 66 , 67)])
-       #cat("class(test.X) = " , class(test.X) , "\n")
-       test.Y <- data$test[ , 66]
-       
-       #apply to test set
-       pred.y <- test.X %*% ladlasso.coefs[-1] + ladlasso.coefs[1]
-       #cat("pred.y = " , pred.y , "\n")
-       resid <- pred.y - test.Y
-       resid.sq <- resid^2
-       sum.resid.sq <- sum(resid.sq)
-       mse <- sum.resid.sq / n
-       
-       end <- Sys.time()
-       
-       time <- abs(as.numeric(difftime(start , end , units = "secs")))
-       cat("time = " , time , "\n")
-
-       #initialize important info dataframe
-       #put conditions, model info, and metrics into list
-       return(list(model = list(#full.model = ladlasso.model , 
-                                lambda = lambda.opt , 
-                                coefs = ladlasso.coefs) , 
-                   metrics = list(mse = mse , 
-                                   n.coefs = n.coefs , 
-                                  runtime = time
+       # using holdout data, if applicable, and depending on
+       # # inclusion of intercept
+       if(!is.null(xhold) & !is.null(yhold)) {
+               # store n
+               n <- nrow(xhold)
+               
+               # calculate predicted values
+               y.pred <- xhold %*% ladlasso.coefs[-1] +
+                               ladlasso.coefs[1]
+               
+               # calculate residual
+               resid <- y.pred - yhold
+               
+               # square the residuals
+               resid.sq <- resid ^ 2
+               
+               # sum the square of residuals
+               sum.resid.sq <- sum(resid.sq)
+               
+               #calculate root mse
+               mse <- sum.resid.sq / n
+               
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(model = list(lambda = lambda.opt , 
+                                        coefs = ladlasso.coefs
+                                        ) , 
+                           metrics = list(mse = mse , 
+                                          n.coefs = n.coefs , 
+                                          runtime = time
                                   )
-                   )
-       )
+                           )
+                      )
+       } else {
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(model = list(lambda = lambda.opt , 
+                                        coefs = ladlasso.coefs
+                                        ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time
+                                  )
+                           )
+                      )
+       }
+       
+       
+
+       
 
 }
+```
+
+Initially, this function was developed to give users the option of including or excluding a model intercept. However, the *hqreg* family of functions inherently include an intercept in model estimation. Consequently, excluding the intercept might create issues with proper interpretation of the results, particularly if prediction accuracy is of interest.
+
+Now let's try running the model on our demo.data. Note that we're mapping/applying the model using the *safely()* function. This allows our model application function to continue mapping after running into an error and provide more info about errors that arise.
+
+```{r run adalad function}
+ladlasso.test <- demo.data[1] %>%   
+       map(safely(ladlasso.sim.fnct) , 
+           xtrain = X_train , ytrain = Y_train , 
+           xhold = X_hold , yhold = Y_hold)
 ```
