@@ -13,6 +13,10 @@ output: html_document
 #              css: [default, tamu, tamu-fonts]
 ---
 
+## Introduction
+
+This file walks through the steps used to simulate data in DISSERTATION. WRITE MORE
+
 ## Preamble
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
@@ -68,6 +72,7 @@ The following code chunk generates a data.table with each unique combination of 
   * Levels simulated: 0.0, 0.2
   
 For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.
+
 * Outliers: 4 x 2 x 3 x 3 = 72 conditions
 * Skew/Kurtosis: 4 x 2 x 3 = 24 conditions
 
@@ -147,7 +152,7 @@ sim_repped.dt[ , tracker := c(1:48000)]
 sim_repped.dt <- sim_repped.dt[ , !1 , with = F]
 ```
 
-## Generating Simulated data
+## Generating simulated data
 
 The chunks in this section will generate the data based on the initial steps conducted above. This function is specific to the data characteristics chosen and varied above. 
 
@@ -230,78 +235,106 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
                   tracker = tracker , 
                   seed = seed , 
                   betas = betas , 
-                  Y_train = Y[1 : floor((n * .667))] ,
-                  Y_hold = Y[floor((n * .667) + 1) : n] , 
-                  X_train = setDT(data.frame(X[1 : floor(n * .667) , 
-                                               ])) , 
-                  X_hold = setDT(data.frame(X[floor((n * .667) + 1) : n , 
-                                              ])) , 
-                  err = err[floor((n * .667) + 1) : n])        
+                  X = setDT(data.frame(X)) , 
+                  Y = setDT(data.frame(Y)) , 
+                  err = err
+                  )        
   
   #save combined list of all generated data
   return(combine)
 }
 ```
 
-Finally, let's map the data-generating function over all data conditions and iterations. Note that I've set "eval = F" for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it's unnecessary to process that for the html walkthrough. This also means that the following chunks won't operate, but I've included them here to show what would follow. Those who are interested in seeing it in action can set the "eval" arguments below to "eval = T". 
+Finally, let's map the data-generating function over all data conditions and iterations. Note that I've set "eval = F" for the full data-generating chunk below and the following *saveRDS()* chunk. The data file resulting from the chunk below would be nearly 2gb and it's unnecessary to process that for the html walkthrough. This also means that the following chunks won't operate properly, but I've included them here to show what would follow and for the purposes of storing everything on GitHub. Those who are interested in seeing it in action can set the "eval" arguments below to "eval = T". 
+
+Function notes: *pmap()* will apply the function in parentheses (**data_gen** here) over all rows in the pre-existing object specified before the pipe (**sim_repped.dt** here). *pmap()* specifically applies the given function using the values in each row of the specified object as the arguments in the function being mapped. Here, it is being used to run the data-generating function individually for the conditions specified in each row of **sim_repped.dt**.
 
 ```{r generate data , eval = F}
 full.data <- sim_repped.dt %>%   
-       pmap(data_gen)
+  pmap(data_gen)
 ```
 
-### Saving the data
+### Processing and saving the data
 
-If you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path). 
+If you want to save the resulting data as an .RData file, run the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to "eval = T" or run the code within the chunk independently (after specifying the appropriate path). 
 
 ```{r save simulated data , eval = F}
 saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME/fulldata.RData")
 ```
 
-For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10/100 random datasets from this full dataset. I've also included the vector of 10/100 random indices and the vector-generating seed for those indices for transparency.
+For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 100 random datasets from this full dataset. I've also included the vector of 100 random indices and the vector-generating seed for those indices for transparency.
 
-```{r save 10 random datasets , eval = T}
+```{r save 100 random datasets , eval = T}
 #set the seed
 set.seed(501)
 
 #vector of 10 indices
-data.10 <- sample(x = c(1:48000) , size = 100 , replace = F)
+data.100 <- sample(x = c(1:48000) , size = 100 , replace = F)
 
-#save 10 from full data
-saveRDS(full.data[data.10] , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100.RData")
+#save 100 from full data
+saveRDS(full.data[data.100] , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100.RData")
 ```
 
-Let's also extract and process a single dataset. 
+Many of the lasso/elastic net functions used in the combined model I will be demo'ing rely on matrices rather than data.tables. Let's also create a version of this data file in which the X's are in matrix format.
 
-```{r extract single applied dataset , eval = T}
-#set random seed
+In words, the following chunk is specifying a new objects **testing100.mtx**, which will result from the testing100 iterations of the full dataset. More specifically, it will extract just those iterations, but will apply the *as.matrix()* function to the appropriate list elements of each data iteration. Even more specifically, it applies as.matrix to elements 5 and 6 of each data iteration, which correspond with the X and Y data.tables, respectively.
+
+```{r testing100 X matrices}
+# set up the new object and start the pipe '%>%'
+testing100.mtx <- full.data[data.100] %>%
+  # 'lapply()' applies a certain function over all list elements
+  # # in the pre-existing object specified before the pipe
+  lapply(map_at , 
+         # and these subsequent arguments correspond with the 
+         # # function being lapply'ed
+         .at = c(5 , 6) , as.matrix)
+
+#save 100 from full data
+saveRDS(testing100.mtx , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100_Xmtx.RData")
+```
+
+Let's also extract and process a single dataset, save it, and then do the same for a matrix-ized version as we did above.
+
+```{r extract and save single dataset and mtx version}
+# set random seed
 set.seed(501)
 
-#random index for choosing dataset from full data
+# random index for choosing dataset from full data
 data.1 <- sample(x = c(1:48000) , size = 1 , replace = F)
 
-#extract single dataset
+# extract single dataset
 testing1 <- full.data[data.1]
-```
 
-And now we can save that resulting file.
-
-```{r save single applied dataset , eval = T}
-#save applied dataset
+# save applied dataset
 saveRDS(testing1 , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing1.RData")
+
+# "matricize" data.tables
+testing1.mtx <- testing1 %>%
+  lapply(map_at , 
+         .at = c(5 , 6) , as.matrix)
+
+#save 1 from full data
+saveRDS(testing1.mtx , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing1_Xmtx.RData")
 ```
 
-Finally, since I'm going to be creating demos for use with applied datasets, let's make a version that is as close to a real dataset as possible. This mainly means I'm going to strip away the metadata I added for simulation purposes.
+Finally, since I'm going to be creating demos for use with applied datasets, let's make a version that is as close to a real dataset as possible and save it. This mainly means I'm going to strip away the metadata I added for simulation purposes. I will make versions using both data.tables and matrices, and then I will save each version of the "applied" dataset.
 
-```{r applied dataset}
-testingapplied <- list(X_train = testing1[[1]][["X_train"]] , 
-                       Y_train = testing1[[1]][["Y_train"]] , 
-                       X_hold = testing1[[1]][["X_hold"]] , 
-                       Y_hold = testing1[[1]][["Y_hold"]])
-```
+```{r applied datasets and save}
+# create data.table version of "applied" dataset
+testingapplied <- list(X = testing1[[1]][["X"]] , 
+                       Y = testing1[[1]][["Y"]])
 
-Lastly, we save this "applied" dataset.
+# save data.table version of "applied" dataset
+saveRDS(testingapplied ,
+        "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData")
 
-```{r save applied dataset}
-saveRDS(testingapplied , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData")
+# create matrix version
+testingapplied.mtx <- list(X = testing1.mtx[[1]][["X"]] , 
+                           Y = testing1.mtx[[1]][["Y"]])
+
+# save matrix version
+saveRDS(testingapplied.mtx ,
+        "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData")
+
+
 ```

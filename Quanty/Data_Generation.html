@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-08-03" />
+<meta name="date" content="2021-08-04" />
 
 <title>Data_Generation</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data_Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-08-03</h4>
+<h4 class="date">2021-08-04</h4>
 
 </div>
 
@@ -411,7 +411,11 @@ ghdist&lt;-function(n,g=0,h=0){
 <li>Levels simulated: 0.0, 0.2</li>
 </ul></li>
 </ul>
-<p>For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions. * Outliers: 4 x 2 x 3 x 3 = 72 conditions * Skew/Kurtosis: 4 x 2 x 3 = 24 conditions</p>
+<p>For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.</p>
+<ul>
+<li>Outliers: 4 x 2 x 3 x 3 = 72 conditions</li>
+<li>Skew/Kurtosis: 4 x 2 x 3 = 24 conditions</li>
+</ul>
 <pre class="r"><code># create an empty data.table to fill with data conditions
 sim_structure.dt &lt;- setDT(as.data.frame(matrix(ncol = 6 , nrow = 96)))
 {
@@ -476,7 +480,7 @@ sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
 <p>This function will generate our simulation data on which we will run the models of interest.</p>
 <p>NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.</p>
 <pre class="r"><code>data_gen &lt;- function(n , p , eta_x , eta_y , g , h , 
-                     seed , tracker = tracker) {      
+                     seed , tracker) {      
   conditions &lt;- setDT(data.frame(n = n , p = p , 
                                  eta_x = eta_x , eta_y = eta_y , 
                                  g = g , h = h , tracker = tracker , 
@@ -558,24 +562,38 @@ sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
   #save combined list of all generated data
   return(combine)
 }</code></pre>
-<p>Finally, let’s map the data-generating function over all data conditions and iterations. Note that I’ve set “eval = F” for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it’s unnecessary to process that for the html walkthrough. This also means that the following chunks won’t operate, but I’ve included them here to show what would follow. Those who are interested in seeing in action can set the “eval” arguments below to “eval = T”.</p>
+<p>Finally, let’s map the data-generating function over all data conditions and iterations. Note that I’ve set “eval = F” for the full data-generating chunk below and the following <em>saveRDS()</em> chunk. The data file resulting from the chunk below would be nearly 2gb and it’s unnecessary to process that for the html walkthrough. This also means that the following chunks won’t operate properly, but I’ve included them here to show what would follow and for the purposes of storing everything on GitHub. Those who are interested in seeing it in action can set the “eval” arguments below to “eval = T”.</p>
+<p>Function notes: <em>pmap()</em> will apply the function in parentheses (<strong>data_gen</strong> here) over all rows in the pre-existing object specified before the pipe (<strong>sim_repped.dt</strong> here). <em>pmap()</em> specifically applies the given function using the values in each row of the specified object as the arguments in the function being mapped. Here, it is being used to run the data-generating function individually for the conditions specified in each row of <strong>sim_repped.dt</strong>.</p>
 <pre class="r"><code>full.data &lt;- sim_repped.dt %&gt;%   
-       pmap(data_gen)</code></pre>
+  pmap(data_gen)</code></pre>
 </div>
 <div id="saving-the-data" class="section level3">
 <h3>Saving the data</h3>
 <p>If you want to save the resulting data as an .RData file, use the following chunk, specifying the appropriate file path. Note that this chunk will not automatically be evaluated. You must either change the eval argument for the code chunk to “eval = T” or run the code within the chunk independently (after specifying the appropriate path).</p>
 <pre class="r"><code>saveRDS(full.data , &quot;FILE/PATH/TO/DESIRED/FOLDER/NAME/fulldata.RData&quot;)</code></pre>
-<p>For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10/100 random datasets from this full dataset. I’ve also included the vector of 10/100 random indices and the vector-generating seed for those indices for transparency.</p>
+<p>For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 100 random datasets from this full dataset. I’ve also included the vector of 100 random indices and the vector-generating seed for those indices for transparency.</p>
 <pre class="r"><code>#set the seed
 set.seed(501)
 
 #vector of 10 indices
-data.10 &lt;- sample(x = c(1:48000) , size = 100 , replace = F)
+data.100 &lt;- sample(x = c(1:48000) , size = 100 , replace = F)
 
-#save 10 from full data
-saveRDS(full.data[data.10] , &quot;/FILE/PATH/Testing100.RData&quot;)</code></pre>
-<p>Finally, let’s extract and process a single dataset. Since I’m going to be creating demos for use with applied datasets, let’s make this is as close to a real dataset as possible. This mainly means I’m going to strip away the metadata I added for simulation purposes.</p>
+#save 100 from full data
+saveRDS(full.data[data.100] , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100.RData&quot;)</code></pre>
+<p>Many of the lasso/elastic net functions used in the combined model I will be demo’ing rely on matrices rather than data.tables. Let’s also create a version of this data file in which the X’s are in matrix format.</p>
+<p>In words, the following chunk is specifying a new objects <strong>testing100.mtx</strong>, which will result from the testing100 iterations of the full dataset. More specifically, it will extract just those iterations, but will apply the <em>as.matrix()</em> function to the appropriate list elements of each data iteration. Even more specifically, it applies as.matrix to elements 7 and 8 of each data iteration, which correspond with the training and holdout predictor sets, respectively.</p>
+<pre class="r"><code># set up the new object and start the pipe '%&gt;%'
+testing100.mtx &lt;- full.data[data.100] %&gt;%
+  # 'lapply()' applies a certain function over all list elements
+  # # in the pre-existing object specified before the pipe
+  lapply(map_at , 
+         # and these subsequent arguments correspond with the 
+         # # function being lapply'ed
+         .at = c(7 , 8) , as.matrix)
+
+#save 100 from full data
+saveRDS(testing100.mtx , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100_Xmtx.RData&quot;)</code></pre>
+<p>Let’s also extract and process a single dataset, save it, and then do the same for a matrix-ized version as we did above.</p>
 <pre class="r"><code>#set random seed
 set.seed(501)
 
@@ -583,15 +601,29 @@ set.seed(501)
 data.1 &lt;- sample(x = c(1:48000) , size = 1 , replace = F)
 
 #extract single dataset
-testing1 &lt;- full.data[data.1]</code></pre>
-<pre class="r"><code>#extract just our X and Y objects
-testing1 &lt;- list(Y_train = testing1[[1]][&quot;Y_train&quot;] , 
-                 Y_hold = testing1[[1]][&quot;Y_hold&quot;] , 
-                 X_train = testing1[[1]][&quot;X_train&quot;] , 
-                 X_hold = testing1[[1]][&quot;X_hold&quot;])</code></pre>
-<p>And now we can save that resulting file.</p>
-<pre class="r"><code>#save applied dataset
-saveRDS(testing1 , &quot;/FILE/PATH/TestingApplied.RData&quot;)</code></pre>
+testing1 &lt;- full.data[data.1]
+
+#save applied dataset
+saveRDS(testing1 , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing1.RData&quot;)
+
+# set up the new object and start the pipe '%&gt;%'
+testing1.mtx &lt;- testing1 %&gt;%
+  # 'lapply()' applies a certain function over all list elements
+  # # in the pre-existing object specified before the pipe
+  lapply(map_at , 
+         # and these subsequent arguments correspond with the 
+         # # function being lapply'ed
+         .at = c(7 , 8) , as.matrix)
+
+#save 100 from full data
+saveRDS(testing1.mtx , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing1_Xmtx.RData&quot;)</code></pre>
+<p>Finally, since I’m going to be creating demos for use with applied datasets, let’s make a version that is as close to a real dataset as possible. This mainly means I’m going to strip away the metadata I added for simulation purposes.</p>
+<pre class="r"><code>testingapplied &lt;- list(X_train = testing1[[1]][[&quot;X_train&quot;]] , 
+                       Y_train = testing1[[1]][[&quot;Y_train&quot;]] , 
+                       X_hold = testing1[[1]][[&quot;X_hold&quot;]] , 
+                       Y_hold = testing1[[1]][[&quot;Y_hold&quot;]])</code></pre>
+<p>Lastly, we save this “applied” dataset.</p>
+<pre class="r"><code>saveRDS(testingapplied , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData&quot;)</code></pre>
 </div>
 </div>
 
