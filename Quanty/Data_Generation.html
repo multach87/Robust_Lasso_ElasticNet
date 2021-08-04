@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-07-30" />
+<meta name="date" content="2021-08-03" />
 
 <title>Data_Generation</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Data_Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-07-30</h4>
+<h4 class="date">2021-08-03</h4>
 
 </div>
 
@@ -442,10 +442,7 @@ sim_structure.dt &lt;- setDT(as.data.frame(matrix(ncol = 6 , nrow = 96)))
 <p>The following chunks will generate a data.table with multiple rows per data condition. Each data condition will therefore have a number of rows equal to the number of simulated iterations. This is primarily used for convenience with the data-generating functions.</p>
 <p>The resulting data.table should have a number of rows equal to the number of unique conditions times the number of iterations being simulated for each condition. Here, there are 72 + 24 = 96 unique conditions and we are simulating 500 iterations of each condition, resulting in 48000 total datasets/rows. We are also adding an additional column for the data-generating seed.</p>
 <pre class="r"><code># create empty df
-sim_repped.dt &lt;- setDT(as.data.frame(matrix(ncol = 1 , nrow = (96*500))))
-# set column names of df
-#colnames(sim_repped.dt) &lt;- c(&quot;n&quot; , &quot;p&quot; , &quot;eta_x&quot; , &quot;eta_y&quot; , &quot;g&quot; , &quot;h&quot; , 
-#                                    &quot;seed&quot;)</code></pre>
+sim_repped.dt &lt;- setDT(as.data.frame(matrix(ncol = 1 , nrow = (96*500))))</code></pre>
 <p>Now fill the empty data.table with repeated conditions</p>
 <pre class="r"><code># fill empty df with repeated data conditions
 for(i in 1:nrow(sim_structure.dt)) {
@@ -456,15 +453,16 @@ for(i in 1:nrow(sim_structure.dt)) {
                             eta_y = sim_structure.dt[i , eta_y] , 
                             g = sim_structure.dt[i , g] , 
                             h = sim_structure.dt[i , h])]
-}
-
-#purrr::map(seq_len(500) , ~sim_structure.dt[i , (1:6)])</code></pre>
-<p>Finally, generate a seed for each iteration. Let’s also get rid of the blank column from initializing the data.table.</p>
+}</code></pre>
+<p>Finally, generate a seed for each iteration and a tracker number for each iteration. The tracker number will give us a sense of our progress if we run across the entire simulated data. This tracker will simply be the numbers 1 through 48000. Let’s also get rid of the blank column from initializing the data.table.</p>
 <pre class="r"><code># generate random seeds
 set.seed(501)
 sim_repped.dt[ , seed := runif(n = nrow(sim_repped.dt) , 
                                min = -1e10 , 
                                max = 1e10)]
+
+# generate iteration tracker number
+sim_repped.dt[ , tracker := c(1:48000)]
 
 # get rid of blank first column
 sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
@@ -477,10 +475,12 @@ sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
 <h3>Data-generating function</h3>
 <p>This function will generate our simulation data on which we will run the models of interest.</p>
 <p>NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.</p>
-<pre class="r"><code>data_gen &lt;- function(n , p , eta_x , eta_y , g , h , seed) {      
+<pre class="r"><code>data_gen &lt;- function(n , p , eta_x , eta_y , g , h , 
+                     seed , tracker = tracker) {      
   conditions &lt;- setDT(data.frame(n = n , p = p , 
                                  eta_x = eta_x , eta_y = eta_y , 
-                                 g = g , h = h , seed = seed))
+                                 g = g , h = h , tracker = tracker , 
+                                 seed = seed))
 
   betas &lt;- matrix(0 , nrow = p , ncol = 1)
   betas[1,1] &lt;- 0.5
@@ -544,6 +544,7 @@ sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
   
   # Create list of separate components of generated data   
   combine &lt;- list(conditions = conditions ,
+                  tracker = tracker , 
                   seed = seed , 
                   betas = betas , 
                   Y_train = Y[1 : floor((n * .667))] ,

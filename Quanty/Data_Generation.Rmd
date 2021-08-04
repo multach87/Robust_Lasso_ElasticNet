@@ -113,9 +113,6 @@ The resulting data.table should have a number of rows equal to the number of uni
 ```{r create empty data.table}
 # create empty df
 sim_repped.dt <- setDT(as.data.frame(matrix(ncol = 1 , nrow = (96*500))))
-# set column names of df
-#colnames(sim_repped.dt) <- c("n" , "p" , "eta_x" , "eta_y" , "g" , "h" , 
-#                                    "seed")
 ```
 
 Now fill the empty data.table with repeated conditions
@@ -132,10 +129,9 @@ for(i in 1:nrow(sim_structure.dt)) {
                             h = sim_structure.dt[i , h])]
 }
 
-#purrr::map(seq_len(500) , ~sim_structure.dt[i , (1:6)])
 ```
 
-Finally, generate a seed for each iteration. Let's also get rid of the blank column from initializing the data.table.
+Finally, generate a seed for each iteration and a tracker number for each iteration. The tracker number will give us a sense of our progress if we run across the entire simulated data. This tracker will simply be the numbers 1 through 48000. Let's also get rid of the blank column from initializing the data.table.
 
 ```{r fill seeds column}
 # generate random seeds
@@ -143,6 +139,9 @@ set.seed(501)
 sim_repped.dt[ , seed := runif(n = nrow(sim_repped.dt) , 
                                min = -1e10 , 
                                max = 1e10)]
+
+# generate iteration tracker number
+sim_repped.dt[ , tracker := c(1:48000)]
 
 # get rid of blank first column
 sim_repped.dt <- sim_repped.dt[ , !1 , with = F]
@@ -159,10 +158,12 @@ This function will generate our simulation data on which we will run the models 
 NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.
 
 ```{r data-generating function}
-data_gen <- function(n , p , eta_x , eta_y , g , h , seed) {      
+data_gen <- function(n , p , eta_x , eta_y , g , h , 
+                     seed , tracker) {      
   conditions <- setDT(data.frame(n = n , p = p , 
                                  eta_x = eta_x , eta_y = eta_y , 
-                                 g = g , h = h , seed = seed))
+                                 g = g , h = h , tracker = tracker , 
+                                 seed = seed))
 
   betas <- matrix(0 , nrow = p , ncol = 1)
   betas[1,1] <- 0.5
@@ -226,6 +227,7 @@ data_gen <- function(n , p , eta_x , eta_y , g , h , seed) {
   
   # Create list of separate components of generated data   
   combine <- list(conditions = conditions ,
+                  tracker = tracker , 
                   seed = seed , 
                   betas = betas , 
                   Y_train = Y[1 : floor((n * .667))] ,
@@ -241,7 +243,7 @@ data_gen <- function(n , p , eta_x , eta_y , g , h , seed) {
 }
 ```
 
-Finally, let's map the data-generating function over all data conditions and iterations. Note that I've set "eval = F" for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it's unnecessary to process that for the html walkthrough. This also means that the following chunks won't operate, but I've included them here to show what would follow. Those who are interested in seeing in action can set the "eval" arguments below to "eval = T". 
+Finally, let's map the data-generating function over all data conditions and iterations. Note that I've set "eval = F" for all subsequent chunks. The data file resulting from the chunk below would be nearly 2gb and it's unnecessary to process that for the html walkthrough. This also means that the following chunks won't operate, but I've included them here to show what would follow. Those who are interested in seeing it in action can set the "eval" arguments below to "eval = T". 
 
 ```{r generate data , eval = F}
 full.data <- sim_repped.dt %>%   
@@ -258,7 +260,7 @@ saveRDS(full.data , "FILE/PATH/TO/DESIRED/FOLDER/NAME/fulldata.RData")
 
 For use with subsequent demos of the ensemble lasso/elastic net procedure, I will be saving 10/100 random datasets from this full dataset. I've also included the vector of 10/100 random indices and the vector-generating seed for those indices for transparency.
 
-```{r save 10 random datasets , eval = F}
+```{r save 10 random datasets , eval = T}
 #set the seed
 set.seed(501)
 
@@ -266,12 +268,12 @@ set.seed(501)
 data.10 <- sample(x = c(1:48000) , size = 100 , replace = F)
 
 #save 10 from full data
-saveRDS(full.data[data.10] , "/FILE/PATH/Testing100.RData")
+saveRDS(full.data[data.10] , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing100.RData")
 ```
 
-Finally, let's extract and process a single dataset. Since I'm going to be creating demos for use with applied datasets, let's make this is as close to a real dataset as possible. This mainly means I'm going to strip away the metadata I added for simulation purposes.
+Let's also extract and process a single dataset. 
 
-```{r extract single applied dataset , eval = F}
+```{r extract single applied dataset , eval = T}
 #set random seed
 set.seed(501)
 
@@ -282,17 +284,24 @@ data.1 <- sample(x = c(1:48000) , size = 1 , replace = F)
 testing1 <- full.data[data.1]
 ```
 
-```{r strip metadata , eval = F}
-#extract just our X and Y objects
-testing1 <- list(Y_train = testing1[[1]]["Y_train"] , 
-                 Y_hold = testing1[[1]]["Y_hold"] , 
-                 X_train = testing1[[1]]["X_train"] , 
-                 X_hold = testing1[[1]]["X_hold"])
-```
-
 And now we can save that resulting file.
 
-```{r save single applied dataset , eval = F}
+```{r save single applied dataset , eval = T}
 #save applied dataset
-saveRDS(testing1 , "/FILE/PATH/TestingApplied.RData")
+saveRDS(testing1 , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/Testing1.RData")
+```
+
+Finally, since I'm going to be creating demos for use with applied datasets, let's make a version that is as close to a real dataset as possible. This mainly means I'm going to strip away the metadata I added for simulation purposes.
+
+```{r applied dataset}
+testingapplied <- list(X_train = testing1[[1]][["X_train"]] , 
+                       Y_train = testing1[[1]][["Y_train"]] , 
+                       X_hold = testing1[[1]][["X_hold"]] , 
+                       Y_hold = testing1[[1]][["Y_hold"]])
+```
+
+Lastly, we save this "applied" dataset.
+
+```{r save applied dataset}
+saveRDS(testingapplied , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied.RData")
 ```
