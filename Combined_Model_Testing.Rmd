@@ -1,0 +1,296 @@
+---
+title: 'K-Fold Subsetting Function Demo'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Introduction
+
+This file demonstrates use of a custom function for indexing and splitting a full dataset for k-fold cross-validation.
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages.
+
+```{r libraries}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+library(tibble)
+```
+
+
+Let's also load our test data, which will just be our matricized singular applied dataset.
+
+```{r load synthetic applied dataset}
+demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData")
+```
+
+Let's also quickly combine the X and Y list elements into a single object for convenience with the subsetting function. We will put Y into the first column since it corresponds with a left-to-right reading of a regression model.
+
+```{r combine X and Y into single object}
+demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
+                                     )
+                               )
+                    )
+```
+
+## Custom k-fold subsetting function
+
+The chunk below takes a dataset and creates an ordinal variable with *k* levels, corresponding with each of the *k* test sets. The function takes as its arguments:
+
+ * **data** : a dataset to be split into *k* groups
+ * ***k*** : the number of folds for cross-validation
+   * Defaults to 5 folds
+   * Corresponds with the percentage of data to be used as a holdout/testing set in the following manner:
+   $$
+   \begin{equation}
+        n_{test} = \text{
+                $n_{full}$ $/$ $k$
+        }
+   \end{equation}
+   $$
+ * **seed** : a seed for fixing random processes
+   * For this function, this is primarily associated with random and unordered assignment of the values of *k* across the full dataset
+ * **list** : this argument tells the function if you want the resulting *k*-fold indexed data to be put into list format, with each list element corresponding with one fold *k*
+   * This function defaults to *FALSE*, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index *k*
+   * If set to *TRUE*, the resulting list will *not* contain the index variable for *k*, as the list elements themselves correspond with *k*
+   * If set to *"traintest"* (in quotes!), the resulting list will instead contain two elements:
+     * A training set containing data from *k* - 1 folds/subsets
+     * A holdout/testing set containing data from the *k* fold/subset
+     
+Although the chunk isn't printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.
+
+```{r kfold subsetting function DEPRECATED , echo = F , eval = F}
+# k-fold subsetting function
+kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
+        if(length(dim(data)) == 2) { 
+                # For 2D data input (matrices, data.tables, dataframes, etc.)
+                
+                # determine number of subsets which contain an extra element
+                # # if n is not evenly divisible by k
+                # # # note that this value will be 0 if n/k is evenly divisible
+                nsams.large <- nrow(data) %% k
+                
+                # determine number of smaller subset if n 
+                # # is not evenly divisible by k
+                # # # note that this will be the total number of samples if n/k is evenly divisible
+                nsams.small <- k - nsams.large
+                
+                # determine sample size of larger subsets if applicable
+                samsize.large <- ceiling(nrow(data) / k) * (nsams.large != 0)
+                
+                # determine sample size of smaller/all subsets
+                samsize.small <- floor(nrow(data) / k)
+                
+                # create indicator for each subset
+                subset.indicator <- c(rep( (1 : k) , 
+                                           floor(nrow(data) / k)
+                                          ) ,
+                                      rep( (1 : (nsams.large) ) , 
+                                           (1 * (nsams.large != 0) ) 
+                                          )
+                                      )
+                
+                # fix random assignment process
+                if(seed) {
+                        set.seed(seed)
+                }
+                
+                # combine subset indicator with original data  
+                newdata <- cbind(data , 
+                                 subset = sample(subset.indicator)
+                                 )
+                
+                newdata <- setDT(data.frame(newdata))
+                
+                # create k-split list if desired
+                if(list == TRUE) {
+                        newdata <- return(split(newdata , 
+                                                newdata[ , "subset"])
+                                          )
+                } else if(list == "TRAINTEST") {
+                        newdata <- return(list(
+                                Train = subset(newdata , subset < k) , 
+                                Test = subset(newdata , subset %in% k)
+                                )
+                                )
+                } else {
+                        newdata <- return(newdata)
+                }
+        } else if (length(dim(data)) == 0){   
+                # for 1D data
+                
+                # determine number of subsets which contain an extra element
+                # # if n is not evenly divisible by k
+                # # # note that this value will be 0 if n/k is evenly divisible
+                nsams.large <- length(data) %% k
+                
+                # determine number of smaller subset if n 
+                # # is not evenly divisible by k
+                # # # note that this will be the total number of samples if n/k is evenly divisible
+                nsams.small <- k - nsams.large
+                
+                # determine sample size of larger subsets if applicable
+                samsize.large <- ceiling(length(data) / k) * (nsams.large != 0)
+                
+                # determine sample size of smaller/all subsets
+                samsize.small <- floor(length(data) / k)
+                
+                # create indicator for each subset
+                subset.indicator <- c(rep( (1 : k) , 
+                                           floor(length(data) / k)
+                                          ) ,
+                                      rep( (1 : (nsams.large) ) , 
+                                           (1 * (nsams.large != 0) ) 
+                                          )
+                                      )
+                
+                # fix random assignment process
+                if(seed) {
+                        set.seed(seed)
+                }
+                
+                # combine original data and subset indicator
+                newdata <- matrix(cbind(data , 
+                                        subset = sample(subset.indicator) 
+                                        ) ,
+                                  ncol = 2
+                                  )
+                
+                # setDT() for splitting step
+                newdata <- setDT(data.frame(newdata))
+                
+                return(newdata)
+                
+                # create k-split list if desired
+                if(list == TRUE) {
+                        newdata <- return(split(newdata , 
+                                                newdata[ , "subset"])
+                                          )
+                } else if(list == "TRAINTEST") {
+                        newdata <- return(list(
+                                Train = subset(newdata , subset < k) , 
+                                Test = subset(newdata , subset %in% k)
+                                )
+                                )
+                } else {
+                        newdata <- return(newdata)
+                }
+        }
+}
+```
+
+```{r kfold subsetting function}
+# k-fold subsetting function
+kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
+        # check for data.table and setDT() if not a data.table
+        if(!(TRUE %in% (class(data) == "data.table"))) {
+                data <- setDT(data.frame(data))
+        }
+        
+        # determine number of subsets which contain an extra element
+        # # if n is not evenly divisible by k
+        # # # note that this value will be 0 if n/k is evenly divisible
+        nsams.large <- nrow(data) %% k
+        
+        # determine number of smaller subset if n 
+        # # is not evenly divisible by k
+        # # # note that this will be the total number of samples if n/k is evenly divisible
+        nsams.small <- k - nsams.large
+        
+        # determine sample size of larger subsets if applicable
+        samsize.large <- ceiling(nrow(data) / k) * (nsams.large != 0)
+        
+        # determine sample size of smaller/all subsets
+        samsize.small <- floor(nrow(data) / k)
+                
+        # create indicator for each subset
+        subset.indicator <- c(rep( (1 : k) , 
+                                   floor(nrow(data) / k)
+                                  ) ,
+                              rep( (1 : (nsams.large) ) , 
+                                   (1 * (nsams.large != 0) ) 
+                                  )
+                              )
+                
+        # fix random assignment process
+        if(seed) {
+                set.seed(seed)
+        }
+        
+        # combine subset indicator with original data  
+        newdata <- cbind(data , 
+                         subset = sample(subset.indicator)
+                         )
+                
+        newdata <- setDT(data.frame(newdata))
+        
+        # create k-split list if desired
+        if(list == TRUE) {
+                newdata <- return(split(newdata , 
+                                        newdata[ , "subset"])
+                                  )
+        } else if(list == "traintest") {
+                newdata <- return(list(
+                        Train = subset(newdata , subset < k) , 
+                        Test = subset(newdata , subset %in% k)
+                        )
+                        )
+        } else {
+                newdata <- return(newdata)
+        }
+}
+```
+
+
+```{r set seeds for splitting , eval = F}
+#generate seeds
+set.seed(501)
+appliedcv.seeds <- sample(x = c(1:1000000) , size = 100 , replace = FALSE)
+```
+
+```{r splitting data , eval = F}
+php.split <- list()
+
+for(i in 1:length(appliedcv.seeds)) {
+        #cat("i = " , i , "\n")
+       #initialize list element and underlying data 
+       php.split[[i]] <- list(track = numeric() , 
+                               train = matrix(ncol = (ncol(model.complete) + 1)) , 
+                               test = matrix(ncol = (ncol(model.complete) + 1)))
+       #create k-fold-indexed data for each dataset
+        php.kfold <- kfold_subsetter(model.complete , k = 3 ,
+                                       seed = appliedcv.seeds[i])
+        #cat("i = " , i , "\n")
+        php.split[[i]]$track <- i
+        php.split[[i]]$train <- php.kfold[(php.kfold$subset != 3) , ]
+        php.split[[i]]$test <- php.kfold[(php.kfold$subset == 3) , ]
+        
+}
+```
+
+
+
+```{r save php demo data and data for applied models , eval = F}
+
+```
+
