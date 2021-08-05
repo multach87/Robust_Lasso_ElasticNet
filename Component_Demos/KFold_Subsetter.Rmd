@@ -72,9 +72,10 @@ The chunk below takes a dataset and creates an ordinal variable with *k* levels,
  * **list** : this argument tells the function if you want the resulting *k*-fold indexed data to be put into list format, with each list element corresponding with one fold *k*
    * This function defaults to *FALSE*, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index *k*
    * If set to *TRUE*, the resulting list will *not* contain the index variable for *k*, as the list elements themselves correspond with *k*
-   * If set to *"traintest"* (in quotes!), the resulting list will instead contain two elements:
+   * If set to *"traintest"* (in quotes!), the resulting list will instead contain three elements:
      * A training set containing data from *k* - 1 folds/subsets
      * A holdout/testing set containing data from the *k* fold/subset
+     * The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in "CV_Splitting"
      
 Although the chunk isn't printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.
 
@@ -201,6 +202,11 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
 ```{r kfold subsetting function}
 # k-fold subsetting function
 kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
+        # check for string argument in "data"
+        if(is.character(data)) {
+                data <- eval(parse_expr(data))
+        }
+        
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == "data.table"))) {
                 data <- setDT(data.frame(data))
@@ -256,7 +262,8 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         } else if(list == "traintest") {
                 newdata <- return(list(
                         Train = subset(newdata , subset < k) , 
-                        Test = subset(newdata , subset %in% k)
+                        Test = subset(newdata , subset %in% k) , 
+                        Seed = seed
                         )
                         )
         } else {

@@ -403,16 +403,22 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <ul>
 <li>This function defaults to <em>FALSE</em>, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index <em>k</em></li>
 <li>If set to <em>TRUE</em>, the resulting list will <em>not</em> contain the index variable for <em>k</em>, as the list elements themselves correspond with <em>k</em></li>
-<li>If set to <em>“traintest”</em> (in quotes!), the resulting list will instead contain two elements:
+<li>If set to <em>“traintest”</em> (in quotes!), the resulting list will instead contain three elements:
 <ul>
 <li>A training set containing data from <em>k</em> - 1 folds/subsets</li>
 <li>A holdout/testing set containing data from the <em>k</em> fold/subset</li>
+<li>The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in “CV_Splitting”</li>
 </ul></li>
 </ul></li>
 </ul>
 <p>Although the chunk isn’t printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used <em>if</em> / <em>else if</em> branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.</p>
 <pre class="r"><code># k-fold subsetting function
 kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
+        # check for string argument in &quot;data&quot;
+        if(is.character(data)) {
+                data &lt;- eval(parse_expr(data))
+        }
+        
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
                 data &lt;- setDT(data.frame(data))
@@ -468,7 +474,8 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
         } else if(list == &quot;traintest&quot;) {
                 newdata &lt;- return(list(
                         Train = subset(newdata , subset &lt; k) , 
-                        Test = subset(newdata , subset %in% k)
+                        Test = subset(newdata , subset %in% k) , 
+                        Seed = seed
                         )
                         )
         } else {
@@ -575,7 +582,7 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
                                   seed = 7 , list = &quot;traintest&quot;)</code></pre>
 <p>And let’s look at the structure of the data.</p>
 <pre class="r"><code>str(trtstsplit.data)</code></pre>
-<pre><code>## List of 2
+<pre><code>## List of 3
 ##  $ Train:Classes 'data.table' and 'data.frame':  120 obs. of  10 variables:
 ##   ..$ Y     : num [1:120] -0.198 -1.156 -1.795 2.867 4.78 ...
 ##   ..$ X1    : num [1:120] -0.46 -0.32 -1.94 -1.09 1.38 ...
@@ -599,7 +606,8 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
 ##   ..$ X7    : num [1:30] 0.204 0.842 0.578 0.712 2.192 ...
 ##   ..$ X8    : num [1:30] -0.468 -0.273 0.546 -0.353 -0.736 ...
 ##   ..$ subset: int [1:30] 5 5 5 5 5 5 5 5 5 5 ...
-##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
+##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
+##  $ Seed : num 7</code></pre>
 </div>
 </div>
 
