@@ -364,35 +364,14 @@ pre code {
 <h2>Preamble</h2>
 <p>First, let’s load the necessary packages.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
-library(xaringan)   # Allows active preview of report in RStudio</code></pre>
-<pre><code>## Warning: package 'xaringan' was built under R version 3.6.2</code></pre>
-<pre class="r"><code>library(mvtnorm)    # Generates multivariate-normal data
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
 library(magrittr)   # Used for piping
-library(purrr)      # Used for mapping functions efficiently</code></pre>
-<pre><code>## 
-## Attaching package: 'purrr'</code></pre>
-<pre><code>## The following object is masked from 'package:magrittr':
-## 
-##     set_names</code></pre>
-<pre class="r"><code>library(data.table) # For more streamlined data structures</code></pre>
-<pre><code>## data.table 1.12.8 using 1 threads (see ?getDTthreads).  Latest news: r-datatable.com</code></pre>
-<pre><code>## 
-## Attaching package: 'data.table'</code></pre>
-<pre><code>## The following object is masked from 'package:purrr':
-## 
-##     transpose</code></pre>
-<pre class="r"><code>library(glmnet)     # For general lasso/elastic net functionality</code></pre>
-<pre><code>## Loading required package: Matrix</code></pre>
-<pre><code>## Loading required package: foreach</code></pre>
-<pre><code>## 
-## Attaching package: 'foreach'</code></pre>
-<pre><code>## The following objects are masked from 'package:purrr':
-## 
-##     accumulate, when</code></pre>
-<pre><code>## Loaded glmnet 2.0-18</code></pre>
-<pre class="r"><code>library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(tibble)</code></pre>
-<pre><code>## Warning: package 'tibble' was built under R version 3.6.2</code></pre>
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+library(rlang)</code></pre>
 <p>Let’s also load our demo data, which will just be our matricized singular applied dataset.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 <p>Let’s also quickly combine the X and Y list elements into a single object for convenience with the subsetting function. We will put Y into the first column since it corresponds with a left-to-right reading of a regression model.</p>
@@ -404,41 +383,21 @@ library(tibble)</code></pre>
 <div id="custom-k-fold-subsetting-function" class="section level2">
 <h2>Custom k-fold subsetting function</h2>
 <p>This function is as described in the “KFold_Subsetter” file. A full description of the arguments of the original function can be found therein.</p>
-<p>The chunk below takes a dataset and creates an ordinal variable with <em>k</em> levels, corresponding with each of the <em>k</em> test sets. The function takes as its arguments:</p>
-<ul>
-<li><strong>data</strong> : a dataset to be split into <em>k</em> groups</li>
-<li><strong><em>k</em></strong> : the number of folds for cross-validation
-<ul>
-<li>Defaults to 5 folds</li>
-<li>Corresponds with the percentage of data to be used as a holdout/testing set in the following manner: <span class="math display">\[
-\begin{equation}
-   n_{test} = \text{
-           $n_{full}$ $/$ $k$
-   }
-\end{equation}
-\]</span></li>
-</ul></li>
-<li><strong>seed</strong> : a seed for fixing random processes
-<ul>
-<li>For this function, this is primarily associated with random and unordered assignment of the values of <em>k</em> across the full dataset</li>
-</ul></li>
-<li><strong>list</strong> : this argument tells the function if you want the resulting <em>k</em>-fold indexed data to be put into list format, with each list element corresponding with one fold <em>k</em>
-<ul>
-<li>This function defaults to <em>FALSE</em>, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index <em>k</em></li>
-<li>If set to <em>TRUE</em>, the resulting list will <em>not</em> contain the index variable for <em>k</em>, as the list elements themselves correspond with <em>k</em></li>
-<li>If set to <em>“traintest”</em> (in quotes!), the resulting list will instead contain two elements:
-<ul>
-<li>A training set containing data from <em>k</em> - 1 folds/subsets</li>
-<li>A holdout/testing set containing data from the <em>k</em> fold/subset</li>
-</ul></li>
-</ul></li>
-</ul>
-<p>Although the chunk isn’t printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used <em>if</em> / <em>else if</em> branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.</p>
 <pre class="r"><code># k-fold subsetting function
 kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
+        # check for string object in data argument
+        if(is.character(data)) {
+                data &lt;- eval(parse_expr(data))
+        }
+        
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
                 data &lt;- setDT(data.frame(data))
+        }
+        
+        # check for 0 &lt; k &lt;= n/2
+        if((k &lt;= 0) | (k &gt; (nrow(data) / 2) ) ) {
+                stop(&quot;ERROR: number of folds 'k' must be greater than 0 and less than sample size divided by 2&quot;)
         }
         
         # determine number of subsets which contain an extra element
@@ -486,7 +445,8 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
         } else if(list == &quot;traintest&quot;) {
                 newdata &lt;- return(list(
                         Train = subset(newdata , subset &lt; k) , 
-                        Test = subset(newdata , subset %in% k)
+                        Test = subset(newdata , subset %in% k) , 
+                        Seed = seed
                         )
                         )
         } else {
@@ -497,6 +457,70 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
 <div id="multi-subsetting-wrapper" class="section level2">
 <h2>Multi-Subsetting Wrapper</h2>
 <p>The following function serves as a wrapper around the original subsetting function which incorporates additional arguments. These arguments extend the original function to conduct multiple training-testing splits and store the resulting datasets in a singular overarching list.</p>
+<p>The wrapper’s arguments are as follows. The ellipses are arguments for the original subsetting function which are handled internally within the wrapper.</p>
+<ul>
+<li><strong>data</strong> : a dataset to be split into training-testing sets</li>
+<li><strong>seed_multi</strong> : a seed for generating the vector of seeds for each individual training-testing <em>k</em>-fold split</li>
+<li><strong>num_splits</strong> : the number of training-testing splits to be created
+<ul>
+<li>Defaults to 100</li>
+</ul></li>
+<li><strong>test_percent</strong> : the percentage (as a decimal) of the full data to be reserved for the holdout/testing set
+<ul>
+<li>Corresponds with the number of folds <em>k</em> for <em>k</em>-fold subsetting in the following manner: <span class="math display">\[
+\begin{equation}
+  test\_percent = \text{
+          $1$ $/$ $k$
+  }
+\end{equation}
+\]</span></li>
+<li>Defaults to 20<span class="math inline">\(\%\)</span>, which corresponds with 5-fold subsetting</li>
+</ul></li>
+</ul>
+<p>Note that this wrapper defaults to setting “list” argument in <em>kfold_subsetter()</em> to “traintest.” This decision was implemented to reduce issues with formatting an applied dataset for the final combined-model function. The subsetting function is relatively more flexible in terms of data inputs than the full combined-model function, therefore I wanted to streamline data formatting from that point forward when using the combined model in full.</p>
+<pre class="r"><code>kfold_multi &lt;- function(data , ... , seed_multi = 713 , 
+                        num_splits = 100 , test_percent = .2) {
+        # set the seed for generating individual kfold seeds
+        set.seed(seed_multi)
+        
+        # turn data object name into character string for subsequent use
+        data.name &lt;- deparse(substitute(data))
+        
+        # generate random numbers equal to num_splits so that each
+        # # individual run of the subsetter has a unique seed
+        seeds &lt;- sample(c(1:100000) , size = num_splits , replace = FALSE)
+        
+        # set value of k corresponding with test_percent
+        if((test_percent &gt;= 1) | (test_percent &lt;= 0)) {
+                stop(&quot;ERROR: 'test_percent' must be greater than and less than 1&quot;)
+        }
+        
+        # set k for individual splits
+        k &lt;- 1 / test_percent
+        
+        # initialize and data.table of kfold arguments
+        split_repped.dt &lt;- setDT(as.data.frame(matrix(ncol = 1 , 
+                                              nrow = num_splits)))
+        
+        # fill data.table with arguments for kfold function
+        split_repped.dt[ , ':=' (data = data.name , 
+                         k = k , 
+                         seed = seeds , 
+                         list = &quot;traintest&quot;
+                         )
+                 ]
+        
+        # remove blank column from initializing
+        split_repped.dt &lt;- split_repped.dt[ , !1 , with = F]
+        
+        # run subsetter a number of times equal to num_splits and save
+        return(full.data &lt;- split_repped.dt %&gt;%
+                pmap(kfold_subsetter))
+}</code></pre>
+</div>
+<div id="examples" class="section level2">
+<h2>Examples</h2>
+<p>INCLUDE SOME EXAMPLES</p>
 </div>
 
 
