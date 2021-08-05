@@ -370,8 +370,7 @@ library(magrittr)   # Used for piping
 library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
-library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(tibble)</code></pre>
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</code></pre>
 <p>Let’s also load our demo data, which will just be our matricized singular applied dataset.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 <p>Let’s also quickly combine the X and Y list elements into a single object for convenience with the subsetting function. We will put Y into the first column since it corresponds with a left-to-right reading of a regression model.</p>
@@ -417,6 +416,11 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
                 data &lt;- setDT(data.frame(data))
+        }
+        
+        # check for 0 &lt; k &lt;= n/2
+        if((k &lt;= 0) | (k &gt; (nrow(data) / 2) ) ) {
+                stop(&quot;ERROR: number of folds 'k' must be greater than 0 and less than sample size divided by 2&quot;)
         }
         
         # determine number of subsets which contain an extra element

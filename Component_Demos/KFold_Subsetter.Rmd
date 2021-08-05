@@ -34,7 +34,6 @@ library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(tibble)
 ```
 
 
@@ -205,6 +204,11 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == "data.table"))) {
                 data <- setDT(data.frame(data))
+        }
+        
+        # check for 0 < k <= n/2
+        if((k <= 0) | (k > (nrow(data) / 2) ) ) {
+                stop("ERROR: number of folds 'k' must be greater than 0 and less than sample size divided by 2")
         }
         
         # determine number of subsets which contain an extra element
