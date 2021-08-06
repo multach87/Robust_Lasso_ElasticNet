@@ -383,7 +383,7 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <p>The function in the code chunk below applies the <em>cv.hqreg()</em>-based models to specified data for predictors and a single response. For <em>glmnet</em>-related functions, multi-dimensional inputs must be in matrix format. Y can be in a single-column matrix, or just a vector, but it must contain a number of elements equal to the number of rows of “X” if given in a vector. Likewise, if your desired “Y” is in tabular format, the number of rows should equal number of rows of “X.” Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.</p>
 <p>Note that the function takes a list of data elements as its sole argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” Subsequent, more comprehensive demos will provide functionality for putting your data in this structure.</p>
 <ul>
-<li>Explain extra arguments</li>
+<li>EXPLAIN EXTRA ARGUMENTS AND ANY CONSTRAINTS PLACED BY WRAPPER</li>
 </ul>
 <pre class="r"><code># adaptive LAD lasso application function
 hqreg.sim.fnct &lt;- function(data.list , 
