@@ -1,0 +1,253 @@
+---
+title: 'Single-Model Demo: Generalized hqreg() Model'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Introduction
+
+This file demonstrates application of *hqreg()*-based models through a singular model-application function. The models this function applies, via *hqreg()*, include the adaptive LAD lasso, adaptive LAD elastic net, adaptive Huber lasso, and adaptive Huber elastic net. 
+
+Basically, this is a wrapper for *cv.hqreg()* which applies it to a dataset in a manner convenient with the subsequent combined model that these files build towards.
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages.
+
+```{r libraries}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+```
+
+## Data Loading
+
+First, let's load the singular dataset we created.
+
+```{r load data , echo = T}
+demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData")
+```
+
+## Model-Application Function
+
+The function in the code chunk below applies the *cv.hqreg()*-based models to specified data for predictors and a single response. For *glmnet*-related functions, multi-dimensional inputs must be in matrix format. Y can be in a single-column matrix, or just a vector, but it must contain a number of elements equal to the number of rows of "X" if given in a vector. Likewise, if your desired "Y" is in tabular format, the number of rows should equal number of rows of "X." Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.
+
+Note that the function takes a list of data elements as its sole argument, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." Subsequent, more comprehensive demos will provide functionality for putting your data in this structure.
+
+ * Explain extra arguments
+
+```{r hqreg model application function , echo = T}
+
+# adaptive LAD lasso application function
+hqreg.sim.fnct <- function(data.list , 
+                           method = c("quantile" , "LAD" , "huber") , 
+                           tau = 0.5 , gamma = 1.345 , alpha = 0.5) {
+       # Store training X and Y to temporary objects
+       X_train <- data.list[["X"]]
+       Y_train <- data.list[["Y"]]
+       
+       if(method == "LAD") {
+               method <- "quantile"
+       }
+       
+       # If applicable, store holdout/testing X and Y
+       if(!is.null(data.list[["X_test"]]) & 
+          !is.null(data.list[["Y_test"]])) {
+               X_test <- data.list[["X_test"]]
+               Y_test <- data.list[["Y_test"]]
+       } else {
+               X_test <- NULL
+               Y_test <- NULL
+       }
+        
+       # lambdas to try for regularization
+       lambda.try <- seq(log(1400) , log(0.01) , length.out = 100)
+       lambda.try <- exp(lambda.try)
+       
+       # set a timer start point
+       start <- Sys.time()
+       
+       # cross-validated selection of adaptive lasso
+       # # tuning hyperparameter nu/gamma
+       
+       # # select ridge coefs for weighting
+       ridge.model <- cv.glmnet(x = X_train , y = Y_train , 
+                                lambda = lambda.try , alpha = 0)
+       lambda.ridge.opt <- ridge.model$lambda.min
+       best.ridge.coefs <- predict(ridge.model , 
+                                           type = "coefficients" ,
+                                           s = lambda.ridge.opt)[-1]
+
+       
+       # # grid of nu/gamma values to try for cross-validation
+       nu.try <- exp(seq(log(0.01) , log(10) , length.out = 100))
+       
+       # # initialize full list of LAD lasso results from each nu/gamma
+       hqreg.nu.cv.full <- list()
+       
+       # # initialize matrices of metrics and minimizing results
+       hqreg.nu.cv.lambda <- numeric()
+       hqreg.nu.cv.mse <- numeric()
+       hqreg.nu.cv.msesd <- numeric()
+       hqreg.nu.cv.coefs <- list()
+       
+       # # Loop over nu/gamma values for CV, 
+       # # # storing minimizing lambda within each nu/gamma
+       for(i in 1:length(nu.try)) {
+         invisible(
+                 capture.output(
+                         hqreg.nu.cv.full[[i]] <- 
+                                 cv.hqreg(X = X_train , y = Y_train , 
+                                          method = method , 
+                                          tau = tau , 
+                                          gamma = gamma , 
+                                          lambda = lambda.try ,
+                                          alpha = alpha , 
+                                          preprocess = "standardize" , 
+                                          screen = "ASR" , 
+                                          penalty.factor = 
+                                                  1 /
+                                                  abs(best.ridge.coefs) ^
+                                                  nu.try[i] , 
+                                          FUN = "hqreg" , 
+                                          type.measure = "mse"
+                                          )
+                         )
+                 )
+         hqreg.nu.cv.mse[i] <- min(hqreg.nu.cv.full[[i]]$cve)
+         hqreg.nu.cv.msesd[i] <-
+                 hqreg.nu.cv.full[[i]]$cvse[
+                         which.min(hqreg.nu.cv.full[[i]]$cve)
+                         ]
+         hqreg.nu.cv.lambda[i] <- hqreg.nu.cv.full[[i]]$lambda.min
+         hqreg.nu.cv.coefs[[i]] <- 
+                 hqreg.nu.cv.full[[i]]$fit$beta[ , 
+                         which.min(hqreg.nu.cv.full[[i]]$cve)
+                         ]
+       }
+       
+       #specify minimizing nu value and resulting model info
+       nu.opt <- nu.try[which.min(hqreg.nu.cv.mse)]
+       lambda.opt <- 
+               hqreg.nu.cv.lambda[
+                       which.min(hqreg.nu.cv.mse)
+                       ]
+       weights.opt <- 1 / abs(best.ridge.coefs) ^ nu.opt
+       hqreg.coefs <-
+               hqreg.nu.cv.coefs[[
+                       which.min(hqreg.nu.cv.mse)
+                       ]]
+       hqreg.mse.min <- min(hqreg.nu.cv.mse)
+       hqreg.mse.min.se <-
+               hqreg.nu.cv.msesd[
+                       which.min(hqreg.nu.cv.mse)
+                       ]
+       hqreg.model.min <- 
+               hqreg.nu.cv.full[
+                       which.min(hqreg.nu.cv.mse)
+                       ]
+       n.coefs <- sum(hqreg.coefs[-1] != 0)
+       
+       # calculate metrics using holdout data, if applicable
+       if(!is.null(X_test) & !is.null(Y_test)) {
+               # store n
+               n <- nrow(data.list[["X_test"]])
+               
+               # calculate predicted values
+               y.pred <- (data.list[["X_test"]] %*% hqreg.coefs[-1]) +
+                               hqreg.coefs[1]
+               
+               # calculate residual
+               resid <- y.pred - Y_test
+               
+               # square the residuals
+               resid.sq <- resid ^ 2
+               
+               # sum the square of residuals
+               sum.resid.sq <- sum(resid.sq)
+               
+               #calculate root mse
+               mse <- sum.resid.sq / n
+               
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = ladlasso.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = ladlasso.coefs
+                                             ) , 
+                           metrics = list(mse = mse , 
+                                          n.coefs = n.coefs , 
+                                          runtime = time
+                                  )
+                           )
+                      )
+       } else {
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = hqreg.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = hqreg.coefs
+                                             ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time
+                                          )
+                           )
+                      )
+       }
+       
+       
+
+       
+
+}
+```
+
+Initially, this function was developed to give users the option of including or excluding a model intercept. However, the *hqreg* family of functions inherently include an intercept in model estimation. Excluding the intercept might therefore create issues with proper interpretation of the results, particularly if prediction accuracy is of interest. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.
+
+## EXAMPLES
+
+ADD EXAMPLES
