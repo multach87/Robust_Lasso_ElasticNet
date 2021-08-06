@@ -520,9 +520,10 @@ ladlasso.sim.fnct &lt;- function(data.list) {
                cat(&quot;time = &quot; , time , &quot;\n&quot;)
                
                # put conditions, model info, and metrics into list
-               return(list(model = list(lambda = lambda.opt , 
-                                        coefs = ladlasso.coefs
-                                        ) , 
+               return(list(full.model = ladlasso.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = ladlasso.coefs
+                                             ) , 
                            metrics = list(mse = mse , 
                                           n.coefs = n.coefs , 
                                           runtime = time
@@ -564,7 +565,7 @@ ladlasso.sim.fnct &lt;- function(data.list) {
 <p>Initially, this function was developed to give users the option of including or excluding a model intercept. However, the <em>hqreg</em> family of functions inherently include an intercept in model estimation. Excluding the intercept might therefore create issues with proper interpretation of the results, particularly if prediction accuracy is of interest. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
 <p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data.</p>
 <pre class="r"><code>ladlasso.test &lt;- ladlasso.sim.fnct(demo.data)</code></pre>
-<pre><code>## time =  22.51046</code></pre>
+<pre><code>## time =  24.07693</code></pre>
 </div>
 
 

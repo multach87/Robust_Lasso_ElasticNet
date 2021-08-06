@@ -191,9 +191,10 @@ ladlasso.sim.fnct <- function(data.list) {
                cat("time = " , time , "\n")
                
                # put conditions, model info, and metrics into list
-               return(list(model = list(lambda = lambda.opt , 
-                                        coefs = ladlasso.coefs
-                                        ) , 
+               return(list(full.model = ladlasso.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = ladlasso.coefs
+                                             ) , 
                            metrics = list(mse = mse , 
                                           n.coefs = n.coefs , 
                                           runtime = time
