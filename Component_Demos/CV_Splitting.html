@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-08-05" />
+<meta name="date" content="2021-08-06" />
 
 <title>Demo: Splitting Data for Cross-Validation and Improved Model Results</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Demo: Splitting Data for Cross-Validation and Improved Model Results</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-08-05</h4>
+<h4 class="date">2021-08-06</h4>
 
 </div>
 
@@ -513,9 +513,12 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
         # remove blank column from initializing
         split_repped.dt &lt;- split_repped.dt[ , !1 , with = F]
         
-        # run subsetter a number of times equal to num_splits and save
-        return(full.data &lt;- split_repped.dt %&gt;%
-                pmap(kfold_subsetter))
+        # run subsetter for the desired number of splits
+        full.data &lt;- split_repped.dt %&gt;%
+                pmap(kfold_subsetter)
+        
+        # store single object of all training/testing splits
+        return(full.data)
 }</code></pre>
 </div>
 <div id="examples" class="section level2">

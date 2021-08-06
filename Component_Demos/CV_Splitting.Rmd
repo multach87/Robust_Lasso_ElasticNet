@@ -153,7 +153,6 @@ The wrapper's arguments are as follows. The ellipses are arguments for the origi
 
 Note that this wrapper defaults to setting "list" argument in *kfold_subsetter()* to "traintest." This decision was implemented to reduce issues with formatting an applied dataset for the final combined-model function. The subsetting function is relatively more flexible in terms of data inputs than the full combined-model function, therefore I wanted to streamline data formatting from that point forward when using the combined model in full.
 
-
 ```{r multi-kfold wrapper}
 kfold_multi <- function(data , ... , seed_multi = 713 , 
                         num_splits = 100 , test_percent = .2) {
@@ -190,9 +189,12 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
         # remove blank column from initializing
         split_repped.dt <- split_repped.dt[ , !1 , with = F]
         
-        # run subsetter a number of times equal to num_splits and save
-        return(full.data <- split_repped.dt %>%
-                pmap(kfold_subsetter))
+        # run subsetter for the desired number of splits
+        full.data <- split_repped.dt %>%
+                pmap(kfold_subsetter)
+        
+        # store single object of all training/testing splits
+        return(full.data)
 }
 ```
 
