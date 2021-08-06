@@ -384,11 +384,16 @@ library(rlang)</code></pre>
 <h2>Custom k-fold subsetting function</h2>
 <p>This function is as described in the “KFold_Subsetter” file. A full description of the arguments of the original function can be found therein.</p>
 <pre class="r"><code># k-fold subsetting function
-kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
+kfold_subsetter &lt;- function(data , y_col = 1 , 
+                            x_cols = c(2:nrow(data)) , 
+                            subset_col = (nrow(data) + 1) , 
+                            k = 5 , seed = 7 , list = FALSE) {
         # check for string object in data argument
         if(is.character(data)) {
                 data &lt;- eval(parse_expr(data))
         }
+    #cat(&quot;x_cols = &quot; , x_cols , &quot;\n&quot;)
+    #cat(&quot;y_col = &quot; , y_col , &quot;\n&quot;)
         
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
@@ -437,6 +442,8 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
                 
         newdata &lt;- setDT(data.frame(newdata))
         
+        cat(&quot;k = &quot; , k , &quot;\n&quot;)
+        
         # create k-split list if desired
         if(list == TRUE) {
                 newdata &lt;- return(split(newdata , 
@@ -444,9 +451,23 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
                                   )
         } else if(list == &quot;traintest&quot;) {
                 newdata &lt;- return(list(
-                        Train = subset(newdata , subset &lt; k) , 
-                        Test = subset(newdata , subset %in% k) , 
-                        Seed = seed
+                    X = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset &lt; k) %&gt;%
+                        .[ , c(1:8) , with = F] , 
+                    Y = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset &lt; k) %&gt;%
+                        .[ , 1 , with = F] , 
+                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset %in% k) %&gt;%
+                        .[ , c(1:8) , with = F] , 
+                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset %in% k) %&gt;%
+                        .[ , 1 , with = F] , 
+                    Seed = seed , 
+                    Subsets = newdata[ , &quot;subset&quot;]
+                        #Train = subset(newdata , subset &lt; k) , 
+                        #Test = subset(newdata , subset %in% k) , 
+                        #Seed = seed
                         )
                         )
         } else {

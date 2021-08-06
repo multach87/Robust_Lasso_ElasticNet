@@ -57,9 +57,15 @@ demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
 The chunk below takes a dataset and creates an ordinal variable with *k* levels, corresponding with each of the *k* test sets. The function takes as its arguments:
 
  * **data** : a dataset to be split into *k* groups
+ * **y_col** : an index indicating the column number of the response variable Y in the original dataset
+   * Defaults to the first column
+ * **x_cols** : indices indicating the column numbers of the predictor variables in the original dataset
+   * Defaults to all but the first column
+ * **subset_col** : an index for the column number of the subset indicator in the intermediate dataset
+   * Defaults to 1 + the number of columns in the original dataset
  * ***k*** : the number of folds for cross-validation
-   * Defaults to 5 folds
-   * Corresponds with the percentage of data to be used as a holdout/testing set in the following manner:
+   * Defaults to *k = 5* folds
+   * Corresponds with the sample size of the resulting holdout/testing set in the following manner:
    $$
    \begin{equation}
         n_{test} = \text{
@@ -72,14 +78,20 @@ The chunk below takes a dataset and creates an ordinal variable with *k* levels,
  * **list** : this argument tells the function if you want the resulting *k*-fold indexed data to be put into list format, with each list element corresponding with one fold *k*
    * This function defaults to *FALSE*, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index *k*
    * If set to *TRUE*, the resulting list will *not* contain the index variable for *k*, as the list elements themselves correspond with *k*
-   * If set to *"traintest"* (in quotes!), the resulting list will instead contain three elements:
-     * A training set containing data from *k* - 1 folds/subsets
-     * A holdout/testing set containing data from the *k* fold/subset
-     * The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in "CV_Splitting"
+   * If set to *"traintest"* (in quotes!), the resulting list will instead contain six elements:
+     * **"X"** : The training set of predictor values ("X") containing predictor data from *k* - 1 folds/subsets
+     * **"Y"** : The training set of response values
+     * **"X_Test"** : The holdout/testing set of predictor values
+     * **"Y_Test"** : The holdout/testing set of response values ("Y_Test")
+     * **"Seed"** : The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in "CV_Splitting"
+     * **"Subsets"** : A *k*-level vector containing the row-ordered subset indicator for the full input dataset
      
-Although the chunk isn't printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.
+Although the chunk isn't printed in the .html walkthrough, the .Rmd file contains additional deprecated versions of the subsetting function for those who are interested. 
+ 
+ * The 08/05/2021 deprecation used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching. 
+ * The 08/06/2021 deprecation only split the resulting data into training/testing/seed elements when setting the "list" argument to "traintest." The current version splits the data into the 6 elements described above.
 
-```{r kfold subsetting function DEPRECATED , echo = F , eval = F}
+```{r kfold subsetting function DEPRECATED 08052021 , echo = F , eval = F}
 # k-fold subsetting function
 kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         if(length(dim(data)) == 2) { 
@@ -199,7 +211,7 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
 }
 ```
 
-```{r kfold subsetting function}
+```{r kfold subsetting function DEPRECATED2 08062021 , echo = F , eval = F}
 # k-fold subsetting function
 kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         # check for string argument in "data"
@@ -270,6 +282,100 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
                 newdata <- return(newdata)
         }
 }
+```
+
+
+```{r kfold subsetting function}
+# k-fold subsetting function
+kfold_subsetter <- function(data , y_col = 1 , 
+                            x_cols = c(2:ncol(data)) , 
+                            subset_col = (ncol(data) + 1) , 
+                            k = 5 , seed = 7 , list = FALSE) {
+        # check for string object in data argument
+        if(is.character(data)) {
+                data <- eval(parse_expr(data))
+        }
+        
+        # check for data.table and setDT() if not a data.table
+        if(!(TRUE %in% (class(data) == "data.table"))) {
+                data <- setDT(data.frame(data))
+        }
+        
+        # check for 0 < k <= n/2
+        if((k <= 0) | (k > (nrow(data) / 2) ) ) {
+                stop("ERROR: number of folds 'k' must be greater than 0 and less than sample size divided by 2")
+        }
+        
+        # determine number of subsets which contain an extra element
+        # # if n is not evenly divisible by k
+        # # # note that this value will be 0 if n/k is evenly divisible
+        nsams.large <- nrow(data) %% k
+        
+        # determine number of smaller subset if n 
+        # # is not evenly divisible by k
+        # # # note that this will be the total number of samples if n/k is evenly divisible
+        nsams.small <- k - nsams.large
+        
+        # determine sample size of larger subsets if applicable
+        samsize.large <- ceiling(nrow(data) / k) * (nsams.large != 0)
+        
+        # determine sample size of smaller/all subsets
+        samsize.small <- floor(nrow(data) / k)
+                
+        # create indicator for each subset
+        subset.indicator <- c(rep( (1 : k) , 
+                                   floor(nrow(data) / k)
+                                  ) ,
+                              rep( (1 : (nsams.large) ) , 
+                                   (1 * (nsams.large != 0) ) 
+                                  )
+                              )
+                
+        # fix random assignment process
+        if(seed) {
+                set.seed(seed)
+        }
+        
+        # combine subset indicator with original data  
+        newdata <- cbind(data , 
+                         subset = sample(subset.indicator)
+                         )
+                
+        newdata <- setDT(data.frame(newdata))
+        
+        # create k-split list if desired
+        if(list == TRUE) {
+                newdata <- return(split(newdata , 
+                                        newdata[ , "subset"])
+                                  )
+        } else if(list == "traintest") {
+                newdata <- return(list(
+                    X = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset < k) %>%
+                        .[ , c(1:8) , with = F] , 
+                    Y = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset < k) %>%
+                        .[ , 1 , with = F] , 
+                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset %in% k) %>%
+                        .[ , c(1:8) , with = F] , 
+                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset %in% k) %>%
+                        .[ , 1 , with = F] , 
+                    Seed = seed , 
+                    Subsets = newdata[ , "subset"]
+                        #Train = subset(newdata , subset < k) , 
+                        #Test = subset(newdata , subset %in% k) , 
+                        #Seed = seed
+                        )
+                        )
+        } else {
+                newdata <- return(newdata)
+        }
+}
+
+
+
 ```
 
 ## Testing the function

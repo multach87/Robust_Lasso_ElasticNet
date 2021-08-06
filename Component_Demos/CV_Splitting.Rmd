@@ -34,7 +34,7 @@ library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(rlang)
+#library(rlang)
 ```
 
 Let's also load our demo data, which will just be our matricized singular applied dataset.
@@ -58,7 +58,10 @@ This function is as described in the "KFold_Subsetter" file. A full description 
 
 ```{r kfold subsetting function}
 # k-fold subsetting function
-kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
+kfold_subsetter <- function(data , y_col = 1 , 
+                            x_cols = c(2:ncol(data)) , 
+                            subset_col = (ncol(data) + 1) , 
+                            k = 5 , seed = 7 , list = FALSE) {
         # check for string object in data argument
         if(is.character(data)) {
                 data <- eval(parse_expr(data))
@@ -118,9 +121,23 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
                                   )
         } else if(list == "traintest") {
                 newdata <- return(list(
-                        Train = subset(newdata , subset < k) , 
-                        Test = subset(newdata , subset %in% k) , 
-                        Seed = seed
+                    X = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset < k) %>%
+                        .[ , c(1:8) , with = F] , 
+                    Y = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset < k) %>%
+                        .[ , 1 , with = F] , 
+                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset %in% k) %>%
+                        .[ , c(1:8) , with = F] , 
+                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset %in% k) %>%
+                        .[ , 1 , with = F] , 
+                    Seed = seed , 
+                    Subsets = newdata[ , "subset"]
+                        #Train = subset(newdata , subset < k) , 
+                        #Test = subset(newdata , subset %in% k) , 
+                        #Seed = seed
                         )
                         )
         } else {

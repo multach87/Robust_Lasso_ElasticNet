@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-08-05" />
+<meta name="date" content="2021-08-06" />
 
 <title>K-Fold Subsetting Function Demo</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">K-Fold Subsetting Function Demo</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-08-05</h4>
+<h4 class="date">2021-08-06</h4>
 
 </div>
 
@@ -384,10 +384,22 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <p>The chunk below takes a dataset and creates an ordinal variable with <em>k</em> levels, corresponding with each of the <em>k</em> test sets. The function takes as its arguments:</p>
 <ul>
 <li><strong>data</strong> : a dataset to be split into <em>k</em> groups</li>
+<li><strong>y_col</strong> : an index indicating the column number of the response variable Y in the original dataset
+<ul>
+<li>Defaults to the first column</li>
+</ul></li>
+<li><strong>x_cols</strong> : indices indicating the column numbers of the predictor variables in the original dataset
+<ul>
+<li>Defaults to all but the first column</li>
+</ul></li>
+<li><strong>subset_col</strong> : an index for the column number of the subset indicator in the intermediate dataset
+<ul>
+<li>Defaults to 1 + the number of columns in the original dataset</li>
+</ul></li>
 <li><strong><em>k</em></strong> : the number of folds for cross-validation
 <ul>
-<li>Defaults to 5 folds</li>
-<li>Corresponds with the percentage of data to be used as a holdout/testing set in the following manner: <span class="math display">\[
+<li>Defaults to <em>k = 5</em> folds</li>
+<li>Corresponds with the sample size of the resulting holdout/testing set in the following manner: <span class="math display">\[
 \begin{equation}
    n_{test} = \text{
            $n_{full}$ $/$ $k$
@@ -403,18 +415,28 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <ul>
 <li>This function defaults to <em>FALSE</em>, meaning the resulting data will be in matrix/tabular format and will contain a separate column for the index <em>k</em></li>
 <li>If set to <em>TRUE</em>, the resulting list will <em>not</em> contain the index variable for <em>k</em>, as the list elements themselves correspond with <em>k</em></li>
-<li>If set to <em>“traintest”</em> (in quotes!), the resulting list will instead contain three elements:
+<li>If set to <em>“traintest”</em> (in quotes!), the resulting list will instead contain six elements:
 <ul>
-<li>A training set containing data from <em>k</em> - 1 folds/subsets</li>
-<li>A holdout/testing set containing data from the <em>k</em> fold/subset</li>
-<li>The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in “CV_Splitting”</li>
+<li><strong>“X”</strong> : The training set of predictor values (“X”) containing predictor data from <em>k</em> - 1 folds/subsets</li>
+<li><strong>“Y”</strong> : The training set of response values</li>
+<li><strong>“X_Test”</strong> : The holdout/testing set of predictor values</li>
+<li><strong>“Y_Test”</strong> : The holdout/testing set of response values (“Y_Test”)</li>
+<li><strong>“Seed”</strong> : The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in “CV_Splitting”</li>
+<li><strong>“Subsets”</strong> : A <em>k</em>-level vector containing the row-ordered subset indicator for the full input dataset</li>
 </ul></li>
 </ul></li>
 </ul>
-<p>Although the chunk isn’t printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used <em>if</em> / <em>else if</em> branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.</p>
+<p>Although the chunk isn’t printed in the .html walkthrough, the .Rmd file contains additional deprecated versions of the subsetting function for those who are interested.</p>
+<ul>
+<li>The 08/05/2021 deprecation used <em>if</em> / <em>else if</em> branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.</li>
+<li>The 08/06/2021 deprecation only split the resulting data into training/testing/seed elements when setting the “list” argument to “traintest.” The current version splits the data into the 6 elements described above.</li>
+</ul>
 <pre class="r"><code># k-fold subsetting function
-kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
-        # check for string argument in &quot;data&quot;
+kfold_subsetter &lt;- function(data , y_col = 1 , 
+                            x_cols = c(2:ncol(data)) , 
+                            subset_col = (ncol(data) + 1) , 
+                            k = 5 , seed = 7 , list = FALSE) {
+        # check for string object in data argument
         if(is.character(data)) {
                 data &lt;- eval(parse_expr(data))
         }
@@ -473,9 +495,23 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
                                   )
         } else if(list == &quot;traintest&quot;) {
                 newdata &lt;- return(list(
-                        Train = subset(newdata , subset &lt; k) , 
-                        Test = subset(newdata , subset %in% k) , 
-                        Seed = seed
+                    X = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset &lt; k) %&gt;%
+                        .[ , c(1:8) , with = F] , 
+                    Y = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset &lt; k) %&gt;%
+                        .[ , 1 , with = F] , 
+                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
+                                            with = F] , subset %in% k) %&gt;%
+                        .[ , c(1:8) , with = F] , 
+                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
+                                        with = F] , subset %in% k) %&gt;%
+                        .[ , 1 , with = F] , 
+                    Seed = seed , 
+                    Subsets = newdata[ , &quot;subset&quot;]
+                        #Train = subset(newdata , subset &lt; k) , 
+                        #Test = subset(newdata , subset %in% k) , 
+                        #Seed = seed
                         )
                         )
         } else {
@@ -582,32 +618,37 @@ kfold_subsetter &lt;- function(data , k = 5 , seed = 7 , list = FALSE) {
                                   seed = 7 , list = &quot;traintest&quot;)</code></pre>
 <p>And let’s look at the structure of the data.</p>
 <pre class="r"><code>str(trtstsplit.data)</code></pre>
-<pre><code>## List of 3
-##  $ Train:Classes 'data.table' and 'data.frame':  120 obs. of  10 variables:
-##   ..$ Y     : num [1:120] -0.198 -1.156 -1.795 2.867 4.78 ...
-##   ..$ X1    : num [1:120] -0.46 -0.32 -1.94 -1.09 1.38 ...
-##   ..$ X2    : num [1:120] -0.113 -1.247 -0.149 1.825 1.384 ...
-##   ..$ X3    : num [1:120] -2.279 0.399 0.291 -0.463 -1.178 ...
-##   ..$ X4    : num [1:120] 1.858 0.49 -1.427 0.154 1.565 ...
-##   ..$ X5    : num [1:120] 0.4322 0.0439 1.3068 -0.5186 0.7024 ...
-##   ..$ X6    : num [1:120] -0.11 0.455 -0.34 -1.818 0.698 ...
-##   ..$ X7    : num [1:120] -0.395 -0.601 -0.139 -0.2 0.851 ...
-##   ..$ X8    : num [1:120] 0.379 -1.429 0.843 -0.257 0.485 ...
-##   ..$ subset: int [1:120] 2 3 3 1 2 2 1 4 2 1 ...
+<pre><code>## List of 6
+##  $ X      :Classes 'data.table' and 'data.frame':    120 obs. of  8 variables:
+##   ..$ X1: num [1:120] -0.46 -0.32 -1.94 -1.09 1.38 ...
+##   ..$ X2: num [1:120] -0.113 -1.247 -0.149 1.825 1.384 ...
+##   ..$ X3: num [1:120] -2.279 0.399 0.291 -0.463 -1.178 ...
+##   ..$ X4: num [1:120] 1.858 0.49 -1.427 0.154 1.565 ...
+##   ..$ X5: num [1:120] 0.4322 0.0439 1.3068 -0.5186 0.7024 ...
+##   ..$ X6: num [1:120] -0.11 0.455 -0.34 -1.818 0.698 ...
+##   ..$ X7: num [1:120] -0.395 -0.601 -0.139 -0.2 0.851 ...
+##   ..$ X8: num [1:120] 0.379 -1.429 0.843 -0.257 0.485 ...
 ##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
-##  $ Test :Classes 'data.table' and 'data.frame':  30 obs. of  10 variables:
-##   ..$ Y     : num [1:30] 0.247 -0.921 6.476 -0.994 4.042 ...
-##   ..$ X1    : num [1:30] -0.306 0.135 1.385 0.584 0.168 ...
-##   ..$ X2    : num [1:30] -0.353 -0.21 0.251 -2.415 2.543 ...
-##   ..$ X3    : num [1:30] 1.09 0.335 1.199 -0.249 -1.672 ...
-##   ..$ X4    : num [1:30] -0.549 -0.648 1.218 0.269 0.299 ...
-##   ..$ X5    : num [1:30] -0.827 -0.618 -1.295 -1.235 -2.179 ...
-##   ..$ X6    : num [1:30] -1.399 0.185 -0.163 -0.964 -0.396 ...
-##   ..$ X7    : num [1:30] 0.204 0.842 0.578 0.712 2.192 ...
-##   ..$ X8    : num [1:30] -0.468 -0.273 0.546 -0.353 -0.736 ...
-##   ..$ subset: int [1:30] 5 5 5 5 5 5 5 5 5 5 ...
+##  $ Y      :Classes 'data.table' and 'data.frame':    120 obs. of  1 variable:
+##   ..$ Y: num [1:120] -0.198 -1.156 -1.795 2.867 4.78 ...
 ##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
-##  $ Seed : num 7</code></pre>
+##  $ X_Test :Classes 'data.table' and 'data.frame':    30 obs. of  8 variables:
+##   ..$ X1: num [1:30] -0.306 0.135 1.385 0.584 0.168 ...
+##   ..$ X2: num [1:30] -0.353 -0.21 0.251 -2.415 2.543 ...
+##   ..$ X3: num [1:30] 1.09 0.335 1.199 -0.249 -1.672 ...
+##   ..$ X4: num [1:30] -0.549 -0.648 1.218 0.269 0.299 ...
+##   ..$ X5: num [1:30] -0.827 -0.618 -1.295 -1.235 -2.179 ...
+##   ..$ X6: num [1:30] -1.399 0.185 -0.163 -0.964 -0.396 ...
+##   ..$ X7: num [1:30] 0.204 0.842 0.578 0.712 2.192 ...
+##   ..$ X8: num [1:30] -0.468 -0.273 0.546 -0.353 -0.736 ...
+##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
+##  $ Y_Test :Classes 'data.table' and 'data.frame':    30 obs. of  1 variable:
+##   ..$ Y: num [1:30] 0.247 -0.921 6.476 -0.994 4.042 ...
+##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
+##  $ Seed   : num 7
+##  $ Subsets:Classes 'data.table' and 'data.frame':    150 obs. of  1 variable:
+##   ..$ subset: int [1:150] 2 3 5 3 1 2 2 1 4 5 ...
+##   ..- attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt;</code></pre>
 </div>
 </div>
 
