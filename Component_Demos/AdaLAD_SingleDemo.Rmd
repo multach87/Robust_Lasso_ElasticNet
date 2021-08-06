@@ -149,6 +149,10 @@ ladlasso.sim.fnct <- function(data.list) {
                ladlasso.nu.cv.msesd[
                        which.min(ladlasso.nu.cv.mse)
                        ]
+       ladlasso.model.min <- 
+               ladlasso.nu.cv.full[
+                       which.min(ladlasso.nu.cv.mse)
+                       ]
        n.coefs <- sum(ladlasso.coefs[-1] != 0)
        
        # calculate metrics using holdout data, if applicable
@@ -212,12 +216,13 @@ ladlasso.sim.fnct <- function(data.list) {
                cat("time = " , time , "\n")
                
                # put conditions, model info, and metrics into list
-               return(list(model = list(lambda = lambda.opt , 
-                                        coefs = ladlasso.coefs
-                                        ) , 
+               return(list(full.model = ladlasso.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = ladlasso.coefs
+                                             ) , 
                            metrics = list(n.coefs = n.coefs , 
                                           runtime = time
-                                  )
+                                          )
                            )
                       )
        }
