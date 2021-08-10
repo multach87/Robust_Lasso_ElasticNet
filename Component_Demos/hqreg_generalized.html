@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-08-05" />
+<meta name="date" content="2021-08-10" />
 
 <title>Single-Model Demo: Generalized hqreg() Model</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Single-Model Demo: Generalized hqreg() Model</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-08-05</h4>
+<h4 class="date">2021-08-10</h4>
 
 </div>
 
@@ -533,7 +533,8 @@ hqreg.sim.fnct &lt;- function(data.list ,
                # put conditions, model info, and metrics into list
                return(list(full.model = ladlasso.model.min ,
                            model.info = list(lambda = lambda.opt , 
-                                             coefs = ladlasso.coefs
+                                             coefs = ladlasso.coefs , 
+                                             weights = weights.opt
                                              ) , 
                            metrics = list(mse = mse , 
                                           n.coefs = n.coefs , 
@@ -559,7 +560,8 @@ hqreg.sim.fnct &lt;- function(data.list ,
                # put conditions, model info, and metrics into list
                return(list(full.model = hqreg.model.min ,
                            model.info = list(lambda = lambda.opt , 
-                                             coefs = hqreg.coefs
+                                             coefs = hqreg.coefs , 
+                                             weights = weights.opt
                                              ) , 
                            metrics = list(n.coefs = n.coefs , 
                                           runtime = time

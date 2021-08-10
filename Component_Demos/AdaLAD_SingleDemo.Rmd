@@ -193,7 +193,8 @@ ladlasso.sim.fnct <- function(data.list) {
                # put conditions, model info, and metrics into list
                return(list(full.model = ladlasso.model.min ,
                            model.info = list(lambda = lambda.opt , 
-                                             coefs = ladlasso.coefs
+                                             coefs = ladlasso.coefs , 
+                                             weights = weights.opt
                                              ) , 
                            metrics = list(mse = mse , 
                                           n.coefs = n.coefs , 
@@ -219,7 +220,8 @@ ladlasso.sim.fnct <- function(data.list) {
                # put conditions, model info, and metrics into list
                return(list(full.model = ladlasso.model.min ,
                            model.info = list(lambda = lambda.opt , 
-                                             coefs = ladlasso.coefs
+                                             coefs = ladlasso.coefs , 
+                                             weights = weights.opt
                                              ) , 
                            metrics = list(n.coefs = n.coefs , 
                                           runtime = time
