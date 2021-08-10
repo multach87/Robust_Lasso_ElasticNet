@@ -352,16 +352,20 @@ kfold_subsetter <- function(data , y_col = 1 ,
                 newdata <- return(list(
                     X = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset < k) %>%
-                        .[ , c(1:8) , with = F] , 
+                        .[ , c(1:8) , with = F] %>%
+                        as.matrix() , 
                     Y = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset < k) %>%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %>%
+                        as.matrix() , 
                     X_Test = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset %in% k) %>%
-                        .[ , c(1:8) , with = F] , 
+                        .[ , c(1:8) , with = F] %>%
+                        as.matrix() , 
                     Y_Test = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset %in% k) %>%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %>%
+                        as.matrix() , 
                     Seed = seed , 
                     Subsets = newdata[ , "subset"]
                         #Train = subset(newdata , subset < k) , 
