@@ -129,11 +129,11 @@ kfold_subsetter <- function(data , y_col = 1 ,
                                         with = F] , subset < k) %>%
                         .[ , 1 , with = F] %>%
                         as.matrix() , 
-                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
+                    X_test = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset %in% k) %>%
                         .[ , c(1:8) , with = F] %>%
                         as.matrix() , 
-                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
+                    Y_test = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset %in% k) %>%
                         .[ , 1 , with = F] %>%
                         as.matrix() , 
