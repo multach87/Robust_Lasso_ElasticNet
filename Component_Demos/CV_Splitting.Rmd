@@ -34,7 +34,7 @@ library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-#library(rlang)
+library(rlang)      # For parse_expr() to parse data name from argument
 ```
 
 Let's also load our demo data, which will just be our matricized singular applied dataset.
@@ -121,18 +121,22 @@ kfold_subsetter <- function(data , y_col = 1 ,
                                   )
         } else if(list == "traintest") {
                 newdata <- return(list(
-                    X = subset(newdata[ , c(x_cols, subset_col) , 
-                                            with = F] , subset < k) %>%
-                        .[ , c(1:8) , with = F] , 
+                    X = subset(newdata[ , c(x_cols, subset_col) , with = F] , 
+                                         subset < k) %>%
+                        .[ , c(1:8) , with = F] %>%
+                        as.matrix() , 
                     Y = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset < k) %>%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %>%
+                        as.matrix() , 
                     X_Test = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset %in% k) %>%
-                        .[ , c(1:8) , with = F] , 
+                        .[ , c(1:8) , with = F] %>%
+                        as.matrix() , 
                     Y_Test = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset %in% k) %>%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %>%
+                        as.matrix() , 
                     Seed = seed , 
                     Subsets = newdata[ , "subset"]
                         #Train = subset(newdata , subset < k) , 

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-08-06" />
+<meta name="date" content="2021-08-10" />
 
 <title>Demo: Splitting Data for Cross-Validation and Improved Model Results</title>
 
@@ -351,7 +351,7 @@ pre code {
 
 <h1 class="title toc-ignore">Demo: Splitting Data for Cross-Validation and Improved Model Results</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-08-06</h4>
+<h4 class="date">2021-08-10</h4>
 
 </div>
 
@@ -371,7 +371,7 @@ library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(rlang)</code></pre>
+library(rlang)      # For parse_expr() to parse data name from argument</code></pre>
 <p>Let’s also load our demo data, which will just be our matricized singular applied dataset.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 <p>Let’s also quickly combine the X and Y list elements into a single object for convenience with the subsetting function. We will put Y into the first column since it corresponds with a left-to-right reading of a regression model.</p>
@@ -385,15 +385,13 @@ library(rlang)</code></pre>
 <p>This function is as described in the “KFold_Subsetter” file. A full description of the arguments of the original function can be found therein.</p>
 <pre class="r"><code># k-fold subsetting function
 kfold_subsetter &lt;- function(data , y_col = 1 , 
-                            x_cols = c(2:nrow(data)) , 
-                            subset_col = (nrow(data) + 1) , 
+                            x_cols = c(2:ncol(data)) , 
+                            subset_col = (ncol(data) + 1) , 
                             k = 5 , seed = 7 , list = FALSE) {
         # check for string object in data argument
         if(is.character(data)) {
                 data &lt;- eval(parse_expr(data))
         }
-    #cat(&quot;x_cols = &quot; , x_cols , &quot;\n&quot;)
-    #cat(&quot;y_col = &quot; , y_col , &quot;\n&quot;)
         
         # check for data.table and setDT() if not a data.table
         if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
@@ -442,8 +440,6 @@ kfold_subsetter &lt;- function(data , y_col = 1 ,
                 
         newdata &lt;- setDT(data.frame(newdata))
         
-        cat(&quot;k = &quot; , k , &quot;\n&quot;)
-        
         # create k-split list if desired
         if(list == TRUE) {
                 newdata &lt;- return(split(newdata , 
@@ -451,18 +447,22 @@ kfold_subsetter &lt;- function(data , y_col = 1 ,
                                   )
         } else if(list == &quot;traintest&quot;) {
                 newdata &lt;- return(list(
-                    X = subset(newdata[ , c(x_cols, subset_col) , 
-                                            with = F] , subset &lt; k) %&gt;%
-                        .[ , c(1:8) , with = F] , 
+                    X = subset(newdata[ , c(x_cols, subset_col) , with = F] , 
+                                         subset &lt; k) %&gt;%
+                        .[ , c(1:8) , with = F] %&gt;%
+                        as.matrix() , 
                     Y = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset &lt; k) %&gt;%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %&gt;%
+                        as.matrix() , 
                     X_Test = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset %in% k) %&gt;%
-                        .[ , c(1:8) , with = F] , 
+                        .[ , c(1:8) , with = F] %&gt;%
+                        as.matrix() , 
                     Y_Test = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset %in% k) %&gt;%
-                        .[ , 1 , with = F] , 
+                        .[ , 1 , with = F] %&gt;%
+                        as.matrix() , 
                     Seed = seed , 
                     Subsets = newdata[ , &quot;subset&quot;]
                         #Train = subset(newdata , subset &lt; k) , 
