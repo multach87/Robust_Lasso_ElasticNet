@@ -1,0 +1,105 @@
+---
+title: 'Process Coefficients'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Introduction
+
+This document demo's the processing of model coefficients from a list of multiple model objects produced by the previous _hqmsa.sim.funct()_ function. Note that the function created herein will be designed to run on all model results from a single adaptation, _across all data splits_. 
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages. I've also set this code chunk to not print warnings, as they are largely not helpful for the current example.
+
+```{r libraries , warning = FALSE}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+library(rlang)      # For parse_expr() to parse data name in k-fold subsetting functions
+library(msaenet)    # For the multi-step adaptive elastic net
+```
+
+
+Let's also load our processed model data. 
+
+```{r load processed model results}
+models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models10.RData")
+```
+
+Let's also store the results from a single adaptation for the purposes of creating and demo'ing the function. We're going to use the results from the adaptive LAD lasso.
+
+```{r store ladlasso}
+ladlasso.models <- models_all[["ladlasso"]]
+```
+
+
+And finally let's get rid of the full model object.
+
+```{r remove combined model data}
+rm(list = c("models_all"))
+```
+
+## Extracting Coefficient Information
+
+### Coefficient frequency function
+
+There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors. 
+
+I'd like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
+
+Also note that this function relies on a list with a comparable structure to my processed models:
+ * Level 1 of list corresponds with each data split
+ * Level 2 of list corresponds with different model result objects from a given data split
+   * One list element at Level 2 contains the model summary object _model.info_
+     *which contains a list element _coefs_, a numeric vector of coefficient values (and intercept, if applicable)
+
+```{r extract coefficient information}
+coefs_freq <- function(models) {
+       # initialize vector of predictor selection frequency, with all values set to 0
+       coefs.freq <- numeric(length = 8)
+       
+       # label frequency vector with predictor names, accounting for 
+       names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
+       
+       # update each predictors' selection frequency if the corresponding coefficient value
+       # # in each data split is nonzero (aka, was selected into the model)
+       for(i in 1:length(models)) {
+              for(j in 1:length(coefs.freq)) {
+                     if(models[[i]][["model.info"]][["coefs"]][(j + 1)] != 0) {
+                            coefs.freq[j] <- coefs.freq[j] + 1
+                     }
+              }
+       }
+       
+       return(coefs.freq)       
+}
+```
+
+### Example 
+
+Now let's run it and see what happens when I run the function.
+
+```{r run coef frequency function on ladlasso models}
+ladlasso.models[["coef.freq"]] <- ladlasso.models %>%
+       coefs_freq
+```
+
