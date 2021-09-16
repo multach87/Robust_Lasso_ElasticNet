@@ -60,8 +60,13 @@ Note that the function takes a list of data elements as its sole argument, and w
 # adaptive LAD lasso application function
 hqmsa.sim.fnct <- function(data.list , 
                            method = c("msaenet" , 
-                                      "quantile" , "LAD" , "huber") , 
-                           tau = 0.5 , gamma = 1.345 , alpha = 0.5 , nsteps = 10L) {
+                                      "quantile" , "LAD" , 
+                                      "huber") , 
+                           tau = 0.5 , 
+                           gamma = 1.345 , 
+                           alpha = 0.5 , 
+                           nsteps = 10L , 
+                           print.time = TRUE) {
        # Store training X and Y to temporary objects
        X_train <- data.list[["X"]]
        Y_train <- data.list[["Y"]]
@@ -129,12 +134,12 @@ hqmsa.sim.fnct <- function(data.list ,
                                                     scale = nu.try[i])
                        
                        hqmsa.nu.cv.lambda[i] <-
-                               hqmsa.nu.cv.full[[i]]$best.lambdas[[11]]
+                               hqmsa.nu.cv.full[[i]]$best.lambdas[[nsteps + 1]]
                        
                        hqmsa.nu.cv.coefs[[i]] <- c(NA , coef(hqmsa.nu.cv.full[[i]]))
                                
                        
-                       hqmsa.nu.cv.mse[i] <- min(hqmsa.nu.cv.full[[i]]$step.criterion[[11]])
+                       hqmsa.nu.cv.mse[i] <- min(hqmsa.nu.cv.full[[i]]$step.criterion[[nsteps + 1]])
                        }
        } else {
                for(i in 1:length(nu.try)) {
@@ -232,7 +237,10 @@ hqmsa.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
+               
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqmsa.model.min ,
@@ -259,7 +267,9 @@ hqmsa.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqmsa.model.min ,

@@ -254,8 +254,13 @@ Finally, let's load the function used to generate our the models from our lasso 
 # adaptive LAD lasso application function
 hqmsa.sim.fnct <- function(data.list , 
                            method = c("msaenet" , 
-                                      "quantile" , "LAD" , "huber") , 
-                           tau = 0.5 , gamma = 1.345 , alpha = 0.5 , nsteps = 10L) {
+                                      "quantile" , "LAD" , 
+                                      "huber") , 
+                           tau = 0.5 , 
+                           gamma = 1.345 , 
+                           alpha = 0.5 , 
+                           nsteps = 10L , 
+                           print.time = TRUE) {
        # Store training X and Y to temporary objects
        X_train <- data.list[["X"]]
        Y_train <- data.list[["Y"]]
@@ -426,7 +431,9 @@ hqmsa.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqmsa.model.min ,
@@ -453,7 +460,9 @@ hqmsa.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , " ;;; ")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqmsa.model.min ,
