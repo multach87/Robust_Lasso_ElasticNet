@@ -799,11 +799,8 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 
 }</code></pre>
 </div>
-</div>
-<div id="running-the-models" class="section level2">
-<h2>Running the Models</h2>
-<div id="generating-our-cv-splits" class="section level3">
-<h3>Generating our CV splits</h3>
+<div id="splitting-the-data" class="section level3">
+<h3>Splitting the Data</h3>
 <p>Before we apply our models, let’s create our data splits. We will use the multi-subsetting wrapper above to generate 100 random data splits. We will reserve 20<span class="math inline">\(\%\)</span> of the data for holdout/generating prediction error (aka, 5-fold subsets).</p>
 <pre class="r"><code>demo.split &lt;- list()
 
@@ -811,8 +808,9 @@ demo.split&lt;- kfold_multi(demo.data2 , seed_multi = 999 ,
                          num_splits = 100 , test_percent = 0.2)</code></pre>
 <p>Here is a good place to stop and save the split data if you want store it for later use using the <em>saveRDS()</em> function.</p>
 </div>
-<div id="running-our-models" class="section level3">
-<h3>Running our models</h3>
+</div>
+<div id="running-our-models" class="section level2">
+<h2>Running our models</h2>
 <p>Now we can generate the models from our adaptations! I opted to generate the 100-model objects for each adaptation separately and then combined them. A little work with tools use throughout the different component demos could make a wrapper that generates all with one command and store them in a single objects. I will leave that as an exercise for anyone looking to practice function-writing.</p>
 <p>We are going to generate models from each of the following adaptations:</p>
 <ul>
@@ -824,10 +822,15 @@ demo.split&lt;- kfold_multi(demo.data2 , seed_multi = 999 ,
 <li>Multi-step adaptive elastic net with <span class="math inline">\(k = 5\)</span> adaptive steps, <span class="math inline">\(\alpha = 0.5\)</span></li>
 <li>Multi-step adaptive elastic net with <span class="math inline">\(k = 10\)</span> adaptive steps, <span class="math inline">\(\alpha = 0.5\)</span></li>
 </ul>
+<div id="ms-adaptive-elastic-net1" class="section level3">
+<h3>MS Adaptive Elastic Net1</h3>
+<pre class="r"><code>#run across full dataset
+msaelnet10.test &lt;- demo.split[1] %&gt;%
+        map(safely(hqmsa.sim.fnct))</code></pre>
+<pre><code>## Warning in if (method == &quot;LAD&quot;) {: the condition has length &gt; 1 and only the first element will be used</code></pre>
+<pre><code>## Warning in if (method == &quot;msaenet&quot;) {: the condition has length &gt; 1 and only the first element will be used</code></pre>
+<pre><code>## time =  86.67348</code></pre>
 </div>
-</div>
-<div id="standard-lasso" class="section level2">
-<h2>Standard Lasso</h2>
 </div>
 
 

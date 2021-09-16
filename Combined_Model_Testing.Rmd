@@ -323,12 +323,12 @@ hqmsa.sim.fnct <- function(data.list ,
                                                     scale = nu.try[i])
                        
                        hqmsa.nu.cv.lambda[i] <-
-                               hqmsa.nu.cv.full[[i]]$best.lambdas[[11]]
+                               hqmsa.nu.cv.full[[i]]$best.lambdas[[nsteps + 1]]
                        
                        hqmsa.nu.cv.coefs[[i]] <- c(NA , coef(hqmsa.nu.cv.full[[i]]))
                                
                        
-                       hqmsa.nu.cv.mse[i] <- min(hqmsa.nu.cv.full[[i]]$step.criterion[[11]])
+                       hqmsa.nu.cv.mse[i] <- min(hqmsa.nu.cv.full[[i]]$step.criterion[[nsteps + 1]])
                        }
        } else {
                for(i in 1:length(nu.try)) {
@@ -453,7 +453,7 @@ hqmsa.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               cat("time = " , time , " ;;; ")
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqmsa.model.min ,
@@ -475,9 +475,7 @@ hqmsa.sim.fnct <- function(data.list ,
 }
 ```
 
-## Running the Models
-
-### Generating our CV splits
+### Splitting the Data
 
 Before we apply our models, let's create our data splits. We will use the multi-subsetting wrapper above to generate 100 random data splits. We will reserve 20$\%$ of the data for holdout/generating prediction error (aka, 5-fold subsets).
 
@@ -490,7 +488,7 @@ demo.split<- kfold_multi(demo.data2 , seed_multi = 999 ,
 
 Here is a good place to stop and save the split data if you want store it for later use using the _saveRDS()_ function.
 
-### Running our models
+## Running our models
 
 Now we can generate the models from our adaptations! I opted to generate the 100-model objects for each adaptation separately and then combined them. A little work with tools use throughout the different component demos could make a wrapper that generates all with one command and store them in a single objects. I will leave that as an exercise for anyone looking to practice function-writing. 
 
@@ -504,4 +502,36 @@ We are going to generate models from each of the following adaptations:
  * Multi-step adaptive elastic net with $k = 5$ adaptive steps, $\alpha = 0.5$
  * Multi-step adaptive elastic net with $k = 10$ adaptive steps, $\alpha = 0.5$
 
-## Standard Lasso
+
+
+### Adaptive LAD Lasso
+
+```{r ladlasso}
+#run across data subset
+ladlasso.full <- demo.split %>%
+        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1)
+```
+
+```{r ladelnet5}
+#run across data subset
+ladelnet5.full <- demo.split %>%
+        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5)
+```
+
+```{r huberlasso}
+#run across data subset
+huberlasso.full <- demo.split[1:2] %>%
+        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1)
+```
+
+```{r ladelnet5}
+#run across data subset
+huberelnet5.full <- demo.split %>%
+        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
+```
+
+```{r msaenet k3}
+#run across data subset
+msaelnet.full <- demo.split %>%
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L)
+```
