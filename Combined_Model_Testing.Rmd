@@ -511,36 +511,142 @@ We are going to generate models from each of the following adaptations:
  * Multi-step adaptive elastic net with $k = 5$ adaptive steps, $\alpha = 0.5$
  * Multi-step adaptive elastic net with $k = 10$ adaptive steps, $\alpha = 0.5$
 
-
+For the purposes of testing, this demo only runs the models on 10 data splits each. The full demo of the combined-model approach will run each model across all 100 data splits.
 
 ### Adaptive LAD Lasso
 
 ```{r ladlasso}
 #run across data subset
-ladlasso.full <- demo.split %>%
+ladlasso.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1)
 ```
 
+### Adaptive LAD Elastic Net, Alpha = 0.5
+
 ```{r ladelnet5}
 #run across data subset
-ladelnet5.full <- demo.split %>%
+ladelnet5.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5)
 ```
 
+### Adaptive Huber Lasso
+
 ```{r huberlasso}
 #run across data subset
-huberlasso.full <- demo.split[1:2] %>%
+huberlasso.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1)
 ```
 
+### Adaptive Huber Elastic Net, Alpha = 0.5
+
 ```{r ladelnet5}
 #run across data subset
-huberelnet5.full <- demo.split %>%
+huberelnet5.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
 ```
 
+### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
+
 ```{r msaenet k3}
 #run across data subset
-msaelnet.full <- demo.split %>%
+msaelnetk3.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L)
+```
+
+### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
+
+```{r msaenet k5}
+#run across data subset
+msaelnetk5.10 <- demo.split[1:10] %>%
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 5L)
+```
+
+### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
+
+```{r msaenet k10}
+#run across data subset
+msaelnetk10.10 <- demo.split[1:10] %>%
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 10L)
+```
+
+### map(safely())
+
+You may notice that in mapping each model across the first 10 data splits, we include an extra function _safely()_ within _map()_, in addition to the subsequent arguments to specify the adaptations of interest. If we look at the structure of one model from one adaptation
+
+```{r str safely explain}
+str(ladlasso.10[[1]] , max.level = 2)
+```
+
+we notice a list with 2 elements: 'result' and 'error', with 'result' containing 3 list elements. Using just _map()_ would have produced one of the following:
+ * A list of 3 elements for each data split: _full.model_, _model.info_, and _metrics_
+ * The mapping command would have failed due to an error
+
+The _safely()_ function allows the mapping command to continue in the face of an error rather than stop completely. If an error had been produced by one of the models, the corresponding 'result' element would instead have been NULL. The 'error' element, on the other hand, would contain whatever error message was thrown while trying to map our model-application function.
+
+Another note: in running _str()_ above, I specified an argument _max.level = 2_. _str()_ therefore only produced the structure to a depth of 2. If I had specified _max.level_, _str()_ would have given the structure for all objects down to the deepest level of object contained in _ladlasso.10_.
+
+### Combine and save a temporary full model set
+
+Just in case, I am going to combine all of the model files into one ugly dataset and save it.
+
+```{r combine and save models , eval = F}
+models_combine <- list(ladlasso = ladlasso.10 , ladelnet = ladelnet5.10 , 
+                       huberlasso = huberlasso.10 , huberelnet = huberelnet5.10 , 
+                       msak3 = msaelnetk3.10 , msak5 = msaelnetk5.10 , 
+                       msak10 = msaelnetk10.10)
+
+saveRDS(models_combine , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/models_combine10.RData")
+```
+
+
+## Processing the model results
+
+There are a few ways we could process and organize the model results. There 2 main steps of processing that need to occur:
+ * Move either the "result" or "error" list elements from each model up a level in the list
+ * Put the model results from the different adaptations into a single combined object
+
+### Get rid of result/error level of each model: Function
+
+Fun fact: the _ifelse()_ results in an object with the same dimensions as the input object. Our input data will be the individual model list elements, corresponding with the result/error list that the model produced for each data split. Unfortunately, the results of each model are lists with 3 elements. Consequently, the code chunk below will only store the first of the 3 elements that we want stored.
+
+```{r ifelse error result function , eval = F}
+res_or_err <- function(data) {
+    return(ifelse(is.null(data[["error"]] , data[["result"]] , data[["error"]])
+                  )
+           )
+}
+```
+
+I didn't know this before working on this demo! As a result of this interesting behavior, the function which will be mapped onto each individual model will isntead utilize separate if-else statements.
+
+```{r error or result function}
+#eliminate result/error level
+res_or_err <- function(data) {
+        if(is.null(data[["error"]])) {
+                temp <- data[["result"]]
+        } else {
+                temp <- data[["error"]]
+        }
+        
+        return(temp)
+}
+```
+
+### Get rid of result/error and combine
+
+```{r no resulterror and combine models}
+models_all <- list(ladlasso = ladlasso.10 %>%
+                       map(res_or_err) , 
+                   ladelnet = ladelnet5.10 %>%
+                       map(res_or_err) , 
+                   huberlasso = huberlasso.10 %>%
+                       map(res_or_err) , 
+                   huberelnet = huberelnet5.10 %>%
+                       map(res_or_err) , 
+                   msak3 = msaelnetk3.10 %>%
+                       map(res_or_err) , 
+                   msak5 = msaelnetk5.10 %>%
+                       map(res_or_err) ,
+                   msak10 = msaelnetk10.10 %>%
+                       map(res_or_err))
 ```
