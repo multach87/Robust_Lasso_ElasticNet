@@ -54,7 +54,9 @@ demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
                     )
 ```
 
-## Custom k-fold subsetting function
+## Loading custom functions
+
+### Custom k-fold subsetting function
 
 The chunk below takes a dataset and creates an ordinal variable with *k* levels, corresponding with each of the *k* test sets. The function takes as its arguments:
 
@@ -77,8 +79,6 @@ The chunk below takes a dataset and creates an ordinal variable with *k* levels,
    * If set to *"traintest"* (in quotes!), the resulting list will instead contain two elements:
      * A training set containing data from *k* - 1 folds/subsets
      * A holdout/testing set containing data from the *k* fold/subset
-     
-Although the chunk isn't printed in the .html walkthrough, the .Rmd file contains an additional chunk of a deprecated version of this function. The deprecated version used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching.
 
 ```{r kfold subsetting function}
 # k-fold subsetting function
@@ -177,7 +177,7 @@ kfold_subsetter <- function(data , y_col = 1 ,
 
 ```
 
-## Multi-Subsetting Wrapper
+### Multi-Subsetting Wrapper
 
 The following function serves as a wrapper around the original subsetting function which incorporates additional arguments. These arguments extend the original function to conduct multiple training-testing splits and store the resulting datasets in a singular overarching list.
 
@@ -245,40 +245,263 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 }
 ```
 
+### Model-Application Function
 
+Finally, let's load the function used to generate our the models from our lasso and elastic net adaptations.
 
+```{r hqreg model application function , echo = T}
 
-
-
-```{r set seeds for splitting , eval = F}
-#generate seeds
-set.seed(501)
-appliedcv.seeds <- sample(x = c(1:1000000) , size = 100 , replace = FALSE)
-```
-
-```{r splitting data , eval = F}
-php.split <- list()
-
-for(i in 1:length(appliedcv.seeds)) {
-        #cat("i = " , i , "\n")
-       #initialize list element and underlying data 
-       php.split[[i]] <- list(track = numeric() , 
-                               train = matrix(ncol = (ncol(model.complete) + 1)) , 
-                               test = matrix(ncol = (ncol(model.complete) + 1)))
-       #create k-fold-indexed data for each dataset
-        php.kfold <- kfold_subsetter(model.complete , k = 3 ,
-                                       seed = appliedcv.seeds[i])
-        #cat("i = " , i , "\n")
-        php.split[[i]]$track <- i
-        php.split[[i]]$train <- php.kfold[(php.kfold$subset != 3) , ]
-        php.split[[i]]$test <- php.kfold[(php.kfold$subset == 3) , ]
+# adaptive LAD lasso application function
+hqmsa.sim.fnct <- function(data.list , 
+                           method = c("msaenet" , 
+                                      "quantile" , "LAD" , "huber") , 
+                           tau = 0.5 , gamma = 1.345 , alpha = 0.5 , nsteps = 10L) {
+       # Store training X and Y to temporary objects
+       X_train <- data.list[["X"]]
+       Y_train <- data.list[["Y"]]
+       
+       if(method == "LAD") {
+               method <- "quantile"
+       }
+       
+       # If applicable, store holdout/testing X and Y
+       if(!is.null(data.list[["X_test"]]) & 
+          !is.null(data.list[["Y_test"]])) {
+               X_test <- data.list[["X_test"]]
+               Y_test <- data.list[["Y_test"]]
+       } else {
+               X_test <- NULL
+               Y_test <- NULL
+       }
         
+       # lambdas to try for regularization
+       lambda.try <- seq(log(1400) , log(0.01) , length.out = 100)
+       lambda.try <- exp(lambda.try)
+       
+       # set a timer start point
+       start <- Sys.time()
+       
+       # cross-validated selection of adaptive lasso
+       # # tuning hyperparameter nu/gamma
+       
+       # # select ridge coefs for weighting
+       ridge.model <- cv.glmnet(x = X_train , y = Y_train , 
+                                lambda = lambda.try , alpha = 0)
+       lambda.ridge.opt <- ridge.model$lambda.min
+       best.ridge.coefs <- predict(ridge.model , 
+                                           type = "coefficients" ,
+                                           s = lambda.ridge.opt)[-1]
+
+       
+       # # grid of nu/gamma values to try for cross-validation
+       nu.try <- exp(seq(log(0.01) , log(10) , length.out = 100))
+       
+       # # initialize full list of LAD lasso results from each nu/gamma
+       hqmsa.nu.cv.full <- list()
+       
+       # # initialize matrices of metrics and minimizing results
+       hqmsa.nu.cv.lambda <- numeric()
+       hqmsa.nu.cv.mse <- numeric()
+       hqmsa.nu.cv.msesd <- numeric()
+       hqmsa.nu.cv.coefs <- list()
+       
+       # # Loop over nu/gamma values for CV, 
+       # # # storing minimizing lambda within each nu/gamma
+       if(method == "msaenet") {
+               for(i in 1:length(nu.try)) {
+                       #single adaptive lasso run with ridge weighting and nu = 1
+                       hqmsa.nu.cv.full[[i]] <- msaenet(x = X_train , 
+                                                    y = Y_train , 
+                                                    family = "gaussian" , 
+                                                    init = "ridge" ,
+                                                    alphas = 0.5 , 
+                                                    tune = "cv" , 
+                                                    nfolds = 5L , 
+                                                    rule = "lambda.min" , 
+                                                    nsteps = nsteps , 
+                                                    tune.nsteps = "max" , 
+                                                    scale = nu.try[i])
+                       
+                       hqmsa.nu.cv.lambda[i] <-
+                               hqmsa.nu.cv.full[[i]]$best.lambdas[[11]]
+                       
+                       hqmsa.nu.cv.coefs[[i]] <- c(NA , coef(hqmsa.nu.cv.full[[i]]))
+                               
+                       
+                       hqmsa.nu.cv.mse[i] <- min(hqmsa.nu.cv.full[[i]]$step.criterion[[11]])
+                       }
+       } else {
+               for(i in 1:length(nu.try)) {
+                       invisible(capture.output(
+                               hqmsa.nu.cv.full[[i]] <- 
+                                       cv.hqreg(X = X_train , 
+                                                y = Y_train , 
+                                                method = method , 
+                                                tau = tau , 
+                                                gamma = gamma , 
+                                                lambda = lambda.try ,
+                                                alpha = alpha , 
+                                                preprocess =
+                                                        "standardize" , 
+                                                screen = "ASR" , 
+                                                penalty.factor = 
+                                                        1 / abs(best.ridge.coefs) ^ nu.try[i] , 
+                                                FUN = "hqreg" , 
+                                                type.measure = "mse"
+                                                )
+                                        )
+                               )
+                       hqmsa.nu.cv.mse[i] <-
+                               min(hqmsa.nu.cv.full[[i]]$cve)
+                       hqmsa.nu.cv.msesd[i] <-
+                               hqmsa.nu.cv.full[[i]]$cvse[
+                         which.min(hqmsa.nu.cv.full[[i]]$cve)
+                                                         ]
+                       hqmsa.nu.cv.lambda[i] <-
+                               hqmsa.nu.cv.full[[i]]$lambda.min
+                       hqmsa.nu.cv.coefs[[i]] <- 
+                               hqmsa.nu.cv.full[[i]]$fit$beta[ , 
+                         which.min(hqmsa.nu.cv.full[[i]]$cve)
+                                                             ]
+                       }
+       }
+
+       
+       #specify minimizing nu value and resulting model info
+       nu.opt <- nu.try[which.min(hqmsa.nu.cv.mse)]
+       lambda.opt <- 
+               hqmsa.nu.cv.lambda[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]
+       weights.opt <- 1 / abs(best.ridge.coefs) ^ nu.opt
+       hqmsa.coefs <-
+               hqmsa.nu.cv.coefs[[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]]
+       hqmsa.mse.min <- min(hqmsa.nu.cv.mse)
+       if(!is.null(hqmsa.nu.cv.msesd[1])) {
+               hqmsa.mse.min.se <- hqmsa.nu.cv.msesd[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]               
+       }
+
+       hqmsa.model.min <- 
+               hqmsa.nu.cv.full[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]
+       n.coefs <- sum(hqmsa.coefs[-1] != 0)
+       
+       # calculate metrics using holdout data, if applicable
+       if(!is.null(X_test) & !is.null(Y_test)) {
+               # store n
+               n <- nrow(data.list[["X_test"]])
+               
+               # calculate predicted values
+               y.pred <- data.list[["X_test"]] %*% hqmsa.coefs[-1]
+               if(!is.na(hqmsa.coefs[1])) {
+                       y.pred <- y.pred + hqmsa.coefs[1]
+               }
+   
+               # calculate residual
+               resid <- y.pred - Y_test
+               
+               # square the residuals
+               resid.sq <- resid ^ 2
+               
+               # sum the square of residuals
+               sum.resid.sq <- sum(resid.sq)
+               
+               #calculate root mse
+               mse <- sum.resid.sq / n
+               
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = hqmsa.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = hqmsa.coefs , 
+                                             weights = weights.opt
+                                             ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time , 
+                                          mse = mse
+                                          )
+                           )
+                      )
+       } else {
+               # set endpoint for timer
+               end <- Sys.time()
+               
+               # temporarily store time of current model
+               time <- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = "secs"
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               cat("time = " , time , "\n")
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = hqmsa.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = hqmsa.coefs , 
+                                             weights = weights.opt
+                                             ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time
+                                          )
+                           )
+                      )
+       }
+       
+       
+
+       
+
 }
 ```
 
+## Running the Models
 
+### Generating our CV splits
 
-```{r save php demo data and data for applied models , eval = F}
+Before we apply our models, let's create our data splits. We will use the multi-subsetting wrapper above to generate 100 random data splits. We will reserve 20$\%$ of the data for holdout/generating prediction error (aka, 5-fold subsets).
 
+```{r splitting data}
+demo.split <- list()
+
+demo.split<- kfold_multi(demo.data2 , seed_multi = 999 , 
+                         num_splits = 100 , test_percent = 0.2)
 ```
 
+Here is a good place to stop and save the split data if you want store it for later use using the _saveRDS()_ function.
+
+### Running our models
+
+Now we can generate the models from our adaptations! I opted to generate the 100-model objects for each adaptation separately and then combined them. A little work with tools use throughout the different component demos could make a wrapper that generates all with one command and store them in a single objects. I will leave that as an exercise for anyone looking to practice function-writing. 
+
+We are going to generate models from each of the following adaptations:
+
+ * Adaptive LAD asso
+ * Adaptive LAD elastic net, $\alpha = 0.5$
+ * Adaptive Huber lasso, $M = 1.345$
+ * Adaptive Huber elastic net, $M = 1.345, \alpha = 0.5$
+ * Multi-step adaptive elastic net with $k = 3$ adaptive steps, $\alpha = 0.5$
+ * Multi-step adaptive elastic net with $k = 5$ adaptive steps, $\alpha = 0.5$
+ * Multi-step adaptive elastic net with $k = 10$ adaptive steps, $\alpha = 0.5$
+
+## Standard Lasso
