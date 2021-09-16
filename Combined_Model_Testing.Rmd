@@ -617,7 +617,7 @@ res_or_err <- function(data) {
 }
 ```
 
-I didn't know this before working on this demo! As a result of this interesting behavior, the function which will be mapped onto each individual model will isntead utilize separate if-else statements.
+I didn't know this before working on this demo! As a result of this interesting behavior, the function which will be mapped onto each individual model will instead utilize separate if-else statements.
 
 ```{r error or result function}
 #eliminate result/error level
@@ -650,3 +650,11 @@ models_all <- list(ladlasso = ladlasso.10 %>%
                    msak10 = msaelnetk10.10 %>%
                        map(res_or_err))
 ```
+
+### Save processed full object
+
+```{r save processed models}
+saveRDS(models_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models10.RData")
+```
+
+
