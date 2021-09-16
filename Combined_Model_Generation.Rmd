@@ -457,7 +457,7 @@ demo.split<- kfold_multi(demo.data2 , seed_multi = 999 ,
 
 ```{r ladlasso}
 #run across data subset
-ladlasso.100 <- demo.split[1:10] %>%
+ladlasso.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1)
 ```
 
@@ -465,7 +465,7 @@ ladlasso.100 <- demo.split[1:10] %>%
 
 ```{r ladelnet5}
 #run across data subset
-ladelnet5.100 <- demo.split[1:10] %>%
+ladelnet5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5)
 ```
 
@@ -473,7 +473,7 @@ ladelnet5.100 <- demo.split[1:10] %>%
 
 ```{r huberlasso}
 #run across data subset
-huberlasso.100 <- demo.split[1:10] %>%
+huberlasso.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1)
 ```
 
@@ -481,7 +481,7 @@ huberlasso.100 <- demo.split[1:10] %>%
 
 ```{r ladelnet5}
 #run across data subset
-huberelnet5.100 <- demo.split[1:10] %>%
+huberelnet5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
 ```
 
@@ -489,7 +489,7 @@ huberelnet5.100 <- demo.split[1:10] %>%
 
 ```{r msaenet k3}
 #run across data subset
-msaelnetk3.100 <- demo.split[1:10] %>%
+msaelnetk3.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L)
 ```
 
@@ -497,7 +497,7 @@ msaelnetk3.100 <- demo.split[1:10] %>%
 
 ```{r msaenet k5}
 #run across data subset
-msaelnetk5.100 <- demo.split[1:10] %>%
+msaelnetk5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 5L)
 ```
 
@@ -505,7 +505,7 @@ msaelnetk5.100 <- demo.split[1:10] %>%
 
 ```{r msaenet k10}
 #run across data subset
-msaelnetk10.100 <- demo.split[1:10] %>%
+msaelnetk10.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 10L)
 ```
 
