@@ -61,7 +61,7 @@ Note that the function takes a list of data elements as its sole argument, and w
 hqmsa.sim.fnct <- function(data.list , 
                            method = c("msaenet" , 
                                       "quantile" , "LAD" , "huber") , 
-                           tau = 0.5 , gamma = 1.345 , alpha = 0.5) {
+                           tau = 0.5 , gamma = 1.345 , alpha = 0.5 , nsteps = 10L) {
        # Store training X and Y to temporary objects
        X_train <- data.list[["X"]]
        Y_train <- data.list[["Y"]]
@@ -124,7 +124,7 @@ hqmsa.sim.fnct <- function(data.list ,
                                                     tune = "cv" , 
                                                     nfolds = 5L , 
                                                     rule = "lambda.min" , 
-                                                    nsteps = 10L , 
+                                                    nsteps = nsteps , 
                                                     tune.nsteps = "max" , 
                                                     scale = nu.try[i])
                        
