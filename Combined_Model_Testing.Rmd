@@ -657,4 +657,102 @@ models_all <- list(ladlasso = ladlasso.10 %>%
 saveRDS(models_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models10.RData")
 ```
 
+## Processing Coefficients
+
+Before we actually look at and visualize the results of our models, we need to process the coefficients so that they're in a practical form.
+
+### Pre-Processing Organization
+
+First, though, let's clear our environment and then load the 100-split model file, which was generated separately to save time for readers.
+
+```{r clear environment prior to coefficient processing}
+rm(list = ls())
+```
+
+```{r load 100-split model RData}
+models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData")
+```
+
+### Coefficient Processing
+
+```{r extract coefficient information}
+coefs_freq <- function(models) {
+       # initialize vector of predictor selection frequency, with all values set to 0
+       coefs.freq <- numeric(length = 8)
+       
+       # update each predictors' selection frequency if the corresponding coefficient value
+       # # in each data split is nonzero (aka, was selected into the model)
+       for(i in 1:length(models)) {
+              for(j in 1:length(coefs.freq)) {
+                     if(models[[i]][["model.info"]][["coefs"]][(j + 1)] != 0) {
+                            coefs.freq[j] <- coefs.freq[j] + 1
+                     }
+              }
+       }
+       
+       # label frequency vector with predictor names, accounting for 
+       names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
+       
+       return(coefs.freq)       
+}
+```
+
+Our original _coefs_freq()_ function creates a named, $p$-length vector of frequencies of predictor selection for a single lasso or elastic net adaptation. Here, we need to get these frequencies for each of our 7 adaptations. We also want the resulting information to be stored and located conveniently. 
+
+Let's map this function across each of the 7 list elements in _models_all_ corresponding with each of our 7 adaptations. Re: storage and location of the coefficient frequences, let's:
+  * Store all 8-length frequency vectors in a singular, $7 x 8$ data.table
+    * Store this data.table in a new list element in _models_all_ named _"Frequencies"_
+  * Name each column according to the predictor with which it corresponds
+  * Add an 8th column identifying the method the generated row of selection frequencies
+
+```{r run coef frequency function on ladlasso models}
+models_all[["Frequencies"]]<- models_all[1:7] %>%
+    map(coefs_freq) %>%
+    setDT %>%
+    t %>%
+    data.frame %>%
+    setDT %>%
+    .[ , "method" := names(models_all[-8])] %>%
+    setkey(. , method) 
+```
+
+Let's walk through what's going on in the last code chunk. 
+  * First, establish reference to the _models_all_ object for the subsequent pipe operations
+  * Second, _map()_ the _coefs_freq()_ function across elements of _models_all_
+  * Third, make the resulting object a data.table using _setDT()_ function
+  * Fourth, transpose the result using _t()_, since the result will be an $8 x 7$ object with rows corresponding with each possible predictor and columns corresponding with each model/adaptation
+    * As a reminder, our desired object is a $7 x 8$ object, with model/adaptation in each row and possible predictor frequency in each column
+  * Fifth, make the result a dataframe
+  * Sixth, make the result a data.table, _again_
+    * I can't quite explain why we need to do the things above in the exact order (and repetition) in the pipes above. There's a sequence of transformations on the unstored object that impact what the result will be that mean _t()_ has to go in the middle, and _data.frame()_ at the end. But then we have to reset the object as a data.table after _data.frame()_
+
+Because the author is currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
+
+Finally, let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
+
+```{r Frequencies str}
+str(models_all[["Frequencies"]])
+```
+
+### Another Way
+
+Below is another pair of commands which accomplish the same thing, with two major differences. Since the version below involves three separate commands, rather than a single set of operations in one command, we'll use the first version outlined above.
+  * First, we set the object location/pointer at the end of the pipe instead of the beginning
+  * Second, because of that ordering, we can't define the new column within _"Frequencies"_ in the same pipes
+    * *Think about*: Why not?
+
+```{r another way , eval = F}
+models_all %>%
+        map(coefs_freq) %>%
+        setDT %>%
+        t %>%
+        data.frame %>%
+        setDT -> models_all[["Frequencies"]]
+
+models_all[["Frequencies"]][ , "method" := names(models_all)[-8]]
+
+setkey(models_all[["Frequencies"]] , method)
+
+```
+
 
