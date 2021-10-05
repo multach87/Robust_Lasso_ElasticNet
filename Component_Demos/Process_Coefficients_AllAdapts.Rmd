@@ -129,8 +129,8 @@ Let's walk through what's going on in the last code chunk.
   * Fifth, make the result a dataframe
   * Sixth, make the result a data.table, _again_
     * I can't quite explain why we need to conduct the steps above in the exact order (and repetition) in the pipes above. There's a sequence of transformations on the unstored/transitory object that impact what the result will be that mean _t()_ has to go in the middle, and _data.frame()_ at the end. But then we have to reset the object as a data.table after _data.frame()_.
-  * Seventh, map the _all()_ function over the rows of our intermediate data.table
-  * Eighth, map the _none()_ function over the rows of our intermediate data.table
+  * Seventh, create a column of $100\%$-selection variables by mapping the _all()_ function over the rows of our intermediate data.table
+  * Eighth, create a column of $0\%$-selection variables by mapping the _none()_ function over the rows of our intermediate data.table
   * Ninth, make a column indicating the adaptation for each row
 
 Because I'm currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
