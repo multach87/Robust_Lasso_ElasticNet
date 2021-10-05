@@ -2,7 +2,7 @@
 title: 'Process Coefficients'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: pdf_document
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
