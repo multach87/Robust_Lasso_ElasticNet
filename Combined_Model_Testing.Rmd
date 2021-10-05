@@ -673,12 +673,25 @@ rm(list = ls())
 models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData")
 ```
 
-### Coefficient Processing
+### Coefficient frequency function
+
+There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors. 
+
+I'd like to add a list element that contains information about the models produced by each adaptation across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
+
+Also note that this function relies on a list with a comparable structure to my processed models:
+ * Level 1 of list corresponds with each data split
+ * Level 2 of list corresponds with different model result objects from a given data split
+   * One list element at Level 2 contains the model summary object _model.info_
+     *which contains a list element _coefs_, a numeric vector of coefficient values (and intercept, if applicable)
 
 ```{r extract coefficient information}
 coefs_freq <- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
        coefs.freq <- numeric(length = 8)
+       
+       # label frequency vector with predictor names, accounting for 
+       names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
        
        # update each predictors' selection frequency if the corresponding coefficient value
        # # in each data split is nonzero (aka, was selected into the model)
@@ -690,30 +703,93 @@ coefs_freq <- function(models) {
               }
        }
        
-       # label frequency vector with predictor names, accounting for 
-       names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
-       
        return(coefs.freq)       
 }
 ```
 
-Our original _coefs_freq()_ function creates a named, $p$-length vector of frequencies of predictor selection for a single lasso or elastic net adaptation. Here, we need to get these frequencies for each of our 7 adaptations. We also want the resulting information to be stored and located conveniently. 
+Now let's map our coefficient frequency function across all adaptations and model results.
 
+### Minor functions
+
+I'd also like to count the number of variables with $100\%$ or $0\%$ selection for each adaptation. I'm going to create two basic functions that I can apply during piping.
+
+```{r all_splits function}
+all_splits <- function(data) {
+        return(length(which(data[1:8] == 100)
+                      )
+               )
+}
+```
+
+```{r no_splits function}
+no_splits <- function(data) {
+        return(length(which(data[1:8] == 0)
+                      )
+        )
+}
+```
+
+Similarly, I would also like to calculate the number of adaptations which selected each variable $100\%$ and $0\%$ of the time.
+
+```{r adapts_100 function}
+adapts_100 <- function(data) {
+        return(length(which(data[1:7] == 100)
+                      )
+               )
+}
+```
+
+```{r adapts_0 function}
+adapts_0 <- function(data) {
+        return(length(which(data[1:7] == 0)
+                      )
+        )
+}
+```
+
+### Coefficient processing: Initialize list
+
+Our original _coefs_freq()_ function creates a named, $p$-length vector of frequencies of predictor selection for a single lasso or elastic net adaptation. Here, we need to get these frequencies for each of our 7 adaptations. We also want the resulting information to be stored and located conveniently. We also want to create a similar table of selection info, except by potential predictor instead of by adaptation.
+
+Our new list element, "Frequencies", will have two data.tables:
+ * A data.table of selection frequencies by adaptation (rows = lasso/elastic net adaptation)
+ * A data.table of selection frequencies by potential predictor (rows = potential predictor X1 - X8) 
+
+####UPDATE THIS SECTION/MOVE TO APPROPRIATE LOCATION
 Let's map this function across each of the 7 list elements in _models_all_ corresponding with each of our 7 adaptations. Re: storage and location of the coefficient frequences, let's:
   * Store all 8-length frequency vectors in a singular, $7 x 8$ data.table
-    * Store this data.table in a new list element in _models_all_ named _"Frequencies"_
-  * Name each column according to the predictor with which it corresponds
-  * Add an 8th column identifying the method the generated row of selection frequencies
+    * Store this data.table in a new list element in _models_all_ named _"Frequencies"_ and a data.table within that list named _"By_Adaptation"_
+  * Add a 9th column with the number of variables selected into the model in all 100 data splits
+  * Add a 10th column with the number of variables that was unselected in all 100 data splits
+  * Add a final column identifying the method the generated row of selection frequencies
+
+####UPDATE THIS SECTION/MOVE TO APPROPRIATE LOCATION  
+Let's also map this function across each of the 7 list elements in _models_all_ corresponding with each of our 8 potential predictors. Re: storage and location of the coefficient frequences, let's:
+
+
+
+Let's initialize that list.
+
+```{r}
+models_all[["Frequencies"]] <- list()
+```
+
+
+### Coefficient frequency processing: By Adaptation
+
+Now let's map our coefficient frequency function across all adaptations and model results. to create our first data.table.
 
 ```{r run coef frequency function on ladlasso models}
-models_all[["Frequencies"]]<- models_all[1:7] %>%
-    map(coefs_freq) %>%
-    setDT %>%
-    t %>%
-    data.frame %>%
-    setDT %>%
-    .[ , "method" := names(models_all[-8])] %>%
-    setkey(. , method) 
+models_all[["Frequencies"]][["By_Adaptation"]] <- models_all[1:7] %>%
+         map(coefs_freq) %>%
+         setDT %>%
+         t %>%
+         data.frame %>%
+         setDT %>%
+         .[ , "all" := apply(. , 1 , all_splits)] %>%
+         .[ , "none" := apply(. , 1 , no_splits)] %>%
+         .[ , "method" := names(models_all[-8])] %>%
+         setkey(. , method) 
 ```
 
 Let's walk through what's going on in the last code chunk. 
@@ -724,19 +800,45 @@ Let's walk through what's going on in the last code chunk.
     * As a reminder, our desired object is a $7 x 8$ object, with model/adaptation in each row and possible predictor frequency in each column
   * Fifth, make the result a dataframe
   * Sixth, make the result a data.table, _again_
-    * I can't quite explain why we need to do the things above in the exact order (and repetition) in the pipes above. There's a sequence of transformations on the unstored object that impact what the result will be that mean _t()_ has to go in the middle, and _data.frame()_ at the end. But then we have to reset the object as a data.table after _data.frame()_
+    * I can't quite explain why we need to conduct the steps above in the exact order (and repetition) in the pipes above. There's a sequence of transformations on the unstored/transitory object that impact what the result will be that mean _t()_ has to go in the middle, and _data.frame()_ at the end. But then we have to reset the object as a data.table after _data.frame()_.
+  * Seventh, create a column of $100\%$-selection variables by mapping the _all()_ function over the rows of our intermediate data.table
+  * Eighth, create a column of $0\%$-selection variables by mapping the _none()_ function over the rows of our intermediate data.table
+  * Ninth, make a column indicating the adaptation for each row
 
-Because the author is currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
+Because I'm currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
 
-Finally, let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
+Let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
 
 ```{r Frequencies str}
-str(models_all[["Frequencies"]])
+str(models_all[["Frequencies"]][["By_Adaptation"]])
+```
+
+### Coefficient frequency processing: By Potential Predictor
+
+Now we're going to do the same thing, except by predictor instead of adaptation. This is actually pretty easily adapted from the script used to generate a data.table by adaptation. We can just eliminate the transpose ( _t()_ ) step of the pipe. As a result, we can also get rid of the initial _setDT()_ step, as it is now redundant. The only other meaningful changes:
+  * change "all"/"none" columns to map the _adapts_100()_ & _adapts_0()_ functions instead of the previous _all_splits()_ & _no_splits()_ functions
+  * Replace the "method" column with a "predictor" column indicating the potential predictor with which each data.table row corresponds
+
+```{r run coef frequency function on ladlasso models}
+models_all[["Frequencies"]][["By_Predictor"]] <- models_all[1:7] %>%
+        map(coefs_freq) %>%
+        data.frame %>%
+        setDT %>%
+        .[ , "all" := apply(. , 1 , adapts_100)] %>%
+        .[ , "none" := apply(. , 1 , adapts_0)] %>%
+        .[ , "predictor" := names(models_all[["Frequencies"]][["By_Adaptation"]])[1:8]] %>%
+        setkey(. , predictor) 
+```
+
+Let's take a look at the new data.table using _str()_.
+
+```{r Frequencies str}
+str(models_all[["Frequencies"]][["By_Predictor"]])
 ```
 
 ### Another Way
 
-Below is another pair of commands which accomplish the same thing, with two major differences. Since the version below involves three separate commands, rather than a single set of operations in one command, we'll use the first version outlined above.
+Below is another pair of commands which will generate our selection frequencies table, with two major differences. Since the version below involves three separate commands, rather than a single set of operations in one command, we'll use the first version outlined above. Note also that the example below only generates the frequency table by adaptation, but can be edited slightly to generate the table by predictor.
   * First, we set the object location/pointer at the end of the pipe instead of the beginning
   * Second, because of that ordering, we can't define the new column within _"Frequencies"_ in the same pipes
     * *Think about*: Why not?
@@ -747,11 +849,11 @@ models_all %>%
         setDT %>%
         t %>%
         data.frame %>%
-        setDT -> models_all[["Frequencies"]]
+        setDT -> models_all[["Frequencies"]][["By_Adaptation"]]
 
-models_all[["Frequencies"]][ , "method" := names(models_all)[-8]]
+models_all[["Frequencies"]][["By_Adaptation"]][ , "method" := names(models_all)[-8]]
 
-setkey(models_all[["Frequencies"]] , method)
+setkey(models_all[["Frequencies"]][["By_Adaptation"]] , method)
 
 ```
 
