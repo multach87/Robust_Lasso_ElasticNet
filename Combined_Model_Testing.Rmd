@@ -539,7 +539,7 @@ huberlasso.10 <- demo.split[1:10] %>%
 
 ### Adaptive Huber Elastic Net, Alpha = 0.5
 
-```{r ladelnet5}
+```{r huberelnet5}
 #run across data subset
 huberelnet5.10 <- demo.split[1:10] %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
@@ -755,4 +755,4 @@ setkey(models_all[["Frequencies"]] , method)
 
 ```
 
-
+## VISUALIZE
