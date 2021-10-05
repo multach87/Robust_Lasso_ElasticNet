@@ -382,7 +382,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <div id="coefficient-frequency-function" class="section level3">
 <h3>Coefficient frequency function</h3>
 <p>There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors.</p>
-<p>I’d like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does <em>not</em> include intercepts, given that some models do not include them.</p>
+<p>I’d like to add a list element that contains information about the models produced by each adaptation across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does <em>not</em> include intercepts, given that some models do not include them.</p>
 <p>Also note that this function relies on a list with a comparable structure to my processed models: * Level 1 of list corresponds with each data split * Level 2 of list corresponds with different model result objects from a given data split * One list element at Level 2 contains the model summary object <em>model.info</em> *which contains a list element <em>coefs</em>, a numeric vector of coefficient values (and intercept, if applicable)</p>
 <pre class="r"><code>coefs_freq &lt;- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
@@ -407,34 +407,51 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <div id="minor-functions" class="section level3">
 <h3>Minor functions</h3>
 <p>I’d also like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping.</p>
-<pre class="r"><code>all &lt;- function(data) {
-        return(length(which(data == 100)
+<pre class="r"><code>all_splits &lt;- function(data) {
+        return(length(which(data[1:8] == 100)
                       )
                )
 }</code></pre>
-<pre class="r"><code>none &lt;- function(data) {
-        return(length(which(data == 0)
+<pre class="r"><code>no_splits &lt;- function(data) {
+        return(length(which(data[1:8] == 0)
+                      )
+        )
+}</code></pre>
+<p>Similarly, I would also like to calculate the number of adaptations which selected each variable <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> of the time.</p>
+<pre class="r"><code>adapts_100 &lt;- function(data) {
+        return(length(which(data[1:7] == 100)
+                      )
+               )
+}</code></pre>
+<pre class="r"><code>adapts_0 &lt;- function(data) {
+        return(length(which(data[1:7] == 0)
                       )
         )
 }</code></pre>
 </div>
-<div id="coefficient-frequency-processing" class="section level3">
-<h3>Coefficient frequency processing</h3>
-<p>Now let’s map our coefficient frequency function across all adaptations and model results.</p>
-<pre class="r"><code>models_all[[&quot;Frequencies&quot;]] &lt;- models_all[1:7] %&gt;%
+<div id="coefficient-processing-initialize-list" class="section level3">
+<h3>Coefficient processing: Initialize list</h3>
+<p>Our new list element will have two data.tables: * A data.table of selection frequencies by adaptation (rows = lasso/elastic net adaptation) * A data.table of selection frequencies by potential predictor (rows = potential predictor X1 - X8)</p>
+<p>Let’s initialize that list.</p>
+<pre class="r"><code>models_all[[&quot;Frequencies&quot;]] &lt;- list()</code></pre>
+</div>
+<div id="coefficient-frequency-processing-by-adaptation" class="section level3">
+<h3>Coefficient frequency processing: By Adaptation</h3>
+<p>Now let’s map our coefficient frequency function across all adaptations and model results to create our first data.table.</p>
+<pre class="r"><code>models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]] &lt;- models_all[1:7] %&gt;%
          map(coefs_freq) %&gt;%
          setDT %&gt;%
          t %&gt;%
          data.frame %&gt;%
          setDT %&gt;%
-         .[ , &quot;all&quot; := apply(. , 1 , all)] %&gt;%
-         .[ , &quot;none&quot; := apply(. , 1 , none)] %&gt;%
+         .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
+         .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
          .[ , &quot;method&quot; := names(models_all[-8])] %&gt;%
          setkey(. , method) </code></pre>
 <p>Let’s walk through what’s going on in the last code chunk. * First, establish reference to the <em>models_all</em> object for the subsequent pipe operations * Second, <em>map()</em> the <em>coefs_freq()</em> function across elements of <em>models_all</em> * Third, make the resulting object a data.table using <em>setDT()</em> function * Fourth, transpose the result using <em>t()</em>, since the result will be an <span class="math inline">\(8 x 7\)</span> object with rows corresponding with each possible predictor and columns corresponding with each model/adaptation * As a reminder, our desired object is a <span class="math inline">\(7 x 8\)</span> object, with model/adaptation in each row and possible predictor frequency in each column * Fifth, make the result a dataframe * Sixth, make the result a data.table, <em>again</em> * I can’t quite explain why we need to conduct the steps above in the exact order (and repetition) in the pipes above. There’s a sequence of transformations on the unstored/transitory object that impact what the result will be that mean <em>t()</em> has to go in the middle, and <em>data.frame()</em> at the end. But then we have to reset the object as a data.table after <em>data.frame()</em>. * Seventh, create a column of <span class="math inline">\(100\%\)</span>-selection variables by mapping the <em>all()</em> function over the rows of our intermediate data.table * Eighth, create a column of <span class="math inline">\(0\%\)</span>-selection variables by mapping the <em>none()</em> function over the rows of our intermediate data.table * Ninth, make a column indicating the adaptation for each row</p>
 <p>Because I’m currently learning about keys, the last operation of the pipe sets a key for the <em>“Frequences”</em> data.table based on the method/adaptation. (If you don’t know what this means, don’t worry too much about it. It won’t generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting <em>“Frequencies”</em> by method/adaptation).</p>
-<p>Finally, let’s take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in <em>“method”</em>.</p>
-<pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]])</code></pre>
+<p>Let’s take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in <em>“method”</em>.</p>
+<pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])</code></pre>
 <pre><code>## Classes 'data.table' and 'data.frame':   7 obs. of  11 variables:
 ##  $ X1    : num  100 100 100 100 100 100 99
 ##  $ X2    : num  100 100 100 100 100 100 100
@@ -449,6 +466,33 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  $ method: chr  &quot;huberelnet&quot; &quot;huberlasso&quot; &quot;ladelnet&quot; &quot;ladlasso&quot; ...
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;method&quot;</code></pre>
+</div>
+<div id="coefficient-frequency-processing-by-potential-predictor" class="section level3">
+<h3>Coefficient frequency processing: By Potential Predictor</h3>
+<p>Now we’re going to do the same thing, except by predictor instead of adaptation. This is actually pretty easily adapted from the script used to generate a data.table by adaptation. We can just eliminate the transpose ( <em>t()</em> ) step of the pipe. As a result, we can also get rid of the initial <em>setDT()</em> step, as it is now redundant. The only other meaningful changes: * change “all”/“none” columns to map the <em>adapts_100()</em> &amp; <em>adapts_0()</em> functions instead of the previous <em>all_splits()</em> &amp; <em>no_splits()</em> functions * Replace the “method” column with a “predictor” column indicating the potential predictor with which each data.table row corresponds</p>
+<pre class="r"><code>models_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] &lt;- models_all[1:7] %&gt;%
+        map(coefs_freq) %&gt;%
+        data.frame %&gt;%
+        setDT %&gt;%
+        .[ , &quot;all&quot; := apply(. , 1 , adapts_100)] %&gt;%
+        .[ , &quot;none&quot; := apply(. , 1 , adapts_0)] %&gt;%
+        .[ , &quot;predictor&quot; := names(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:8]] %&gt;%
+        setkey(. , predictor) </code></pre>
+<p>Let’s take a look at the new data.table using <em>str()</em>.</p>
+<pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]])</code></pre>
+<pre><code>## Classes 'data.table' and 'data.frame':   8 obs. of  10 variables:
+##  $ ladlasso  : num  100 100 100 100 4 0 9 12
+##  $ ladelnet  : num  100 100 100 100 3 0 9 36
+##  $ huberlasso: num  100 100 100 100 4 2 3 23
+##  $ huberelnet: num  100 100 100 100 5 0 7 46
+##  $ msak3     : num  100 100 100 100 4 0 4 15
+##  $ msak5     : num  99 100 100 100 3 0 4 6
+##  $ msak10    : num  100 100 100 100 5 0 2 6
+##  $ all       : int  6 7 7 7 0 0 0 0
+##  $ none      : int  0 0 0 0 0 6 0 0
+##  $ predictor : chr  &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
+##  - attr(*, &quot;sorted&quot;)= chr &quot;predictor&quot;</code></pre>
 </div>
 </div>
 <div id="save-the-last-dance-file" class="section level2">

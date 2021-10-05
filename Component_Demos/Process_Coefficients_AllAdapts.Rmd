@@ -2,7 +2,7 @@
 title: 'Process Coefficients'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: html_document
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -53,7 +53,7 @@ Note that this data has already been processed to remove the Results vs. Error l
 
 There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors. 
 
-I'd like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
+I'd like to add a list element that contains information about the models produced by each adaptation across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
 
 Also note that this function relies on a list with a comparable structure to my processed models:
  * Level 1 of list corresponds with each data split
@@ -87,35 +87,65 @@ coefs_freq <- function(models) {
 
 I'd also like to count the number of variables with $100\%$ or $0\%$ selection for each adaptation. I'm going to create two basic functions that I can apply during piping.
 
-```{r all function}
-all <- function(data) {
-        return(length(which(data == 100)
+```{r all_splits function}
+all_splits <- function(data) {
+        return(length(which(data[1:8] == 100)
                       )
                )
 }
 ```
 
-```{r none function}
-none <- function(data) {
-        return(length(which(data == 0)
+```{r no_splits function}
+no_splits <- function(data) {
+        return(length(which(data[1:8] == 0)
                       )
         )
 }
 ```
 
-### Coefficient frequency processing
+Similarly, I would also like to calculate the number of adaptations which selected each variable $100\%$ and $0\%$ of the time.
 
-Now let's map our coefficient frequency function across all adaptations and model results.
+```{r adapts_100 function}
+adapts_100 <- function(data) {
+        return(length(which(data[1:7] == 100)
+                      )
+               )
+}
+```
 
-```{r run coef frequency function on ladlasso models}
-models_all[["Frequencies"]] <- models_all[1:7] %>%
+```{r adapts_0 function}
+adapts_0 <- function(data) {
+        return(length(which(data[1:7] == 0)
+                      )
+        )
+}
+```
+
+### Coefficient processing: Initialize list
+
+Our new list element will have two data.tables:
+ * A data.table of selection frequencies by adaptation (rows = lasso/elastic net adaptation)
+ * A data.table of selection frequencies by potential predictor (rows = potential predictor X1 - X8) 
+
+Let's initialize that list.
+
+```{r}
+models_all[["Frequencies"]] <- list()
+```
+
+### Coefficient frequency processing: By Adaptation
+
+Now let's map our coefficient frequency function across all adaptations and model results to create our first data.table.
+
+```{r run coef frequency function by adaptation}
+models_all[["Frequencies"]][["By_Adaptation"]] <- models_all[1:7] %>%
          map(coefs_freq) %>%
          setDT %>%
          t %>%
          data.frame %>%
          setDT %>%
-         .[ , "all" := apply(. , 1 , all)] %>%
-         .[ , "none" := apply(. , 1 , none)] %>%
+         .[ , "all" := apply(. , 1 , all_splits)] %>%
+         .[ , "none" := apply(. , 1 , no_splits)] %>%
          .[ , "method" := names(models_all[-8])] %>%
          setkey(. , method) 
 ```
@@ -135,10 +165,33 @@ Let's walk through what's going on in the last code chunk.
 
 Because I'm currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
 
-Finally, let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
+Let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
 
-```{r Frequencies str}
-str(models_all[["Frequencies"]])
+```{r Frequencies By Adaptation str}
+str(models_all[["Frequencies"]][["By_Adaptation"]])
+```
+
+### Coefficient frequency processing: By Potential Predictor
+
+Now we're going to do the same thing, except by predictor instead of adaptation. This is actually pretty easily adapted from the script used to generate a data.table by adaptation. We can just eliminate the transpose ( _t()_ ) step of the pipe. As a result, we can also get rid of the initial _setDT()_ step, as it is now redundant. The only other meaningful changes:
+  * change "all"/"none" columns to map the _adapts_100()_ & _adapts_0()_ functions instead of the previous _all_splits()_ & _no_splits()_ functions
+  * Replace the "method" column with a "predictor" column indicating the potential predictor with which each data.table row corresponds
+
+```{r run coef frequency function by predictor}
+models_all[["Frequencies"]][["By_Predictor"]] <- models_all[1:7] %>%
+        map(coefs_freq) %>%
+        data.frame %>%
+        setDT %>%
+        .[ , "all" := apply(. , 1 , adapts_100)] %>%
+        .[ , "none" := apply(. , 1 , adapts_0)] %>%
+        .[ , "predictor" := names(models_all[["Frequencies"]][["By_Adaptation"]])[1:8]] %>%
+        setkey(. , predictor) 
+```
+
+Let's take a look at the new data.table using _str()_.
+
+```{r Frequencies By Predictor str}
+str(models_all[["Frequencies"]][["By_Predictor"]])
 ```
 
 ## Save the Last ~~Dance~~ File
