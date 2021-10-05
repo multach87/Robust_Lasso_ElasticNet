@@ -141,4 +141,10 @@ Finally, let's take a quick look at the structure of our coefficient frequencies
 str(models_all[["Frequencies"]])
 ```
 
+## Save the Last ~~Dance~~ File
 
+Let's save the model results file which also includes our new "Frequencies" data.table so that we can load it during the full walkthrough.
+
+```{r save frequencies file}
+saveRDS(models_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData")
+```
