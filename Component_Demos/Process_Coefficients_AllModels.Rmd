@@ -1,0 +1,144 @@
+---
+title: 'Process Coefficients'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Introduction
+
+This document demo's the processing of model coefficients from a list of multiple model objects produced by the previous _hqmsa.sim.funct()_ function. Note that this document walks through the processing of coefficient results from _all_ lasso and elastic net models applied to the 100 data splits. There are therefore a few more steps involved compared to _Process_Coefficients_SingleModel.Rmd_. Furthermore, the final results will be saved for used in future demos.
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+First, let's load the necessary packages. I've also set this code chunk to not print warnings or messages, as they are largely not helpful for the current example.
+
+```{r libraries , warning = FALSE , message = FALSE}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+library(rlang)      # For parse_expr() to parse data name in k-fold subsetting functions
+library(msaenet)    # For the multi-step adaptive elastic net
+```
+
+
+Let's also load our model data.
+
+```{r load model results}
+models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData")
+```
+
+Note that this data has already been processed to remove the Results vs. Error list level.
+
+## Extracting Coefficient Information
+
+### Coefficient frequency function
+
+There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors. 
+
+I'd like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
+
+Also note that this function relies on a list with a comparable structure to my processed models:
+ * Level 1 of list corresponds with each data split
+ * Level 2 of list corresponds with different model result objects from a given data split
+   * One list element at Level 2 contains the model summary object _model.info_
+     *which contains a list element _coefs_, a numeric vector of coefficient values (and intercept, if applicable)
+
+```{r extract coefficient information}
+coefs_freq <- function(models) {
+       # initialize vector of predictor selection frequency, with all values set to 0
+       coefs.freq <- numeric(length = 8)
+       
+       # label frequency vector with predictor names, accounting for 
+       names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
+       
+       # update each predictors' selection frequency if the corresponding coefficient value
+       # # in each data split is nonzero (aka, was selected into the model)
+       for(i in 1:length(models)) {
+              for(j in 1:length(coefs.freq)) {
+                     if(models[[i]][["model.info"]][["coefs"]][(j + 1)] != 0) {
+                            coefs.freq[j] <- coefs.freq[j] + 1
+                     }
+              }
+       }
+       
+       return(coefs.freq)       
+}
+```
+
+### Minor functions
+
+I'd also like to count the number of variables with $100\%$ or $0\%$ selection for each adaptation. I'm going to create two basic functions that I can apply during piping.
+
+```{r all function}
+all <- function(data) {
+        return(length(which(data == 100)
+                      )
+               )
+}
+```
+
+```{r none function}
+none <- function(data) {
+        return(length(which(data == 0)
+                      )
+        )
+}
+```
+
+### Coefficient frequency processing
+
+Now let's map our coefficient frequency function across all adaptations and model results.
+
+```{r run coef frequency function on ladlasso models}
+models_all[["Frequencies"]] <- models_all[1:7] %>%
+         map(coefs_freq) %>%
+         setDT %>%
+         t %>%
+         data.frame %>%
+         setDT %>%
+         .[ , "all" := apply(. , 1 , all)] %>%
+         .[ , "none" := apply(. , 1 , none)] %>%
+         .[ , "method" := names(models_all[-8])] %>%
+         setkey(. , method) 
+```
+
+Let's walk through what's going on in the last code chunk. 
+  * First, establish reference to the _models_all_ object for the subsequent pipe operations
+  * Second, _map()_ the _coefs_freq()_ function across elements of _models_all_
+  * Third, make the resulting object a data.table using _setDT()_ function
+  * Fourth, transpose the result using _t()_, since the result will be an $8 x 7$ object with rows corresponding with each possible predictor and columns corresponding with each model/adaptation
+    * As a reminder, our desired object is a $7 x 8$ object, with model/adaptation in each row and possible predictor frequency in each column
+  * Fifth, make the result a dataframe
+  * Sixth, make the result a data.table, _again_
+    * I can't quite explain why we need to conduct the steps above in the exact order (and repetition) in the pipes above. There's a sequence of transformations on the unstored/transitory object that impact what the result will be that mean _t()_ has to go in the middle, and _data.frame()_ at the end. But then we have to reset the object as a data.table after _data.frame()_.
+  * Seventh, map the _all()_ function over the rows of our intermediate data.table
+  * Eighth, map the _none()_ function over the rows of our intermediate data.table
+  * Ninth, make a column indicating the adaptation for each row
+
+Because I'm currently learning about keys, the last operation of the pipe sets a key for the _"Frequences"_ data.table based on the method/adaptation. (If you don't know what this means, don't worry too much about it. It won't generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting _"Frequencies"_ by method/adaptation).
+
+Finally, let's take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in _"method"_.
+
+```{r Frequencies str}
+str(models_all[["Frequencies"]])
+```
+
+

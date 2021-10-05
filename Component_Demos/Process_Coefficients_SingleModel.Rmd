@@ -39,9 +39,9 @@ library(msaenet)    # For the multi-step adaptive elastic net
 ```
 
 
-Let's also load our processed model data. 
+Let's also load our model data. 
 
-```{r load processed model results}
+```{r load model results}
 models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models10.RData")
 ```
 
