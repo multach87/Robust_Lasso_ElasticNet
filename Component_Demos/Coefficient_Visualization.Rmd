@@ -1,0 +1,240 @@
+---
+title: 'Visualization Demo'
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: html_document
+#output: 
+#       xaringan::infinite_moon_reader:
+#              lib_dir: lib
+#              highlightStyle: github
+#              highlightLines: true
+#              countIncrementalSlides: false
+#              beforeInit: "macros.js"
+#              css: [default, tamu, tamu-fonts]
+---
+
+## Introduction
+
+This document demonstrates the visualization of coefficient inclusion results from our 100-split model data. Graphical objects and manipulation also feature heavily, so we will discuss the many tools I used to present the visuals used.
+
+Due to the multiple tools used to visualize the data effectively, this demo will be a bit longer and more involved than most other demos.
+
+## Preamble
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+### Packages
+
+First, let's load the necessary packages. I've also set this code chunk to not print warnings, as they are largely not helpful for the current example.
+
+```{r libraries , warning = FALSE}
+# This chunk loads the packages used in this workbook
+library(xaringan)     # Allows active preview of report in RStudio
+library(magrittr)     # Used for piping
+library(purrr)        # Used for mapping functions efficiently
+library(data.table)   # For more streamlined data structures
+library(glmnet)       # For general lasso/elastic net functionality
+library(hqreg)        # For LAD/Huber-loss regularization with SNCD algorithm
+library(rlang)        # For parse_expr() to parse data name in k-fold subsetting functions
+library(msaenet)      # For the multi-step adaptive elastic net
+library(gridExtra)    # For displaying grids of objects
+library(grid)         # For creating a title for multiplot grid
+library(dplyr)        # For manipulating data
+library(ggplot2)      # For generating and manipulation graphical objects
+library(RColorBrewer) # For generating custom color palettes
+```
+
+### Model Loading
+
+Let's load our 100-split model file with "Frequencies" data.table.
+
+```{r load 100-split model RData}
+models_freqs <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData")
+```
+
+## Visualization
+
+Now we're going to set up our visualizations. There are going to be three sets of plots:
+  * Plots of selection frequencies of all predictors by each adaptation
+  * Plots of $100/%$ and $0\%$ selection by each adaptation
+  * Plots of frequency of $100/%$ and $0/%$ selection of each predictor across adaptations
+
+### Visualization: All Predictors and Adaptations
+
+#### Custom Color Palette
+
+The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is a tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
+
+```{r make ggplot objects , echo = F}
+P8 <- c("#02AD24" , "#FF0000" , "#0000FF" , "#9A4D42" , 
+         "#00FFBE" , "#FF00B6" , "#000033" , "#00FF00")
+         #"#FFD300" , "#009FFF" ,  "#783FC1")
+```
+
+#### Plot legend function
+
+I'm also going to implement a function that stores a plot legend to an object for use with multi-plot displays. I can't remember where I found the function and can't relocate the original post, but I did *not* create this function myself! Should I ever run across this function again in the wild, I'll update this section to give proper credit.
+
+```{r legend function for multi-plots , echo = F}
+g_legend<-function(a.gplot){
+       tmp <- ggplot_gtable(ggplot_build(a.gplot))
+       leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+       legend <- tmp$grobs[[leg]]
+       return(legend)}
+```
+
+#### Plot Objects
+
+Now, I'm going to create 7 separate plots. The plots will present the selection frequencies of each potential predictor for each of the 7 lasso/elastic net adaptations included in the combined model.
+
+```{r huberelnet selection frequencies}
+huberelnet <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberelnet" , "predictor") , ] , 
+                     aes(x = predictor , y = huberelnet)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "Adaptive Huber Elastic Net" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+Let's break down what's happening in the code chunk above. _ggplot2_ works by creating layers of visual elements on top of a visual object. We're going to define a ggplot object named "huberlasso" using the _ggplot()_ function. We then add each subsequent visual layer by taking the initial ggplot object with a '+', and then the next layer.
+
+In defining our ggplot object, we are specifying "aesthetics," in this case the characteristics represented on the x-axis and the variable used to define our y-axis. In order, the subsequent layers:
+  * Specify that our plot is a column plot (a bar graph with particular characteristics)
+    * We are further specifying that the fill color of each column will vary based on which potential predictor is being represented
+  * Specify the plot title and y-axis label 
+  * Specify that we do *not* want a plot legend, and that the plot title should be horizontally adjusted and have font size 12
+  * Specify that the colors used for filling the columns should come from our custom color palette object
+  
+Now we're going to do the same for each of the 6 remaining adaptations.
+
+```{r huberlasso selection frequencies}
+huberlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberlasso" , "predictor") , ] , 
+                     aes(x = predictor , y = huberlasso)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "Adaptive Huber Lasso" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r ladelnet selection frequencies}
+ladelnet <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladelnet" , "predictor") , ] , 
+                     aes(x = predictor , y = ladelnet)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "Adaptive LAD Elastic Net" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r ladlasso selection frequencies}
+ladlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladlasso" , "predictor") , ] , 
+                     aes(x = predictor , y = ladlasso)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "Adaptive LAD Lasso" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r msak10 selection frequencies}
+msak10 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak10" , "predictor") , ] , 
+                     aes(x = predictor , y = msak10)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "10-Step Adaptive Elastic Net" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r msak3 selection frequencies}
+msak3 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak3" , "predictor") , ] , 
+                     aes(x = predictor , y = msak3)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "3-Step Adaptive Elastic Net" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r msak5 selection frequencies}
+msak5 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak5" , "predictor") , ] , 
+                     aes(x = predictor , y = msak5)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "5-Step Adaptive Elastic Net" ,
+       y = "Frequency") + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+I'm also going to create a blank ggplot object to help with arranging our multi-plot display.
+
+```{r blank ggplot}
+blank <- ggplot() +
+  geom_blank() + 
+  theme_minimal()
+```
+
+#### Create Plot Legend
+
+Let's also create the legend for this multi-plot. Since all refer to the same predictors, we can just pull this from a single adaptation's plot object. First, though, we need to create a plot object that includes a legend.
+
+```{r plot object for first multiplot legend}
+msak5.l <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak5" , "predictor") , ] , 
+                     aes(x = predictor , y = msak5)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "5-Step Adaptive Elastic Net" ,
+       y = "Frequency") + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r legend for first multiplot}
+plotA.legend <- g_legend(msak5.l)
+```
+
+#### Put Plot Objects Together
+
+Lastly (for this plot), we're going to create a grid arrangement of our plots so that they are all presented in a simultaneous object.
+
+```{r multiplotA arrange}
+plotA <- grid.arrange(arrangeGrob(huberelnet , blank , huberlasso , 
+                                  ladelnet , blank , ladlasso , 
+                                  msak3 , msak5 , msak10 , 
+                                  nrow = 3) , 
+                       arrangeGrob(plotA.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob("Predictor Selection Frequency by Lasso/Elastic Net Adaptation"))
+```
