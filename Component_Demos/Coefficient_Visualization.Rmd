@@ -56,6 +56,19 @@ Let's load our 100-split model file with "Frequencies" data.table.
 models_freqs <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData")
 ```
 
+
+
+## Visualization
+
+Now we're going to set up our visualizations. There are going to be three sets of plots:
+  * Plots of selection frequencies of all predictors by each adaptation
+  * Plots of $100/%$ and $0\%$ selection by each adaptation
+  * Plots of frequency of $100/%$ and $0/%$ selection of each predictor across adaptations
+  
+### Visualization Setup
+
+I'm going to create a few practical tools/objects that will be used in our subsequent visualizations.
+
 #### Custom Color Palette
 
 The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is a tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
@@ -75,17 +88,6 @@ P7 <- sample(x = P11 , size = 7 , replace = FALSE)
 P8 <- sample(x = P11 , size = 8 , replace = FALSE)
 ```
 
-## Visualization
-
-Now we're going to set up our visualizations. There are going to be three sets of plots:
-  * Plots of selection frequencies of all predictors by each adaptation
-  * Plots of $100/%$ and $0\%$ selection by each adaptation
-  * Plots of frequency of $100/%$ and $0/%$ selection of each predictor across adaptations
-
-### Visualization: All Predictors and Adaptations
-
-
-
 #### Plot legend function
 
 I'm also going to implement a function that stores a plot legend to an object for use with multi-plot displays. I can't remember where I found the function and can't relocate the original post, but I did *not* create this function myself! Should I ever run across this function again in the wild, I'll update this section to give proper credit.
@@ -97,6 +99,8 @@ g_legend<-function(a.gplot){
        legend <- tmp$grobs[[leg]]
        return(legend)}
 ```
+
+### Visualization: All Predictors and Adaptations
 
 #### Plot Objects
 
