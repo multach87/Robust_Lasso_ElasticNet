@@ -77,7 +77,8 @@ First, I'm going to make a palette of 11 distinct colors. These are the colors I
 
 ```{r make P11 custom color palette}
 P11 <- c("#02AD24" , "#FF0000" , "#0000FF" , "#9A4D42" , 
-         "#00FFBE" , "#FF00B6" , "#000033" , "#00FF00")
+         "#00FFBE" , "#FF00B6" , "#000033" , "#00FF00" ,
+         "#FFD300" , "#009FFF" ,  "#783FC1")
 ```
 
 ```{r make P7 from P11}
@@ -107,7 +108,7 @@ g_legend<-function(a.gplot){
 Now, I'm going to create 7 separate plots. The plots will present the selection frequencies of each potential predictor for each of the 7 lasso/elastic net adaptations included in the combined model.
 
 ```{r huberelnet selection frequencies}
-huberelnet <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberelnet" , "predictor") , ] , 
+huberelnet.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberelnet" , "predictor") , ] , 
                      aes(x = predictor , y = huberelnet)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "Adaptive Huber Elastic Net" ,
@@ -130,7 +131,7 @@ In defining our ggplot object, we are specifying "aesthetics," in this case the 
 Now we're going to do the same for each of the 6 remaining adaptations.
 
 ```{r huberlasso selection frequencies}
-huberlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberlasso" , "predictor") , ] , 
+huberlasso.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberlasso" , "predictor") , ] , 
                      aes(x = predictor , y = huberlasso)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "Adaptive Huber Lasso" ,
@@ -144,7 +145,7 @@ huberlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c
 ```
 
 ```{r ladelnet selection frequencies}
-ladelnet <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladelnet" , "predictor") , ] , 
+ladelnet.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladelnet" , "predictor") , ] , 
                      aes(x = predictor , y = ladelnet)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "Adaptive LAD Elastic Net" ,
@@ -158,7 +159,7 @@ ladelnet <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("
 ```
 
 ```{r ladlasso selection frequencies}
-ladlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladlasso" , "predictor") , ] , 
+ladlasso.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ladlasso" , "predictor") , ] , 
                      aes(x = predictor , y = ladlasso)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "Adaptive LAD Lasso" ,
@@ -172,7 +173,7 @@ ladlasso <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("
 ```
 
 ```{r msak10 selection frequencies}
-msak10 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak10" , "predictor") , ] , 
+msak10.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak10" , "predictor") , ] , 
                      aes(x = predictor , y = msak10)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "10-Step Adaptive Elastic Net" ,
@@ -186,7 +187,7 @@ msak10 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("ms
 ```
 
 ```{r msak3 selection frequencies}
-msak3 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak3" , "predictor") , ] , 
+msak3.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak3" , "predictor") , ] , 
                      aes(x = predictor , y = msak3)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "3-Step Adaptive Elastic Net" ,
@@ -200,7 +201,7 @@ msak3 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msa
 ```
 
 ```{r msak5 selection frequencies}
-msak5 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak5" , "predictor") , ] , 
+msak5.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msak5" , "predictor") , ] , 
                      aes(x = predictor , y = msak5)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "5-Step Adaptive Elastic Net" ,
@@ -216,7 +217,7 @@ msak5 <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("msa
 I'm also going to create a blank ggplot object to help with arranging our multi-plot display.
 
 ```{r blank ggplot}
-blank <- ggplot() +
+blank.pl <- ggplot() +
   geom_blank() + 
   theme_minimal()
 ```
@@ -247,19 +248,195 @@ plotA.legend <- g_legend(msak5.l)
 Lastly (for this plot), we're going to create a grid arrangement of our plots so that they are all presented in a simultaneous object.
 
 ```{r multiplotA arrange}
-plotA <- grid.arrange(arrangeGrob(huberelnet , blank , huberlasso , 
-                                  ladelnet , blank , ladlasso , 
-                                  msak3 , msak5 , msak10 , 
+plotA <- grid.arrange(arrangeGrob(huberelnet.pl , blank.pl , huberlasso.pl , 
+                                  ladelnet.pl , blank.pl , ladlasso.pl , 
+                                  msak3.pl , msak5.pl , msak10.pl , 
                                   nrow = 3) , 
                        arrangeGrob(plotA.legend) , 
                       ncol = 2 , widths = c(200 , 40) , 
-                      top = textGrob("Predictor Selection Frequency by Lasso/Elastic Net Adaptation"))
+                      top = textGrob("Predictor Selection Frequency by Lasso/Elastic Net Adaptation Across All 100 Data Splits"))
 ```
 
 
 
-### Visualization: Predictor Selection by Adaptation
+### Visualization: All/None Predictor Selection by Adaptation
 
-#### Custom Color Palette
+#### Plot Objects
 
-Let's create our custom color palette for the next multi-plot. Since there are only 7 lasso/elastic net adaptations among these models, we only need 7 colors.
+Now, I'm going to create 2 separate. One plot will display the number of predictors selected into $100\%$ of models for each of the 7 adaptations, while the second plot will display similar information for number of predictors selected into *no* models by adaptation. We can mostly just take our previous code and make slight changes, but the structure of creating these objects is largely the same. 
+
+Two noteworthy additions/changes were made, though. First, an additional visual layer was specified by _coord_cartesian()_, which explicitly controls range of y values displayed on the plots. I've also angled the axis ticks for the x-axis to facilitate a later plot. This is specified by the argument "axis.text.x" in the _theme()_ layer. I've also vertically- and horizontally-justified these labels in the same argument to prevent collision with the plots themselves.
+
+Notably, we only need two plots this time.
+
+```{r adaptation 100 plot}
+adapt100.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Adaptation"]][ , c("all" , "method") , ] , 
+                     aes(x = method , y = all)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = "100% Selection" ,
+       y = "100% Selection (out of 7)" , 
+       x = "Adaptation") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(hjust = 1 , 
+                                   vjust = 1 , 
+                                   angle = 45)) +
+  scale_fill_manual(values = P7)
+```
+
+```{r adaptation 0 plot}
+adapt0.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Adaptation"]][ , c("none" , "method") , ] , 
+                     aes(x = method , y = none)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = "0% Selection" ,
+       y = "0% Selection (out of 7)" , 
+       x = "Adaptation") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(hjust = 1 , 
+                                   vjust = 1 , 
+                                   angle = 45)) +
+  scale_fill_manual(values = P7)
+```
+
+#### Create Plot Legend
+
+Let's also create the legend for this multi-plot after creating an analogous plot with the legend included.
+
+```{r plot object for multiplotB legend}
+adapt100.l <- ggplot(data = models_freqs[["Frequencies"]][["By_Adaptation"]][ , c("all" , "method") , ] , 
+                     aes(x = method , y = all)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = "100% Selection" ,
+       y = "100% Selection (out of 7)" , 
+       x = "Adaptation") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P7)
+```
+
+```{r legend for multiplotB}
+plotB.legend <- g_legend(adapt100.l)
+```
+
+
+#### Put Plot Objects Together
+
+```{r multiplotB arrange}
+plotB <- grid.arrange(arrangeGrob(adapt0.pl , 
+                                  adapt100.pl , 
+                                  nrow = 2) , 
+                       arrangeGrob(plotB.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob("0% and 100% Selection Frequency by Lasso/Elastic Net Adaptation"))
+```
+
+
+
+### Visualization: All/None Predictor Selection by Predictor
+
+#### Plot Objects
+
+I'm going to analogous plots to those in the previous subsection. This time, however, the plots look at the number of adaptations for which a given predictor was *always* or *never* selected across the 100 data splits. 
+
+```{r predictor 100 plot}
+pred100.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("all" , "predictor") , ] , 
+                     aes(x = predictor , y = all)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "100% Selection" ,
+       y = "100% Selection (out of 100)" , 
+       x = "Predictor") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r predictor 0 plot}
+pred0.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("none" , "predictor") , ] , 
+                     aes(x = predictor , y = none)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "0% Selection" ,
+       y = "0% Selection (out of 100)" , 
+       x = "Predictor") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = "none" , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P8)
+```
+
+#### Create Plot Legend
+
+Let's also create the legend for this multi-plot after creating an analogous plot with the legend included.
+
+```{r plot object for multiplotC}
+pred100.l <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("all" , "predictor") , ] , 
+                     aes(x = predictor , y = all)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = "100% Selection" ,
+       y = "100% Selection (out of 7)" , 
+       x = "Predictor") + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8)) +
+  scale_fill_manual(values = P8)
+```
+
+```{r legend for multiplotC legend}
+plotC.legend <- g_legend(pred100.l)
+```
+
+
+#### Put Plot Objects Together
+
+```{r multiplotC arrange}
+plotC <- grid.arrange(arrangeGrob(pred0.pl , 
+                                  pred100.pl , 
+                                  nrow = 2) , 
+                       arrangeGrob(plotB.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob("0% and 100% Selection Frequency by Potential Predictor"))
+```
+
+
+### One Last Visualization
+
+I'm going to combine combine the elements of the last two plots into a single plot to finalize this walkthrough and emphasize some of the visual display tools at our disposal in R.
+
+First, though, I would like you to attempt this on your own. There is a hint below as to how I am going to accomplish this, although multiple formats could be used.
+
+\newpage
+
+#### Hint
+
+I'm going to take the four previous plot objects (corresponding to $100\%$ and $0\%$ selection frequency by predictor and adaptation) and the two previous legend objects and use grid.arrange to make two columns: a 4x4 grid of our 4 plots, and a 2x1 grid of our two legends. I'm then going to adjust the overall plot title accordingly.
+
+\newpage
+
+#### An extra page break so you don't mistakenly see the answer if you're trying to avoid it!
+
+\newpage
+
+#### Combined 100/0 Multiplot
+
+```{r multiplotD arrange}
+plotD <- grid.arrange(arrangeGrob(adapt0.pl , adapt100.pl ,
+                                  pred0.pl , pred100.pl , 
+                                  nrow = 2) , 
+                       arrangeGrob(plotB.legend , 
+                                   plotC.legend , 
+                                   nrow = 2) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob("0% and 100% Selection Frequency by Adaptation (top row) and Potential Predictor (bottom row)" , 
+                                     gp=gpar(fontsize=10,font=3)))
+```
