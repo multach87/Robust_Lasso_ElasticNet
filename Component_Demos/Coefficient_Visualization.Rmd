@@ -19,6 +19,8 @@ This document demonstrates the visualization of coefficient inclusion results fr
 
 Due to the multiple tools used to visualize the data effectively, this demo will be a bit longer and more involved than most other demos.
 
+I will not be interpreting the plots produced in this demo. This walkthrough is intended primarily to demonstrate this component of the overall combined model process being proposed and the tools necessary to make this component function. That way, newer users can understand the complex combination of tools that create the larger combined model without detracting from the full walkthrough that these components build towards.
+
 ## Preamble
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
@@ -54,6 +56,25 @@ Let's load our 100-split model file with "Frequencies" data.table.
 models_freqs <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData")
 ```
 
+#### Custom Color Palette
+
+The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is a tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
+
+First, I'm going to make a palette of 11 distinct colors. These are the colors I used when visualizing 11 different lasso and elastic net adaptations in my dissertation. I found that these colors produced pretty meaningful distinctions, so we should be able to sample a practical color palette from these 11 for our purposes. We need two color palettes: one for each of 7 adaptations, and one for each of 8 potential predictors in our models.
+
+```{r make P11 custom color palette}
+P11 <- c("#02AD24" , "#FF0000" , "#0000FF" , "#9A4D42" , 
+         "#00FFBE" , "#FF00B6" , "#000033" , "#00FF00")
+```
+
+```{r make P7 from P11}
+P7 <- sample(x = P11 , size = 7 , replace = FALSE)
+```
+
+```{r make P8 from P11}
+P8 <- sample(x = P11 , size = 8 , replace = FALSE)
+```
+
 ## Visualization
 
 Now we're going to set up our visualizations. There are going to be three sets of plots:
@@ -63,21 +84,13 @@ Now we're going to set up our visualizations. There are going to be three sets o
 
 ### Visualization: All Predictors and Adaptations
 
-#### Custom Color Palette
 
-The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is a tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
-
-```{r make ggplot objects , echo = F}
-P8 <- c("#02AD24" , "#FF0000" , "#0000FF" , "#9A4D42" , 
-         "#00FFBE" , "#FF00B6" , "#000033" , "#00FF00")
-         #"#FFD300" , "#009FFF" ,  "#783FC1")
-```
 
 #### Plot legend function
 
 I'm also going to implement a function that stores a plot legend to an object for use with multi-plot displays. I can't remember where I found the function and can't relocate the original post, but I did *not* create this function myself! Should I ever run across this function again in the wild, I'll update this section to give proper credit.
 
-```{r legend function for multi-plots , echo = F}
+```{r legend function for multi-plots}
 g_legend<-function(a.gplot){
        tmp <- ggplot_gtable(ggplot_build(a.gplot))
        leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
@@ -238,3 +251,11 @@ plotA <- grid.arrange(arrangeGrob(huberelnet , blank , huberlasso ,
                       ncol = 2 , widths = c(200 , 40) , 
                       top = textGrob("Predictor Selection Frequency by Lasso/Elastic Net Adaptation"))
 ```
+
+
+
+### Visualization: Predictor Selection by Adaptation
+
+#### Custom Color Palette
+
+Let's create our custom color palette for the next multi-plot. Since there are only 7 lasso/elastic net adaptations among these models, we only need 7 colors.
