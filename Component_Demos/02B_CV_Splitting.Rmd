@@ -2,7 +2,13 @@
 title: 'Demo: Splitting Data for Cross-Validation and Improved Model Results'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: false
+bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -36,6 +42,11 @@ library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 library(rlang)      # For parse_expr() to parse data name from argument
 ```
+
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg , @rlang
+---
 
 Let's also load our demo data, which will just be our matricized singular applied dataset.
 
@@ -223,3 +234,5 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 ## Examples
 
 INCLUDE SOME EXAMPLES
+
+## References

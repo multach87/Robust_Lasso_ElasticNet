@@ -2,7 +2,13 @@
 title: 'Single-Model Demo: Generalized hqreg() + msaenet() Model'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: false
+bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -38,6 +44,11 @@ library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 library(msaenet)    # For the multi-step adaptive elastic net
 ```
+
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg , @msaenet
+---
 
 ## Data Loading
 
@@ -300,3 +311,5 @@ The difference re: including an intercept will come up again when considering th
 ## EXAMPLES
 
 ADD EXAMPLES
+
+## References

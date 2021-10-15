@@ -2,7 +2,13 @@
 title: 'Single-Model Demo: Generalized hqreg() Model'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: false
+bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -37,6 +43,11 @@ library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 ```
+
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg
+---
 
 ## Data Loading
 
@@ -253,3 +264,5 @@ Initially, this function was developed to give users the option of including or 
 ## EXAMPLES
 
 ADD EXAMPLES
+
+## References

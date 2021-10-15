@@ -2,7 +2,13 @@
 title: 'Process Coefficients'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: false
+bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -38,6 +44,10 @@ library(rlang)      # For parse_expr() to parse data name in k-fold subsetting f
 library(msaenet)    # For the multi-step adaptive elastic net
 ```
 
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg , @rlang , @msaenet
+---
 
 Let's also load our model data. 
 
@@ -103,3 +113,4 @@ ladlasso.models[["coef.freq"]] <- ladlasso.models %>%
        coefs_freq
 ```
 
+## References

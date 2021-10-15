@@ -2,7 +2,13 @@
 title: 'Visualization Demo'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    number_sections: false
+bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib
@@ -47,6 +53,12 @@ library(dplyr)        # For manipulating data
 library(ggplot2)      # For generating and manipulation graphical objects
 library(RColorBrewer) # For generating custom color palettes
 ```
+
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @data.table , @glmnet , @hqreg , @rlang , @msaenet , 
+  @gridExtra , @grid , @dplyr , @ggplot2 , @RColorBrewer
+---
 
 ### Model Loading
 
@@ -440,3 +452,5 @@ plotD <- grid.arrange(arrangeGrob(adapt0.pl , adapt100.pl ,
                       top = textGrob("0% and 100% Selection Frequency by Adaptation (top row) and Potential Predictor (bottom row)" , 
                                      gp=gpar(fontsize=10,font=3)))
 ```
+
+## References
