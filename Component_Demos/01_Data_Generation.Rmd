@@ -63,7 +63,7 @@ Note that if you do not have any of the listed packages, you should install them
 
 The **g-and-h distribution** is a common tool for studying robust properties in hypothesis-testing statistical frameworks. It is a generalization of the Normal distribution that adds two additional parameters for controlling skew and kurtosis. Those two parameters are 'g' and 'h', respectively, hence the name. See @Wilcox1990, @Wilcoxetal2013, @WilcoxRobust for more information.
 
-The distribution takes the following form:
+A g-and-h distributed random variable takes the form:
 $$
     \textit{W} = 
       \begin{cases} 
@@ -72,7 +72,15 @@ $$
      \end{cases}
 $$
 
-This function generates values from the g-and-h distribution. The function was adapted from the *<span style = "color:red">`` `r "WRS2"` ``</span>* package, @WRS2. 
+This function generates values from the g-and-h distribution, where
+
+ * _g_ is a parameter controlling distributional skew, ranging between 0 and 1 (inclusive)
+ * _h_ is a similar parameter for kurtosis/distributional peakedness, also ranging between 0 and 1 (inclusive)
+ * $Z \sim N(0,1)$ is the Standard Normal Distribution
+
+I will not delve deeply into the formulation above. The above distribution function should appear vaguely familiar to anyone who knows the probability density function of the Normal distribution.
+
+The R function below was adapted from the *<span style = "color:red">`` `r "WRS2"` ``</span>* package, @WRS2. 
 
 ```{r g-and-h distr function , eval = TRUE}
 # Function for generating values from the g-and-h distribution
@@ -131,7 +139,16 @@ where
 
 ### Data-Generating Function
 
-This function will generate the simulated linear model data on which we will run the lasso and elastic net adaptations of interest.
+This function will generate the simulated linear model data on which we will run the lasso and elastic net adaptations of interest. The arguments to **<span style = "color:blue">`` `r "data_gen()"` ``</span>** are simply the data characteristics of a dataset to be generated:
+
+* 'n' = sample size
+* 'p' = number of potential predictors
+* 'eta_x' = proportion of outlier contamination in the potential predictor variables
+* 'eta_y' = proportion of outlier contamination in response variable
+* 'g' = amount of skew as imposed by the g-and-h distribution
+* 'h' = amount of kurtosis/"peakedness" as imposed by the g-and-h distribution
+
+In addition to these data characteristic arguments, the function also takes a random process seed and a tracking number. 
 
 NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.
 
@@ -221,11 +238,11 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
 }
 ```
 
-We will subsequently map this function over a data.table of the data conditions specified below.
+You could easily plug in desired values for the data characteristics to generate a single dataset produced from those characteristics. However, generating multiple unique datasets from one characteristic set, or separate datasets with different underlying characteristic sets, requires a bit more work. The following sections work through the process that I used to both generate multiple iterations from the same characteristic set and repeat this process across many distinct sets of characteristics .
 
 ### Data.table of unique data conditions
 
-The following code chunk generates a data.table with each unique combination of data conditions. The current data will include the following characteristics:
+ The current data will include the following characteristics:
 
 * 'n' = sample size
   * Levels simulated: 38, 75, 150, 300
@@ -240,7 +257,7 @@ The following code chunk generates a data.table with each unique combination of 
 * 'h' = amount of kurtosis/"peakedness" as imposed by the g-and-h distribution
   * Levels simulated: 0.0, 0.2
   
-For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.
+The following code chunk generates a data.table with each unique combination of data conditions. For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.
 
 * Outliers: 4 x 2 x 3 x 3 = 72 conditions
 * Skew/Kurtosis: 4 x 2 x 3 = 24 conditions

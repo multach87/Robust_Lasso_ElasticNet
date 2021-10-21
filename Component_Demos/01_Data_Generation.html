@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-15" />
+<meta name="date" content="2021-10-21" />
 
 <title>Data_Generation</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Data_Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-15</h4>
+<h4 class="date">2021-10-21</h4>
 
 </div>
 
@@ -1531,7 +1531,7 @@ library(data.table) # For more streamlined data structures</code></pre>
 <div id="g-and-h-distribution" class="section level3">
 <h3>g-and-h Distribution</h3>
 <p>The <strong>g-and-h distribution</strong> is a common tool for studying robust properties in hypothesis-testing statistical frameworks. It is a generalization of the Normal distribution that adds two additional parameters for controlling skew and kurtosis. Those two parameters are ‘g’ and ‘h’, respectively, hence the name. See <span class="citation">Wilcox (1990)</span>, <span class="citation">Wilcox et al. (2013)</span>, <span class="citation">Wilcox (2016)</span> for more information.</p>
-<p>The distribution takes the following form:
+<p>A g-and-h distributed random variable takes the form:
 <span class="math display">\[
     \textit{W} = 
       \begin{cases} 
@@ -1539,7 +1539,14 @@ library(data.table) # For more streamlined data structures</code></pre>
         Zexp(\frac{hZ^2}{2}) &amp; g=0
      \end{cases}
 \]</span></p>
-<p>This function generates values from the g-and-h distribution. The function was adapted from the <em><span style="color:red"><code>WRS2</code></span></em> package, <span class="citation">Mair and Wilcox (2020)</span>.</p>
+<p>This function generates values from the g-and-h distribution, where</p>
+<ul>
+<li><em>g</em> is a parameter controlling distributional skew, ranging between 0 and 1 (inclusive)</li>
+<li><em>h</em> is a similar parameter for kurtosis/distributional peakedness, also ranging between 0 and 1 (inclusive)</li>
+<li><span class="math inline">\(Z \sim N(0,1)\)</span> is the Standard Normal Distribution</li>
+</ul>
+<p>I will not delve deeply into the formulation above. The above distribution function should appear vaguely familiar to anyone who knows the probability density function of the Normal distribution.</p>
+<p>The R function below was adapted from the <em><span style="color:red"><code>WRS2</code></span></em> package, <span class="citation">Mair and Wilcox (2020)</span>.</p>
 <pre class="r"><code># Function for generating values from the g-and-h distribution
 ghdist &lt;- function(n , g = 0 , h = 0) {
   # generate n random values from a standard normal distribution     
@@ -1922,7 +1929,7 @@ sim_repped.dt &lt;- sim_repped.dt[ , !1 , with = F]</code></pre>
 <h2>References</h2>
 <div id="refs" class="references">
 <div id="ref-magrittr">
-<p>Bache, S.M., and H. Wickham. 2016. <em>Magrittr: A Forward-Pipe Operator for R</em>.</p>
+<p>Bache, S.M., and H. Wickham. 2016. <em>Magrittr: A Forward-Pipe Operator for R</em>. <a href="https://CRAN.R-project.org/package=magrittr">https://CRAN.R-project.org/package=magrittr</a>.</p>
 </div>
 <div id="ref-data.table">
 <p>Dowle, Matt, and Arun Srinivasan. 2019. <em>Data.table: Extension of ‘Data.frame‘</em>. <a href="https://CRAN.R-project.org/package=data.table">https://CRAN.R-project.org/package=data.table</a>.</p>
