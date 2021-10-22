@@ -1504,9 +1504,29 @@ div.tocify {
 <h2>Introduction</h2>
 <p>This file demonstrates use of a custom function for indexing and splitting a full dataset for <em>k</em>-fold cross-validation.</p>
 </div>
-<div id="preamble" class="section level2">
-<h2>Preamble</h2>
-<p>First, let’s load the necessary packages.</p>
+<div id="preamble-and-setup" class="section level2">
+<h2>Preamble and Setup</h2>
+<div id="a-note-on-formatting" class="section level3">
+<h3>A note on formatting</h3>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<ul>
+<li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
+<li><em>italics</em> will be used primarily for emphasis.</li>
+<li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
+<li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
+<li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+</ul>
+<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>Generally, I use line breaks to:</p>
+<ul>
+<li>Break up separate arguments for a single command/function or chain of operations</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+</ul>
+</div>
+<div id="packages" class="section level3">
+<h3>Packages</h3>
+<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in PACKAGE REPOSITORY/GUIDE DOCUMENT. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1522,6 +1542,7 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
                                      )
                                )
                     )</code></pre>
+</div>
 </div>
 <div id="custom-k-fold-subsetting-function" class="section level2">
 <h2>Custom k-fold subsetting function</h2>
@@ -1571,16 +1592,6 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 </ul></li>
 </ul></li>
 </ul>
-<div id="areas-for-improvement" class="section level3">
-<h3>Areas for Improvement</h3>
-<ul>
-<li>Take arguments for X/predictors and Y/outcome instead of a ‘data’ argument and ‘x_cols’ and ‘y_cols’. These are idiosyncratic and not necessarily straightforward for a general user</li>
-<li>The function itself can likely be streamlined for efficiency in a number of places.</li>
-</ul>
-</div>
-<div id="deprecated-versions" class="section level3">
-<h3>Deprecated versions</h3>
-<p>The .Rmd file contains deprecated versions of the subsetting function at the end of the report for those who are interested.</p>
 <pre class="r"><code># k-fold subsetting function
 kfold_subsetter &lt;- function(data , y_col = 1 , 
                             x_cols = c(2:ncol(data)) , 
@@ -1668,6 +1679,16 @@ kfold_subsetter &lt;- function(data , y_col = 1 ,
                 newdata &lt;- return(newdata)
         }
 }</code></pre>
+<div id="areas-for-improvement" class="section level3">
+<h3>Areas for Improvement</h3>
+<ul>
+<li>Take arguments for X/predictors and Y/outcome instead of a ‘data’ argument and ‘x_cols’ and ‘y_cols’. These are idiosyncratic and not necessarily straightforward for a general user</li>
+<li>The function itself can likely be streamlined for efficiency in a number of places.</li>
+</ul>
+</div>
+<div id="deprecated-versions" class="section level3">
+<h3>Deprecated versions</h3>
+<p>The .Rmd file contains deprecated versions of the subsetting function at the end of the report for those who are interested.</p>
 </div>
 </div>
 <div id="testing-the-function" class="section level2">
