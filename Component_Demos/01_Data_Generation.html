@@ -1516,6 +1516,13 @@ div.tocify {
 <li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 </ul>
+<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>Generally, I use line breaks to:</p>
+<ul>
+<li>Break up separate arguments for a single command/function or chain of operations</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+</ul>
 </div>
 <div id="packages" class="section level3">
 <h3>Packages</h3>
@@ -1593,7 +1600,16 @@ ghdist &lt;- function(n , g = 0 , h = 0) {
 <h2>Data Simulation</h2>
 <div id="data-generating-function" class="section level3">
 <h3>Data-Generating Function</h3>
-<p>This function will generate the simulated linear model data on which we will run the lasso and elastic net adaptations of interest.</p>
+<p>This function will generate the simulated linear model data on which we will run the lasso and elastic net adaptations of interest. The arguments to <strong><span style="color:blue"><code>data_gen()</code></span></strong> are simply the data characteristics of a dataset to be generated:</p>
+<ul>
+<li>‘n’ = sample size</li>
+<li>‘p’ = number of potential predictors</li>
+<li>‘eta_x’ = proportion of outlier contamination in the potential predictor variables</li>
+<li>‘eta_y’ = proportion of outlier contamination in response variable</li>
+<li>‘g’ = amount of skew as imposed by the g-and-h distribution</li>
+<li>‘h’ = amount of kurtosis/“peakedness” as imposed by the g-and-h distribution</li>
+</ul>
+<p>In addition to these data characteristic arguments, the function also takes a random process seed and a tracking number.</p>
 <p>NOTE: In its current form, predictor contamination is induced before generating the response values. Consequently, predictor-space outliers will be model-supporting leverage points rather than model-detrimental leverage points.</p>
 <pre class="r"><code>data_gen &lt;- function(n , p , eta_x , eta_y , g , h , 
                      seed , tracker) {      
@@ -1678,11 +1694,11 @@ ghdist &lt;- function(n , g = 0 , h = 0) {
   #save combined list of all generated data
   return(combine)
 }</code></pre>
-<p>We will subsequently map this function over a data.table of the data conditions specified below.</p>
+<p>You could easily plug in desired values for the data characteristics to generate a single dataset produced from those characteristics. However, generating multiple unique datasets from one characteristic set, or separate datasets with different underlying characteristic sets, requires a bit more work. The following sections work through the process that I used to both generate multiple iterations from the same characteristic set and repeat this process across many distinct sets of characteristics .</p>
 </div>
 <div id="data.table-of-unique-data-conditions" class="section level3">
 <h3>Data.table of unique data conditions</h3>
-<p>The following code chunk generates a data.table with each unique combination of data conditions. The current data will include the following characteristics:</p>
+<p>The current data will include the following characteristics:</p>
 <ul>
 <li>‘n’ = sample size
 <ul>
@@ -1709,7 +1725,7 @@ ghdist &lt;- function(n , g = 0 , h = 0) {
 <li>Levels simulated: 0.0, 0.2</li>
 </ul></li>
 </ul>
-<p>For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.</p>
+<p>The following code chunk generates a data.table with each unique combination of data conditions. For the purposes of this example, outlier contamination and skew/kurtosis will be independently varied. Data will not be generated with both contamination and skew/kurtosis. Consequently, there will be a total of 96 unique data conditions.</p>
 <ul>
 <li>Outliers: 4 x 2 x 3 x 3 = 72 conditions</li>
 <li>Skew/Kurtosis: 4 x 2 x 3 = 24 conditions</li>
