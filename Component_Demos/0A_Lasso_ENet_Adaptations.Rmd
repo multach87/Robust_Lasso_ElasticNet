@@ -6,8 +6,11 @@ output:
   bookdown::html_document2:
     toc: true
     toc_depth: 4
-    toc_float: true
-    number_sections: false
+    toc_float: 
+       collapsed: false
+       smooth_scroll: true
+    number_sections: true
+    #pandoc_args: --top-level-division=section
 bibliography: Component_Refs.bib
 ---
 
@@ -15,89 +18,23 @@ bibliography: Component_Refs.bib
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Introduction 
 
-This chapter reviews the lasso, elastic net, and relevant adaptations made to these techniques to improve performance.
+## Some Preliminary Notes
 
-The Least Absolute Shrinkage and Selection Operator (lasso) was first proposed by @Tibshirani1996 to address limitations in the standard Ordinary Least Squares regression framework. Extreme variance in the prediction of the Ordinary Least Squares (OLS) estimates and reduced interpretability given large numbers of predictors underlie this initial proposal. The two contemporary solutions to these problems, ridge regression and subset selection, each suffered from drawbacks. Subset selection provided highly interpretable results. However, as a result of the discrete selection process, subset selection suffered from extreme variance. This extreme variance produced especially non-robust selections, as relatively minute changes in the modeled data could select vastly different variables. Consequently, prediction accuracy also suffered. Ridge regression, meanwhile, proved much more effective in producing stable and consistently strong predictions from its models. Unfortunately, ridge regression never estimates any coefficients to 0, and thus models are not easily interpreted.
+### It Came from the Deep (Darkness of My Dissertation)
 
-### The Lasso: Least Absolute Shrinkage and Selection Operator
+This document is a slimmed-down version of one chapter of my dissertation, @MattDiss. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in the combined model being demo'd throughout these components, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
 
-Enter the lasso, intended to produce a model with the stability and prediction capability of ridge regression and the interpretability of subset selection. Consider first the standard linear regression model with $p$ predictors:
+Due to the nature of the topics covered, this section is **Very Math Heavy**. I recommend this section only for those interested in technical details of the adaptations that I am including in my "combined model." Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.
 
-\begin{align}
-     y_i = \beta_0 + \boldsymbol{x}_i\sum_{j=1}^{p}\beta_j,
-\end{align}
+### Notes on Mathematical Formatting
 
-where $y_i$ represents an outcome value for subject $i, i - 1,...,n$, $\beta_0$ is some intercept or group average for the outcome vector $\boldsymbol{y}$, $\boldsymbol{x}_i$ is a $p$-length vector of values for subject $i$ for all possible predictors, and $\beta_j$ is the coefficient estimate corresponding with the $j$th predictor, $j = {1,...,p}$. The standard solution to the linear regression problem is to estimate coefficients $\beta_j$ using least-squares, which attempts to minimize the following objective function:
+Generally, an unbolded symbol (typically a letter or Greek letter) represents a singular value, while a **bolded** symbol represents a vector or piece information composed of multiple values. Some examples below:
 
-\begin{align}
-     OLS = \operatorname*{arg\,min}_{\beta_0,\beta\in{R}^p} \bigg\{ \frac{1}{2n}
-    \parallel\textbf{y}-\beta_0\textbf{1}-\textbf{X}\beta\parallel_2^2 \bigg\} ,
-\end{align}
-
-where $\textbf{y}$ is the vector of responses, $\textbf{1}$ is an $n$-length vector of all 1's, $\textbf{X}$ is an $n \times p$ matrix containing vectors $\boldsymbol{x}_i$, and $\parallel\cdot\parallel_2$ is the squared-error loss function, otherwise known as the Euclidian or $\ell_2$ norm. Further details on these norms can be found below. The general purpose of this technique is to determine a line that passes as close as possible to all observations, doing so by minimizing the square of the difference between the model-predicted value and the observed outcome $y_i$ (in other words, the residual sum of squares).
-
-Regularization (which includes ridge and the lasso) operates in this context by adding an additional term to the OLS objective function that constrains coefficient estimates based on a particular criterion. The OLS formula above then becomes the following in the case of the lasso: 
-
-\begin{align}
-     lasso = \operatorname*{arg\,min}_{\beta\in{R}^p} \bigg\{ \frac{1}{2n}
-    \parallel\textbf{y}-\beta_0\textbf{1}-\textbf{X}\beta\parallel_2^2 \bigg\} \notag\\
-    \text{subject to} \parallel{\beta}\parallel_1\leq\textit{t},
-\end{align}
-
-where $\parallel\beta\parallel_1 \leq \textit{t}$ represents the $\ell_1$-norm constraint, 't' a constant chosen to induce variable shrinkage, and the equation to be minimized the standard least-squares minimization problem as described in above. The constant 't' bounds the parameter estimates of the resulting model by limiting the sum of the absolute values of these estimates, constraining the model by shrinking parameter estimates and reducing some coefficients completely to zero. This constraint, and its isomorphic equivalent $\lambda$, is typically chosen using an external, data-driven technique such as cross-validation. The $\ell_1$-norm, alternatively known as the Least Absolute Deviation, minimizes the absolute value of the difference between an observed value and the corresponding value predicted by the model, and compares to the $\ell_2$-norm described previously. Alternately expressed in Lagrangian form,
-
-\begin{align}
-     lasso = \operatorname*{arg\,min}_{\beta\in{R}^p} \bigg\{ \frac{1}{2n} \parallel{\textbf{y}-\textbf{X}\beta}\parallel_2^2 + \lambda\parallel{\beta}_1\parallel \bigg\}
-\end{align}
-
-for some $\lambda\geq 0$, where $\lambda$ represents a tuning hyperparameter with a direct relationship to 't' under the constraint $\parallel\beta\parallel_1\leq\textit{t}$.
-
-For convenience with later adaptations, another formulation of the lasso criterion is as follows, see @Tibshirani1996, @Wangetal2007:
-
-\begin{align}
-     lasso = \operatorname*{arg\,min}_{\beta\in{R}^p} \sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + n\lambda\sum_{j=1}^{p}\left|\beta_j\right|
-\end{align}
-
-The first term on the right-hand side of the equation represents the least-squares criterion (i.e., the $\ell_2$-norm from before), and the second represents the $\ell_1$-norm lasso constraint in relation to sample size, 'n'. Ridge regression follows a similar form as the lasso. Ridge uses the $\ell_2$-norm constraint, $n\lambda\sum_{j=1}^{p}(\beta_j)^2$, instead of the $\ell_1$-norm constraint. \par
-
-
-### The Elastic Net
-
-In their preliminary paper on the elastic net, @ZouHastie2005 described three major issues with the general lasso:
-
- * When $p > n$, the lasso can only select up to $p$ variables.
- * Given correlated variables or groups of variables, the lasso will arbitrarily select one into the model and eliminate the others.
- * Even in $n > p$ data, given sufficient predictor correlations, lasso's prediction performance is poor relative to other methods like ridge regression.
-
-To address these concerns, @ZouHastie2005 propose the naïve elastic net, which utilizes both $\ell_1$- and $\ell_2$-norm regularization:
-
-\begin{equation}
-     NaiveENet = 
-     \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_1\sum_{j=1}^{p}\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
-\end{equation}
-
-where $\lambda_{1}$ is the same lasso tuning hyperparameter outlined previously, $\lambda_2$ is the corresponding tuning hyperparameter for $\ell_2$ shrinkage, and $0 \leq \alpha \leq 1$ is a hyperparameter that controls each regularization terms' contributions to model estimation and variable shrinkage. Note that when $\alpha = 0$, this reduces to ridge regression. Similarly, this reduces to the lasso when $\alpha = 1$. $\alpha = 0.5$ corresponds with equal contributions from both ridge and lasso regularization.
-
-Although this initial method addressed the first and second concerns about the lasso, @ZouHastie2005 noted unsatisfactory predictive performance in most cases in the third scenario. The authors, therefore, propose a corrected version, known now as the elastic net: 
-
-\begin{equation}
-     ENet = 
-     (1-\frac{\lambda_2}{n})\{
-     \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_1\sum_{j=1}^{p}\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
-     \}
-\end{equation}
-
-The authors demonstrate the superior performance of the elastic net over the lasso and ridge regression on the three lasso concerns, with both real and simulated data.
-
-![**FIGURE 1: Coefficient Constraint Surfaces for Lasso, Ridge, and Elastic Net Penalization, from @ZouHastie2005 **](lassoridgeenet.png)
-
-A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1** above, shown in the original proposal by @ZouHastie2005, displays the optimized solution region $\theta_{opt}$\footnote{Where $\theta$ represents the parameter space for predictors $\beta$.} for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. Meanwhile, the $\ell_2$-norm constraint in ridge regression is perfectly circular, with all points on the constraint surface equally optimal. Although in practice there exists a minimal possibility that ridge might estimate a coefficient to 0 on this surface, the theoretical probability is 0 due to the continuous nature of the constraint surface. Finally, the elastic net constraint surface features vertices at 0-estimates \textit{and} a curvilinear surface in between these vertices. As balancing hyperparameter $\alpha$ increases from 0 to 1, the constraint surface shifts from a perfectly circular region to a perfectly square region. Not quite so evident from these plots, however, is the added benefit of selecting most or all correlated predictors into or out of the model, compared to the lasso's tendency to arbitrarily select one of a correlated group of variables and eliminating the rest of the group, see @ZouHastie2005.
-
-All subsequent formulations will use $\lambda_{1}$ to represent the lasso tuning hyperparameter and $\lambda_2$ to represent the ridge hyperparameter. Other tuning hyperparameters will be formulated and defined as necessary.
-
-
+ * $\boldsymbol{y}$ or $\boldsymbol{\beta}$ are bolded because they are vectors of response values and coefficients, respectively
+   * $y_i$ or $\beta_j$ are _not_ bolded, because correspond with the $i$-th observation's response value or the $j$-th potential predictor's coefficient value.
+ * $\boldsymbol{X}$ and its componenents are generally _all_ bolded, as they represent a collection of predictor values for each unit of observation
+   * $\boldsymbol{x}_i$, then, represents a vector of _all_ predictor values for observation $i$
 
 ### A Note on Mathematical Norms
 
@@ -109,33 +46,127 @@ The descriptions provided below are simplified descriptions provided for practic
 \end{equation}
 
 
-for some real number $q \geq 1$, where $\cdot$ represents a vector of length $n$. The $\ell_2$-norm represents the straight distance between points on a vector, while the $\ell_1$-norm represents the absolute magnitude of the path between points on a vector\footnote{$\ell_q$ for $q \ge 2$ represent distance notions with less-clear practical examples.}. Both of these norms occur frequently in the current context. The $\ell_2$-norm of the vector of residuals is used both as the primary minimizing criteria for OLS regression and the coefficient penalizer in ridge regression. Meanwhile, the $\ell_1$-norm penalizes coefficients in the lasso and also replaces the $\ell_2$-norm used in standard OLS regression for LAD-loss regression.
+for some real number $q \geq 1$, where $\cdot$ represents a vector of length $n$. The $\ell_2$-norm represents the straight distance between points on a vector, while the $\ell_1$-norm represents the absolute magnitude of the path between points on a vector. Both of these norms occur frequently in the current context. The $\ell_2$-norm of the vector of residuals is used both as the primary minimizing criteria for OLS regression and the coefficient penalizer in ridge regression. Meanwhile, the $\ell_1$-norm penalizes coefficients in the lasso and also replaces the $\ell_2$-norm used in standard OLS regression for LAD-loss regression.
 
-## Review of Relevant Adaptations to the Lasso and Elastic Net
+$\ell_q$ for $q \ge 2$ represent distance notions with less-clear practical examples. and are not used herein, and are thus not addressed further. Complex norms with $g < 1$ also exist, but are similarly left to external research for those interested.
 
-### Adaptive Tuning Hyperparameter
+# Introduction 
+
+This chapter reviews the lasso, elastic net, and relevant adaptations made to these techniques to improve their variable selection performance in different scenarios.
+
+The Least Absolute Shrinkage and Selection Operator (lasso) was first proposed by @Tibshirani1996 to address limitations in the standard Ordinary Least Squares regression framework. Extreme variance in the prediction of the Ordinary Least Squares (OLS) estimates and reduced interpretability given large numbers of predictors underlie this initial proposal. The two contemporary solutions to these problems, ridge regression and subset selection, each suffered from drawbacks. Subset selection provided highly interpretable results. However, as a result of the discrete selection process, subset selection suffered from extreme variance. This extreme variance produced especially non-robust selections, as relatively minute changes in the modeled data could select vastly different variables. Consequently, prediction accuracy also suffered. Ridge regression, meanwhile, proved much more effective in producing stable and consistently strong predictions from its models. Unfortunately, ridge regression never estimates any coefficients to 0, and thus models are not easily interpreted.
+
+## The Lasso: Least Absolute Shrinkage and Selection Operator
+
+Enter the lasso, intended to produce a model with the stability and prediction capability of ridge regression and the interpretability of subset selection. Consider first the standard linear regression model with $p$ predictors:
+
+\begin{align}
+     y_i = \beta_0 + \boldsymbol{x}_i\sum_{j=1}^{p}\beta_j,
+\end{align}
+
+where $y_i$ represents an outcome value for subject $i, i - 1,...,n$, $\beta_0$ is some intercept or group average for the outcome vector $\boldsymbol{y}$, $\boldsymbol{x}_i$ is a $p$-length vector of values for subject $i$ for all possible predictors, and $\beta_j$ is the coefficient estimate corresponding with the $j$th predictor, $j = {1,...,p}$. The standard solution to the linear regression problem is to estimate coefficients $\beta_j$ using least-squares, which attempts to minimize the following objective function:
+
+\begin{align}
+     OLS = \operatorname*{arg\,min}_{\beta_0,\beta\in{R}^p} \bigg\{ \frac{1}{2n}
+    \parallel\textbf{y}-\beta_0\textbf{1}-\textbf{X}\boldsymbol{\beta}\parallel_2^2 \bigg\} ,
+\end{align}
+
+where $\textbf{y}$ is the vector of responses, $\textbf{1}$ is an $n$-length vector of all 1's, $\textbf{X}$ is an $n \times p$ matrix containing vectors $\boldsymbol{x}_i$, and $\parallel\cdot\parallel_2$ is the squared-error loss function, otherwise known as the Euclidian or $\ell_2$ norm. Further details on these norms can be found below. The general purpose of this technique is to determine a line that passes as close as possible to all observations, doing so by minimizing the square of the difference between the model-predicted value and the observed outcome $y_i$ (in other words, the residual sum of squares).
+
+Regularization (which includes ridge and the lasso) operates in this context by adding an additional term to the OLS objective function that constrains coefficient estimates based on a particular criterion. The OLS formula above then becomes the following in the case of the lasso: 
+
+\begin{align}
+     lasso = \operatorname*{arg\,min}_{\beta\in{R}^p} \bigg\{ \frac{1}{2n}
+    \parallel\textbf{y}-\beta_0\textbf{1}-\textbf{X}\boldsymbol{\beta}\parallel_2^2 \bigg\} \notag\\
+    \text{subject to} \parallel{\boldsymbol{\beta}}\parallel_1\leq\textit{t},
+\end{align}
+
+where $\parallel\boldsymbol{\beta}\parallel_1 \leq \textit{t}$ represents the $\ell_1$-norm constraint, 't' a constant chosen to induce variable shrinkage, and the equation to be minimized the standard least-squares minimization problem as described in above. The constant 't' bounds the parameter estimates of the resulting model by limiting the sum of the absolute values of these estimates, constraining the model by shrinking parameter estimates and reducing some coefficients completely to zero. This constraint, and its isomorphic equivalent $\lambda$, is typically chosen using an external, data-driven technique such as cross-validation. The $\ell_1$-norm, alternatively known as the Least Absolute Deviation, minimizes the absolute value of the difference between an observed value and the corresponding value predicted by the model, and compares to the $\ell_2$-norm described previously. Alternately expressed in Lagrangian form,
+
+\begin{align}
+     lasso = \operatorname*{arg\,min}_{\beta\in{R}^p} \bigg\{ \frac{1}{2n} \parallel{\textbf{y}-\textbf{X}\boldsymbol{\beta}}\parallel_2^2 + \lambda\parallel{\boldsymbol{\beta}}\parallel_1 \bigg\}
+\end{align}
+
+for some $\lambda\geq 0$, where $\lambda$ represents a tuning hyperparameter with a direct relationship to 't' under the constraint $\parallel\boldsymbol{\beta}\parallel_1\leq\textit{t}$.
+
+For convenience with later adaptations, another formulation of the lasso criterion is as follows, see @Tibshirani1996, @Wangetal2007:
+
+\begin{align}
+     lasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p} \sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + n\lambda\sum_{j=1}^{p}\left|\beta_j\right|
+\end{align}
+
+The first term on the right-hand side of the equation represents the least-squares criterion (i.e., the $\ell_2$-norm from before), and the second represents the $\ell_1$-norm lasso constraint in relation to sample size, 'n'. Ridge regression follows a similar form as the lasso. Ridge uses the $\ell_2$-norm constraint, $n\lambda\sum_{j=1}^{p}(\beta_j)^2$, instead of the $\ell_1$-norm constraint. \par
+
+
+## The Elastic Net
+
+In their preliminary paper on the elastic net, @ZouHastie2005 described three major issues with the general lasso:
+
+ * When $p > n$, the lasso can only select up to $p$ variables.
+ * Given correlated variables or groups of variables, the lasso will arbitrarily select one into the model and eliminate the others.
+ * Even in $n > p$ data, given sufficient predictor correlations, lasso's prediction performance is poor relative to other methods like ridge regression.
+
+To address these concerns, @ZouHastie2005 propose the naïve elastic net, which utilizes both $\ell_1$- and $\ell_2$-norm regularization:
+
+\begin{equation}
+     NaiveENet = 
+     \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_1\sum_{j=1}^{p}\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
+\end{equation}
+
+where $\lambda_{1}$ is the same lasso tuning hyperparameter outlined previously, $\lambda_2$ is the corresponding tuning hyperparameter for $\ell_2$ shrinkage, and $0 \leq \alpha \leq 1$ is a hyperparameter that controls each regularization terms' contributions to model estimation and variable shrinkage. Note that when $\alpha = 0$, this reduces to ridge regression. Similarly, this reduces to the lasso when $\alpha = 1$. $\alpha = 0.5$ corresponds with equal contributions from both ridge and lasso regularization.
+
+Although this initial method addressed the first and second concerns about the lasso, @ZouHastie2005 noted unsatisfactory predictive performance in most cases in the third scenario. The authors, therefore, propose a corrected version, known now as the elastic net: 
+
+\begin{equation}
+     ENet = 
+     (1-\frac{\lambda_2}{n})\{
+     \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_1\sum_{j=1}^{p}\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
+     \}
+\end{equation}
+
+The main difference between the naive and modern elastic net formulations lies in the correction term $(1 - \frac{\lambda_2}{n})$ before the rest of the objective function. The authors demonstrate the superior performance of the elastic net over the lasso and ridge regression on the three lasso concerns, with both real and simulated data.
+
+A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1** below, shown in the original proposal by @ZouHastie2005, displays the optimized solution region $\theta_{opt}$\footnote{Where $\theta$ represents the parameter space for predictors $\boldsymbol{\beta}$.} for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. 
+
+![**FIGURE 1: Coefficient Constraint Surfaces for Lasso, Ridge, and Elastic Net Penalization, from @ZouHastie2005 **](lassoridgeenet.png)
+
+
+
+Meanwhile, the $\ell_2$-norm constraint in ridge regression is perfectly circular, with all points on the constraint surface equally optimal. Although in practice there exists a minimal possibility that ridge might estimate a coefficient to 0 on this surface, the theoretical probability is 0 due to the continuous nature of the constraint surface. 
+
+Finally, the elastic net constraint surface features vertices at 0-estimates \textit{and} a curvilinear surface in between these vertices. As balancing hyperparameter $\alpha$ increases from 0 to 1, the constraint surface shifts from a perfectly circular region to a perfectly square region. Not quite so evident from these plots, however, is the added benefit of selecting most or all correlated predictors into or out of the model, compared to the lasso's tendency to arbitrarily select one of a correlated group of variables and eliminating the rest of the group, see @ZouHastie2005.
+
+All subsequent formulations will use $\lambda_{1}$ to represent the lasso tuning hyperparameter and $\lambda_2$ to represent the ridge hyperparameter. Other tuning hyperparameters will be formulated and defined as necessary.
+
+
+
+
+
+# Review of Relevant Adaptations to the Lasso and Elastic Net
+
+## Adaptive Tuning Hyperparameter
 
 One of the first proposed modifications of the lasso uses adaptive tuning hyperparameters $\lambda_{1,j}$ ; @Zou2006. The adaptive lasso, or weighted lasso, replaces the single tuning hyperparameter $\lambda_{1}$ with a weighted combination of variable-specific tuning hyperparameters. In layman's terms, the adaptive tuning parameters differentially shrinks each variable. This modification primarily attempts to address problems of inconsistent variable selection that arise from finding the optimal tuning hyperparameter $\lambda_{1}$ for best prediction accuracy, see @FanLi2001; @MeinshausenBuhlman2004:
 
 
 \begin{equation}
-     AdLasso = \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + \lambda_{1,j}\sum_{j=1}^{p}\boldsymbol{\hat{w}}\left|\beta_j\right|,
+     AdLasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + \lambda_{1,j}\sum_{j=1}^{p}\boldsymbol{\hat{w}}\left|\beta_j\right|,
 \end{equation}
 
 
-where $\boldsymbol{\hat{w}} = 1/\left|\hat{\boldsymbol{\beta}}\right|^\gamma$ is a vector of coefficient weights for some weighting hyperparameter $\gamma > 0$ and for some root-n consistent estimator of $\boldsymbol{\beta}$, $\hat{\boldsymbol{\beta}}$. The initial coefficient estimates $\hat{\beta}$ are estimated in a preliminary regression model. The choice of estimator $\hat{\boldsymbol{\beta}}$ is relatively arbitrary, and no convention exists in the literature. For consistency with previous research, ridge regression provides the preliminary coefficient estimates $\hat{\boldsymbol{\beta}}$. Typically, $\gamma$ is chosen via cross-validation in a fashion similar to the selection of $\lambda_{1}$.  
+where $\boldsymbol{\hat{w}} = 1/\left|\hat{\boldsymbol{\beta}}\right|^\gamma$ is a vector of coefficient weights for some weighting hyperparameter $\gamma > 0$ and for some root-n consistent estimator of $\boldsymbol{\beta}$, $\hat{\boldsymbol{\beta}}$. The initial coefficient estimates $\hat{\boldsymbol{\beta}}$ are estimated in a preliminary regression model. The choice of estimator $\hat{\boldsymbol{\beta}}$ is relatively arbitrary, and no convention exists in the literature. For consistency with previous research, ridge regression provides the preliminary coefficient estimates $\hat{\boldsymbol{\beta}}$. Typically, $\gamma$ is chosen via cross-validation in a fashion similar to the selection of $\lambda_{1}$.  
 
 @ZouZhang2009 made a similar adaptation to the elastic net due to similar concerns with the lasso tuning hyperparameter, as well as concerns of the combined impacts of collinearity and dimensionality on model selection and estimation.
 
 \begin{equation}
      AdENet = (1+\frac{\lambda_2}{n})\{
-     \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
+     \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
      \},
 \end{equation}
 
 Note in the elastic net formulation that only the lasso penalty term incorporates the adaptive tuning hyperparameter.
 
-### Multi-Step Adaptive Elastic Net
+## Multi-Step Adaptive Elastic Net
 
 @XiaoXu2015 propose that three fundamental issues arise when using the standard lasso penalty: 
 
@@ -151,7 +182,7 @@ The multi-step adaptive elastic net is conducted as follows:
  * For $\textit{k} = 1,2,...,\textit{M}$, solve the elastic net problem
     \begin{equation}
         (1+\frac{\lambda_2}{n})\{
-        \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_{1,j}^{*(k)}\sum_{j=1}^{p}\hat{w}_j^{(k-1)}\left|\beta_j\right| + (1-\alpha)\lambda_2^{*(k)}\sum_{j=1}^{p}(\beta_j)^2
+        \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + (\alpha)\lambda_{1,j}^{*(k)}\sum_{j=1}^{p}\hat{w}_j^{(k-1)}\left|\beta_j\right| + (1-\alpha)\lambda_2^{*(k)}\sum_{j=1}^{p}(\beta_j)^2
         \}
     \end{equation}
     where $\lambda_1^{*(k)}$ and $\lambda_2^{*(k)}$ represent the optimized tuning hyperparameters at the current stage, and $\hat{w}_j^{(k-1)}$ the weights for the lasso tuning hyperparameter determined at the previous step.
@@ -160,13 +191,13 @@ The multi-step adaptive elastic net is conducted as follows:
 Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent indices rather than exponents for the tuning hyperparameter and tuning hyperparameter weight, respectively. $k$ in this process represents the number of elastic net estimation stages. Running the procedure with $k = 1$ stage amounts to the standard elastic net (since there can be no 0th set of weights), and with $k = 2$ stages, the result is the previously described adaptive elastic net. $k > 2$ results in a multi-step adaptive process as proposed by @XiaoXu2015. The authors do not clearly state how many steps they used for their multi-step procedure, a concern discussed in multiple subsequent chapters.
 
 
-### Least Absolute Deviation (LAD) Loss Function
+## Least Absolute Deviation (LAD) Loss Function
 
 @Wangetal2007 Proposed one of the earliest attempts at robustifying the lasso to response outliers. They propose replacing the least squares criterion with the least absolute deviation (LAD), i.e. the $\ell_1$-norm:
 
 
 \begin{equation}
-     LADLasso = \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} \left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right| + \lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right|,
+     LADLasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} \left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right| + \lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right|,
 \end{equation}
 
 
@@ -178,18 +209,18 @@ The LAD elastic net has not yet been studied in the literature and exists primar
 \begin{equation}
      LADENet =
      (1+\frac{\lambda_2}{n})\{
-     \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} \left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right| + (\alpha)\lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
+     \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} \left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right| + (\alpha)\lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2
      \}
 \end{equation}
 
 
-### Huber Loss Function
+## Huber Loss Function
 
 Looking towards older work in robust estimation, @RossetZhu2007 and @LambertLacroixZwald2011 adapted the lasso by using the Huber loss function (@Huber1964MEsts) rather than the squared-error loss:
 
 
 \begin{equation}
-     HuberLasso = \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} \textit{L}(y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}) + \lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right|,
+     HuberLasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} \textit{L}(y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}) + \lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right|,
 \end{equation}
 
 where $\textit{L}(\textit{z})$ is the Huber loss function:
@@ -211,7 +242,7 @@ Independently of @RossetZhu2007's and @LambertLacroixZwald2011's work incorporat
 
 \begin{equation}
      HuberENet = (1+\frac{\lambda_2}{n})\{
-     \operatorname*{arg\,min}_{\beta\in{R}^p}\sum_{i=1}^{n} \textit{L}(y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}) + (\alpha)\lambda_1\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2.
+     \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} \textit{L}(y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}) + (\alpha)\lambda_1\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right| + (1-\alpha)\lambda_2\sum_{j=1}^{p}(\beta_j)^2.
      \}
 \end{equation}
 
@@ -222,4 +253,4 @@ Their work coincided with the development of the *<span style = "color:red">`` `
 The Huberized lasso and elastic net both incorporate the adaptive tuning hyperparameter in the current study. They will therefore be referred to as "adaptive Huberized lasso" or "adaptive Huber lasso" and "adaptive Huberized elastic net" or "adaptive Huber elastic net." Some studies implement a non-adaptive version of the Huber lasso or elastic net, and those will be referred to simply as "Huber lasso" or "Huber elastic net."
 
 
-## References
+# References
