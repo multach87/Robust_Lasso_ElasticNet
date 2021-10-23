@@ -32,8 +32,8 @@ Due to the nature of the topics covered, this section is **Very Math Heavy**. I 
 Generally, an unbolded symbol (typically a letter or Greek letter) represents a singular value, while a **bolded** symbol represents a vector or piece information composed of multiple values. Some examples below:
 
  * $\boldsymbol{y}$ or $\boldsymbol{\beta}$ are bolded because they are vectors of response values and coefficients, respectively
-   * $y_i$ or $\beta_j$ are _not_ bolded, because correspond with the $i$-th observation's response value or the $j$-th potential predictor's coefficient value.
- * $\boldsymbol{X}$ and its componenents are generally _all_ bolded, as they represent a collection of predictor values for each unit of observation
+   * $y_i$ or $\beta_j$ are _not_ bolded because they correspond with the $i$-th observation's response value or the $j$-th potential predictor's coefficient value.
+ * $\boldsymbol{X}$ and its componenents are generally all bolded, as they represent a collection of predictor values for each unit of observation
    * $\boldsymbol{x}_i$, then, represents a vector of _all_ predictor values for observation $i$
 
 ### A Note on Mathematical Norms
@@ -126,7 +126,7 @@ Although this initial method addressed the first and second concerns about the l
 
 The main difference between the naive and modern elastic net formulations lies in the correction term $(1 - \frac{\lambda_2}{n})$ before the rest of the objective function. The authors demonstrate the superior performance of the elastic net over the lasso and ridge regression on the three lasso concerns, with both real and simulated data.
 
-A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1** below, shown in the original proposal by @ZouHastie2005, displays the optimized solution region $\theta_{opt}$\footnote{Where $\theta$ represents the parameter space for predictors $\boldsymbol{\beta}$.} for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. 
+A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1** below, shown in the original proposal by @ZouHastie2005, displays the optimized solution region $\theta_{opt}$, where $\theta$ represents the parameter space for predictors $\boldsymbol{\beta}$. for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. 
 
 ![**FIGURE 1: Coefficient Constraint Surfaces for Lasso, Ridge, and Elastic Net Penalization, from @ZouHastie2005 **](lassoridgeenet.png)
 
@@ -251,6 +251,32 @@ Independently of @RossetZhu2007's and @LambertLacroixZwald2011's work incorporat
 Their work coincided with the development of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package for handling high-dimensionality data efficiently using an innovative Semismooth Newton Coordinate Descent Algorithm; see @hqreg for more details. Theoretical considerations of the algorithm fall outside the scope of the current applied statistical research; interested readers should consider their original paper for further details. @YiHuang2017's simulations focus solely on the run-time of their SNCD-based methods compared to similar methods and not on performance metrics.
 
 The Huberized lasso and elastic net both incorporate the adaptive tuning hyperparameter in the current study. They will therefore be referred to as "adaptive Huberized lasso" or "adaptive Huber lasso" and "adaptive Huberized elastic net" or "adaptive Huber elastic net." Some studies implement a non-adaptive version of the Huber lasso or elastic net, and those will be referred to simply as "Huber lasso" or "Huber elastic net."
+
+
+# Model Implementation in R
+
+## Included Models and Software Implementation
+
+The current simulations evaluate the variable selection abilities of the following methods. The next section includes further details about cross-validation procedures that are non-specific to method or implementation.
+
+ * **Multi-Step Adaptive Elastic Net**: The multi-step adaptive elastic net was conducted using the **<span style = "color:blue">`` `r "msaenet()"` ``</span>** function from the *<span style = "color:red">`` `r "msaenet"` ``</span>* package, @msaenet. This function includes a built-in procedure for calculating initial coefficient estimates $\boldsymbol{\hat{\beta}}$ for subsequent weighting during the adaptive lasso process. The initial ridge estimates and subsequent weight application were thus all implemented within this function rather than through running a preliminary model, although cross-validation still needed to be incorporated for selecting optimal values for the weighting hyperparameter $\gamma$. The original study does not outline the number of stages used in their simulations, nor a recommended number of stages. Therefore, the number of stages $k$ was arbitrarily set to 3, 5, and 10. 
+  * **Adaptive LAD Lasso and Elastic Net**: The adaptive LAD lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg, by setting the 'method' argument to "quantile" and the corresponding hyperparameter 'tau' argument to 0.5 for the LAD lasso criterion. This function includes a similar "penalty.factor" argument to **<span style = "color:blue">`` `r "cv.glmnet()"` ``</span>**, which was used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. A variable screening procedure for computational optimization developed by @Tibshiranietal2012 was incorporated into the function by setting the 'screen' argument to "SR." The authors also developed a new, less computationally-intensive screening rule, which is less conservative as a result and can be found detailed in their study. The original, more conservative screening rule developed by @Tibshiranietal2012 was chosen for this study. Although the choice to use a screening rule (as opposed to none) was made at the recommendation of the developers of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, the choice of particular rule was arbitrary on my part given the lack of specific recommendations.
+  * **Adaptive Huberized Lasso and Elastic Net**: The adaptive Huberized lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg, by setting the 'method' argument to "huber" and the corresponding transition hyperparameter 'gamma' argument to 1.345 to balance both robustness of the Huber loss as well as efficiency under ideal data conditions, per recommendations by @Huber1981. The 'penalty.factor' argument was again used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. The same screening rule was used as described in the adaptive LAD lasso and elastic net.
+  
+
+
+## Hyperparameter Selection and Cross-Validation Procedures
+
+For all instances of the elastic net, balancing hyperparameter $\alpha$ was set to 0.5. In the course of my dissertation, values of 0.75 and 0.9 were also considered, but discarded due to lack of meaningful differences on primary performance metrics in initial simulations
+
+It is standard to select tuning hyperparameters $\lambda$ via a cross-validation procedure rather than running models such as the lasso or ridge regression using a pre-determined value. No standard exists for the cross-validation procedure itself, so these simulations use the following procedure. Regularization tuning hyperparameters $\lambda$ were chosen from 100 logarithmically-equidistant values between 0.01 and 1400 by 5-fold cross-validation. NOTE: Multiple studies cite @LambertLacroixZwald2011 as the original source for this recommendation. @LambertLacroixZwald2011 does not, however, provide a rationale for this choice.
+
+When utilizing the adaptive lasso tuning hyperparameter, a preliminary 5-fold cross-validated ridge regression was conducted using the same 100 lambda values and the resulting coefficients used for determining the weights vector. Unless otherwise specified, the initial ridge step was performed using the cv.glmnet function in the *<span style = "color:red">`` `r "glmnet"` ``</span>* package, @glmnet. This initial step was conducted internally for the multi-step adaptive elastic net, although arguments were specified to implement the same procedure and using the same sequence of potential $\lambda_2$ values. 
+
+A subsequent 5-fold cross-validation procedure was conducted over 100 potential values of scaling hyperparameter $\gamma$ chosen from the logarithmic sequence described previous. The literature does not provide a standard selection procedure for this hyperparameter. Furthermore, the literature does not make any recommendations for the sequence of potential values to use in cross-validation.
+
+The criterion for selection of optimal hyperparameters was mean prediction error in cross-validation test sets. NOTE: This is different from the test sets used to generate Mean Squared Error and which were indexed by the custom k-fold subsetting functions I demonstrate in 02A_KFold_Subsetter and 02B_KFold_Multi.
+
 
 
 # References
