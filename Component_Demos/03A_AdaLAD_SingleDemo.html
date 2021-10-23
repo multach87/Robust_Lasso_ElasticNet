@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-15" />
+<meta name="date" content="2021-10-23" />
 
 <title>Single-Model Demo: Adaptive LAD Lasso</title>
 
@@ -1495,18 +1495,39 @@ div.tocify {
 
 <h1 class="title toc-ignore">Single-Model Demo: Adaptive LAD Lasso</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-15</h4>
+<h4 class="date">2021-10-23</h4>
 
 </div>
 
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This file demonstrates application of the adaptive LAD lasso to a single dataset. The demo does not include holdout/testing data, although the function used to apply the adaptive LAD lasso incorporates the option for use with the final combined methodology.</p>
+<p>This file demonstrates application of the adaptive LAD lasso to a single dataset. The demo does not include holdout/testing data, although the function used to apply the adaptive LAD lasso incorporates the option.</p>
+<p>Further mathematical and statistical details on the Adaptive LAD Lasso can be found in 00A_Lasso_ENet_Adaptations.</p>
 </div>
-<div id="preamble" class="section level2">
-<h2>Preamble</h2>
-<p>First, let’s load the necessary packages.</p>
+<div id="preamble-and-setup" class="section level2">
+<h2>Preamble and Setup</h2>
+<div id="a-note-on-formatting" class="section level3">
+<h3>A note on formatting</h3>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<ul>
+<li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
+<li><em>italics</em> will be used primarily for emphasis.</li>
+<li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
+<li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
+<li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+</ul>
+<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>Generally, I use line breaks to:</p>
+<ul>
+<li>Break up separate arguments for a single command/function or chain of operations</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+</ul>
+</div>
+<div id="packages" class="section level3">
+<h3>Packages</h3>
+<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1516,15 +1537,26 @@ library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</code></pre>
 </div>
+</div>
 <div id="data-loading" class="section level2">
 <h2>Data Loading</h2>
-<p>First, let’s load the singular dataset we created.</p>
+<p>Let’s load the singular, matricized dataset we created.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 </div>
 <div id="model-application-function" class="section level2">
 <h2>Model-Application Function</h2>
-<p>The function in the code chunk below applies the adaptive LAD lasso to specified data for predictors and a single response. For <em>glmnet</em>-related functions, multi-dimensional inputs must be in matrix format. Y can be in a single-column matrix, or just a vector, but it must contain a number of elements equal to the number of rows of “X” if given in a vector. Likewise, if your desired “Y” is in tabular format, the number of rows should equal number of rows of “X.” Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.</p>
-<p>Note that the function takes a list of data elements as its sole argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” Subsequent, more comprehensive demos will provide functionality for putting your data in this structure.</p>
+<div id="data-input-formatting" class="section level3">
+<h3>Data Input Formatting</h3>
+<p>Note that the function takes a list of data elements as its sole required argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in 02A_KFold_Subsetter, setting the ‘list’ argument to ‘list = “traintest”’.</p>
+<p>If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as ‘eval = F’). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.</p>
+<pre class="r"><code>data_for_adalad &lt;- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
+                        X_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , YCOL.NUMBER])</code></pre>
+</div>
+<div id="the-function" class="section level3">
+<h3>The Function</h3>
+<p>The function in the code chunk below applies the adaptive LAD lasso to specified data for predictors and a single response. Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.</p>
 <pre class="r"><code># adaptive LAD lasso application function
 ladlasso.sim.fnct &lt;- function(data.list) {
        # Store training X and Y to temporary objects
@@ -1708,10 +1740,65 @@ ladlasso.sim.fnct &lt;- function(data.list) {
        
 
 }</code></pre>
-<p>Initially, this function was developed to give users the option of including or excluding a model intercept. However, the <em>hqreg</em> family of functions inherently include an intercept in model estimation. Excluding the intercept might therefore create issues with proper interpretation of the results, particularly if prediction accuracy is of interest. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
+</div>
+<div id="on-model-intercepts" class="section level3">
+<h3>On Model Intercepts</h3>
+<p>Initially, this function was intended to give users the option of including or excluding a model intercept. However, the <strong><span style="color:blue"><code>hqreg()</code></span></strong> family of functions inherently include an intercept in model estimation. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
+</div>
+<div id="invisiblecapture.output" class="section level3">
+<h3><strong><span style="color:blue"><code>invisible(capture.output())</code></span></strong></h3>
+<p>Astute readers might have noticed a pair of commands outside the use of <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> above. This is to prevent an excess of model output getting printed, particularly from repeated model-application during the cross-validation process. <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> will produce a large amount of output <em>for each cv data split</em>. Although the information is useful, having it printed out on-screen whenever you run the function is impractical, especially since we will ultimately be mapping this function over many datasets with one command.</p>
+</div>
+</div>
+<div id="function-testing" class="section level2">
+<h2>Function Testing</h2>
 <p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data.</p>
 <pre class="r"><code>ladlasso.test &lt;- ladlasso.sim.fnct(demo.data)</code></pre>
-<pre><code>## time =  23.35414</code></pre>
+<pre><code>## time =  25.28094</code></pre>
+<p>Let’s explore the structure of the resulting object.</p>
+<pre class="r"><code>str(ladlasso.test)</code></pre>
+<pre><code>## List of 3
+##  $ full.model:List of 1
+##   ..$ :List of 7
+##   .. ..$ cve         : num [1:100] 482 482 482 482 482 ...
+##   .. ..$ cvse        : num [1:100] 78.2 78.2 78.2 78.2 78.2 ...
+##   .. ..$ type.measure: chr &quot;mse&quot;
+##   .. ..$ lambda      : num [1:100] 1400 1242 1102 978 867 ...
+##   .. ..$ fit         :List of 11
+##   .. .. ..$ call          : language FUN(X = X, y = y, method = &quot;quantile&quot;, tau = 0.5, alpha = 1, lambda = ..3, preprocess = &quot;standardize&quot;,      scree| __truncated__
+##   .. .. ..$ beta          : num [1:9, 1:100] 0.85 0 0 0 0 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:9] &quot;(Intercept)&quot; &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; ...
+##   .. .. .. .. ..$ : chr [1:100] &quot;L1&quot; &quot;L2&quot; &quot;L3&quot; &quot;L4&quot; ...
+##   .. .. ..$ iter          : int [1:100] 2 1 1 1 1 1 1 1 1 1 ...
+##   .. .. ..$ saturated     : int 0
+##   .. .. ..$ lambda        : num [1:100] 1400 1242 1102 978 867 ...
+##   .. .. ..$ alpha         : num 1
+##   .. .. ..$ gamma         : NULL
+##   .. .. ..$ tau           : num 0.5
+##   .. .. ..$ penalty.factor: num [1:8] 1.136 0.987 0.937 0.891 1.96 ...
+##   .. .. ..$ method        : chr &quot;quantile&quot;
+##   .. .. ..$ nv            : int 1
+##   .. .. ..- attr(*, &quot;class&quot;)= chr &quot;hqreg&quot;
+##   .. ..$ lambda.1se  : num 0.0972
+##   .. ..$ lambda.min  : num 0.01
+##   .. ..- attr(*, &quot;class&quot;)= chr &quot;cv.hqreg&quot;
+##  $ model.info:List of 3
+##   ..$ lambda : num 0.01
+##   ..$ coefs  : Named num [1:9] -0.0387 0.4643 1.0608 1.4718 1.9876 ...
+##   .. ..- attr(*, &quot;names&quot;)= chr [1:9] &quot;(Intercept)&quot; &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; ...
+##   ..$ weights: num [1:8] 1.136 0.987 0.937 0.891 1.96 ...
+##  $ metrics   :List of 2
+##   ..$ n.coefs: int 4
+##   ..$ runtime: num 25.3</code></pre>
+<p>A 3-element list is produced, each themselves containing various structures. The first list element contains the span of models produced <strong><span style="color:blue"><code>cv.qreg()</code></span></strong> in the cross-validated selection of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>, <em>for the cross-validation-selected minimizing scaling hyperparameter <span class="math inline">\(\nu\)</span> / <span class="math inline">\(\gamma\)</span></em>. The function itself generates a model for each potential value of this scaling hyperparameter, but ultimately only stores the minimizing model results (which are themselves a cross-validation-guided procedure for selecting another hyperparameter).</p>
+<p>The second list element contains the main model results:</p>
+<ul>
+<li>The cv-selected lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span></li>
+<li>The resulting coefficients with names</li>
+<li>The adaptive weighting vector applied to the resulting coefficients</li>
+</ul>
+<p>The final list element contains metrics produced by the model-application function, which in this case were just the number of nonzero coefficients in the final model and the run.time of the model.</p>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>
