@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-15" />
+<meta name="date" content="2021-10-23" />
 
 <title>Single-Model Demo: Generalized hqreg() + msaenet() Model</title>
 
@@ -1495,19 +1495,39 @@ div.tocify {
 
 <h1 class="title toc-ignore">Single-Model Demo: Generalized hqreg() + msaenet() Model</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-15</h4>
+<h4 class="date">2021-10-23</h4>
 
 </div>
 
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>This file demonstrates a model-application function which incorporates <em>hqreg()</em>-based models <em>and</em> the multi-step adaptive elastic net from the <em>msaenet</em> package through a singular model-application function. The models this function applies include the adaptive LAD lasso, adaptive LAD elastic net, adaptive Huber lasso, and adaptive Huber elastic net from the <em>hqreg</em> package and the multi-step adaptive elastic net from the <em>msaenet</em> package.</p>
-<p>Basically, this is a wrapper for both <em>cv.hqreg()</em> and <em>msaenet()</em> which applies them to a dataset in a manner convenient with the subsequent combined model that these files build towards.</p>
+<p>This file demonstrates a model-application function which incorporates <strong><span style="color:blue"><code>hqreg()</code></span></strong>-based models <em>and</em> the multi-step adaptive elastic net from the <em><span style="color:red"><code>msaenet</code></span></em> package through a singular model-application function. This walkthrough extends the work from 03A and 03B one step further to incorporate <em>both</em> <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> and <strong><span style="color:blue"><code>msaenet()</code></span></strong></p>
+<p>Further mathematical and statistical details on the Adaptive LAD Lasso, Adaptive LAD Elastic Net, Adaptive Huber Lasso, Adaptive Huber Elastic Net, and Multi-Step Adaptive Elastic Net can be found in 00A_Lasso_ENet_Adaptations.</p>
 </div>
-<div id="preamble" class="section level2">
-<h2>Preamble</h2>
-<p>First, let’s load the necessary packages.</p>
+<div id="preamble-and-setup" class="section level2">
+<h2>Preamble and Setup</h2>
+<div id="a-note-on-formatting" class="section level3">
+<h3>A note on formatting</h3>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<ul>
+<li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
+<li><em>italics</em> will be used primarily for emphasis.</li>
+<li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
+<li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
+<li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+</ul>
+<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>Generally, I use line breaks to:</p>
+<ul>
+<li>Break up separate arguments for a single command/function or chain of operations</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+</ul>
+</div>
+<div id="packages" class="section level3">
+<h3>Packages</h3>
+<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1518,17 +1538,41 @@ library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </div>
+</div>
 <div id="data-loading" class="section level2">
 <h2>Data Loading</h2>
-<p>First, let’s load the singular dataset we created.</p>
+<p>Let’s load the singular dataset we created.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 </div>
 <div id="model-application-function" class="section level2">
 <h2>Model-Application Function</h2>
-<p>The function in the code chunk below applies the <em>cv.hqreg()</em>-based models and <em>msaenet()</em> to specified data for predictors and a single response. For <em>glmnet</em>-related functions, multi-dimensional inputs must be in matrix format. Y can be in a single-column matrix, or just a vector, but it must contain a number of elements equal to the number of rows of “X” if given in a vector. Likewise, if your desired “Y” is in tabular format, the number of rows should equal number of rows of “X.” Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.</p>
-<p>Note that the function takes a list of data elements as its sole argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” Subsequent, more comprehensive demos will provide functionality for putting your data in this structure.</p>
+<div id="data-input-formatting" class="section level3">
+<h3>Data Input Formatting</h3>
+<p>Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in 02A_KFold_Subsetter, setting the ‘list’ argument to ‘list = “traintest”’.</p>
+<p>If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as ‘eval = F’). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.</p>
+<pre class="r"><code>data_for_hqreg &lt;- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
+                        X_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , YCOL.NUMBER])</code></pre>
+</div>
+<div id="the-function" class="section level3">
+<h3>The Function</h3>
+<p>There are a few additional arguments beyond the function presented in 03A_AdaLAD_SingleDemo:</p>
 <ul>
-<li>EXPLAIN EXTRA ARGUMENTS AND ANY CONSTRAINTS PLACED BY WRAPPER</li>
+<li>‘method’ = tells the function which adaptation you would like to implement. You should specify one of the four when running the function on your own
+<ul>
+<li>“msaenet” is the multi-step adaptive elastic net described in <span class="citation">Xiao and Xu (2017)</span></li>
+<li>“quantile” is just a generalization of LAD loss. I don’t go over quantile-based regularization in these demos. If you are familiar with this type of regression and its use in this context, feel free to specify this and the corresponding argument ‘tau’ as you see fit</li>
+</ul></li>
+<li>‘tau’/‘gamma’ = these arguments specify hyperparameters related to quantile loss and Huber loss, respectively
+<ul>
+<li>‘tau’ defaults to 0.5 for quantile loss, which corresponds with LAD loss</li>
+<li>‘gamma’ defaults to 1.345 for Huber loss. Details on this choice can be found in 00A_Lasso_ENet_Adaptations, or from the original source, <span class="citation">Huber (1981)</span></li>
+<li>NOTE: This “gamma” is NOT the same as the weighting hyperparameter used for adaptive weighting of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>.</li>
+</ul></li>
+<li>‘alpha’ = balancing hyperparameter for contributions of lasso and ridge components to the overall elastic net model. Defaults to 0.5, which equates to an equal contribution of each regularization term</li>
+<li>‘nsteps’ = indicates the number of adaptive steps <span class="math inline">\(k\)</span> for the multi-step adaptive elastic net. Defaults to 5</li>
+<li>‘print.time’ = tells the function whether you want it print out the model run.time or not</li>
 </ul>
 <pre class="r"><code># adaptive LAD lasso application function
 hqmsa.sim.fnct &lt;- function(data.list , 
@@ -1538,7 +1582,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
                            tau = 0.5 , 
                            gamma = 1.345 , 
                            alpha = 0.5 , 
-                           nsteps = 10L , 
+                           nsteps = 5L , 
                            print.time = TRUE) {
        # Store training X and Y to temporary objects
        X_train &lt;- data.list[[&quot;X&quot;]]
@@ -1762,13 +1806,258 @@ hqmsa.sim.fnct &lt;- function(data.list ,
        
 
 }</code></pre>
-<p>Initially, this function was developed to give users the option of including or excluding a model intercept. However, the <em>hqreg</em> family of functions inherently include an intercept in model estimation. Excluding the intercept might therefore create issues with proper interpretation of the results, particularly if prediction accuracy is of interest. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
-<p>Unfortunately, the opposite is true for <em>msaenet()</em>: the function <em>only</em> generates a model without an intercept. This function handles the discrepancy internally by adding an additional ‘NA’ element to the coefficient vectors for <em>msaenet()</em>. The calculation for generating MSE, if applicaple, handles both cases.</p>
-<p>The difference re: including an intercept will come up again when considering the combined-model approach.</p>
 </div>
-<div id="examples" class="section level2">
-<h2>EXAMPLES</h2>
-<p>ADD EXAMPLES</p>
+<div id="on-model-intercepts" class="section level3">
+<h3>On Model Intercepts</h3>
+<p>Initially, this function was intended to give users the option of including or excluding a model intercept. However, the <strong><span style="color:blue"><code>hqreg()</code></span></strong> family of functions inherently include an intercept in model estimation. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
+<p>Unfortunately, the opposite is true for <strong><span style="color:blue"><code>msaenet()</code></span></strong>: the function <em>only</em> generates a model without an intercept. This function handles the discrepancy internally by adding an additional ‘NA’ element to the coefficient vectors for <strong><span style="color:blue"><code>msaenet()</code></span></strong>. The calculation for generating MSE, if applicaple, handles both cases.</p>
+</div>
+<div id="on-invisiblecapture.output" class="section level3">
+<h3>On <strong><span style="color:blue"><code>invisible(capture.output())</code></span></strong></h3>
+<p>Astute readers might have noticed a pair of commands outside the use of <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> above. This is to prevent an excess of model output getting printed, particularly from repeated model-application during the cross-validation process. <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> will produce a large amount of output <em>for each cv data split</em>. Although the information is useful, having it printed out on-screen whenever you run the function is impractical, especially since we will ultimately be mapping this function over many datasets with one command.</p>
+</div>
+</div>
+<div id="function-testing" class="section level2">
+<h2>Function Testing</h2>
+<p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data. Let’s produce a 5-step multi-step adaptive elastic net.</p>
+<pre class="r"><code>msaenet5k.test &lt;- hqmsa.sim.fnct(demo.data , 
+                                  method = &quot;msaenet&quot;)</code></pre>
+<pre><code>## time =  47.3567  ;;;</code></pre>
+<p>Let’s explore the structure of the resulting object.</p>
+<pre class="r"><code>str(msaenet5k.test)</code></pre>
+<pre><code>## List of 3
+##  $ full.model:List of 1
+##   ..$ :List of 12
+##   .. ..$ beta          :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. ..@ i       : int [1:4] 0 1 2 3
+##   .. .. .. ..@ p       : int [1:2] 0 4
+##   .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. ..@ x       : num [1:4] 0.509 1.063 1.437 1.936
+##   .. .. .. ..@ factors : list()
+##   .. ..$ model         :List of 12
+##   .. .. ..$ a0       : Named num 0.119
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. ..@ i       : int [1:4] 0 1 2 3
+##   .. .. .. .. ..@ p       : int [1:2] 0 4
+##   .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. ..@ x       : num [1:4] 0.509 1.063 1.437 1.936
+##   .. .. .. .. ..@ factors : list()
+##   .. .. ..$ df       : int 4
+##   .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. ..$ lambda   : num 2.25
+##   .. .. ..$ dev.ratio: num 0.997
+##   .. .. ..$ nulldev  : num 59325
+##   .. .. ..$ npasses  : int 123
+##   .. .. ..$ jerr     : int 0
+##   .. .. ..$ offset   : logi FALSE
+##   .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. ..$ nobs     : int 150
+##   .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. ..$ best.step     : int 6
+##   .. ..$ best.alphas   : num [1:6] 0 0.5 0.5 0.5 0.5 0.5
+##   .. ..$ best.lambdas  : num [1:6] 1.957 0.155 0.724 1.916 2.251 ...
+##   .. ..$ step.criterion: num [1:6] 1.66 1.09 1.06 1.04 1.06 ...
+##   .. ..$ post.criterion: NULL
+##   .. ..$ beta.list     :List of 6
+##   .. .. ..$ : num [1:8, 1] 0.604 0.722 0.882 0.994 0.369 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. ..$ : num [1:8, 1] 0.4738 1.038 1.4214 1.8641 0.0152 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. ..$ : num [1:8, 1] 0.508 1.082 1.439 1.906 0 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. ..$ : num [1:8, 1] 0.518 1.081 1.433 1.911 0 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. ..$ : num [1:8, 1] 0.51 1.06 1.44 1.94 0 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. ..$ : num [1:8, 1] 0.509 1.063 1.437 1.936 0 ...
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. ..$ model.list    :List of 6
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.441
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:8] 0 1 2 3 4 5 6 7
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 8
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:8] 0.604 0.722 0.882 0.994 0.369 ...
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 8
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 1.96
+##   .. .. .. ..$ dev.ratio: num 0.994
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 96
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[1L]], lambda = best.lambdas[[1L]],      penalty.factor| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.126
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:7] 0 1 2 3 4 6 7
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 7
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:7] 0.4738 1.038 1.4214 1.8641 0.0152 ...
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 7
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 0.155
+##   .. .. .. ..$ dev.ratio: num 0.997
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 256
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.119
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:5] 0 1 2 3 7
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 5
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:5] 0.508 1.0825 1.4387 1.9059 0.0119
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 5
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 0.724
+##   .. .. .. ..$ dev.ratio: num 0.997
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 215
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.126
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:4] 0 1 2 3
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 4
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:4] 0.518 1.081 1.433 1.911
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 4
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 1.92
+##   .. .. .. ..$ dev.ratio: num 0.997
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 159
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.119
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:4] 0 1 2 3
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 4
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:4] 0.51 1.06 1.44 1.94
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 4
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 2.25
+##   .. .. .. ..$ dev.ratio: num 0.997
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 123
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. .. ..$ :List of 12
+##   .. .. .. ..$ a0       : Named num 0.119
+##   .. .. .. .. ..- attr(*, &quot;names&quot;)= chr &quot;s0&quot;
+##   .. .. .. ..$ beta     :Formal class 'dgCMatrix' [package &quot;Matrix&quot;] with 6 slots
+##   .. .. .. .. .. ..@ i       : int [1:4] 0 1 2 3
+##   .. .. .. .. .. ..@ p       : int [1:2] 0 4
+##   .. .. .. .. .. ..@ Dim     : int [1:2] 8 1
+##   .. .. .. .. .. ..@ Dimnames:List of 2
+##   .. .. .. .. .. .. ..$ : chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. .. .. .. .. ..$ : chr &quot;s0&quot;
+##   .. .. .. .. .. ..@ x       : num [1:4] 0.509 1.063 1.437 1.936
+##   .. .. .. .. .. ..@ factors : list()
+##   .. .. .. ..$ df       : int 4
+##   .. .. .. ..$ dim      : int [1:2] 8 1
+##   .. .. .. ..$ lambda   : num 2.25
+##   .. .. .. ..$ dev.ratio: num 0.997
+##   .. .. .. ..$ nulldev  : num 59325
+##   .. .. .. ..$ npasses  : int 123
+##   .. .. .. ..$ jerr     : int 0
+##   .. .. .. ..$ offset   : logi FALSE
+##   .. .. .. ..$ call     : language glmnet(x = x, y = y, family = family, alpha = best.alphas[[i + 1L]], lambda = best.lambdas[[i +      1L]], penalt| __truncated__
+##   .. .. .. ..$ nobs     : int 150
+##   .. .. .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;elnet&quot; &quot;glmnet&quot;
+##   .. ..$ adapen.list   :List of 5
+##   .. .. ..$ : Named num [1:8] 1.04 1.03 1.01 1 1.09 ...
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. ..$ : Named num [1:8] 1.067 0.997 0.97 0.947 1.44 ...
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. ..$ : Named num [1:8] 1.061 0.993 0.969 0.945 22.986 ...
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. ..$ : Named num [1:8] 1.059 0.993 0.969 0.945 22.986 ...
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. .. ..$ : Named num [1:8] 1.06 0.995 0.969 0.944 22.986 ...
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##   .. ..$ seed          : num 1001
+##   .. ..$ call          : language msaenet(x = X_train, y = Y_train, family = &quot;gaussian&quot;, init = &quot;ridge&quot;, alphas = 0.5, tune = &quot;cv&quot;,      nfolds = 5| __truncated__
+##   .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;msaenet&quot; &quot;msaenet.msaenet&quot;
+##  $ model.info:List of 3
+##   ..$ lambda : num 2.25
+##   ..$ coefs  : num [1:9] NA 0.509 1.063 1.437 1.936 ...
+##   ..$ weights: num [1:8] 1.065 0.994 0.968 0.944 1.398 ...
+##  $ metrics   :List of 2
+##   ..$ n.coefs: int 4
+##   ..$ runtime: num 47.4</code></pre>
+<p>The 2nd and 3rd list elements of the resulting object looks very similar to the one produced in 03A and 03B, although our first list element has many more pieces of information corresponding with the multi-step adaptive tuning process. The max depth of the full model object is 5 as a result. I encourage those who are familiar with regression model output in R, or with elastic net-type models, to explore the many elements contained in ‘full.model’. However, the ‘model.info’ and ‘metrics’ list elements were created so that less-familiar and less-technically-oriented users can locate and examine the most relevant model information with ease.</p>
+<p>The second list element contains the main model results:</p>
+<ul>
+<li>The cv-selected lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span></li>
+<li>The resulting coefficients with names</li>
+<li>The adaptive weighting vector applied to the resulting coefficients</li>
+</ul>
+<p>The final list element contains metrics produced by the model-application function, which in this case were just the number of nonzero coefficients in the final model and the run.time of the model.</p>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>
@@ -1788,8 +2077,14 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 <div id="ref-purrr">
 <p>Henry, L., H. Wickham, and RStudio. 2020. <em>Purrr: Functional Programming Tools</em>. <a href="https://CRAN.R-project.org/package=purrr">https://CRAN.R-project.org/package=purrr</a>.</p>
 </div>
+<div id="ref-Huber1981">
+<p>Huber, P. 1981. <em>Robust Statistics</em>. New York, New York: Wiley.</p>
+</div>
+<div id="ref-XiaoXu2015">
+<p>Xiao, N., and Q.S. Xu. 2017. “Multi-Step Adaptive Elastic-Net: Reducing False Positive in High-Dimensional Variable Selection.” <em>Journal of Statistical Computation and Simulation</em> 26 (3): 3755–65.</p>
+</div>
 <div id="ref-msaenet">
-<p>Xiao, N., and Q.S. Xu. 2019. <em>Msaenet: Mutli-Step Adaptive Estimation for Sparse Regressions</em>. <a href="https://CRAN.R-project.org/package=msaenet">https://CRAN.R-project.org/package=msaenet</a>.</p>
+<p>———. 2019. <em>Msaenet: Mutli-Step Adaptive Estimation for Sparse Regressions</em>. <a href="https://CRAN.R-project.org/package=msaenet">https://CRAN.R-project.org/package=msaenet</a>.</p>
 </div>
 <div id="ref-xaringan">
 <p>Xie, Yihui. 2021. <em>Xaringan: Presentation Ninja</em>. <a href="https://CRAN.R-project.org/package=xaringan">https://CRAN.R-project.org/package=xaringan</a>.</p>
