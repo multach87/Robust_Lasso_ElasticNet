@@ -1,0 +1,347 @@
+---
+title: "Package descriptions and helpful links"
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_depth: 4
+    toc_float: 
+       collapsed: true
+       smooth_scroll: true
+    number_sections: false
+    #pandoc_args: --top-level-division=section
+bibliography: Component_Refs.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction 
+
+This document is intended as a central glossary of the packages used throughout these demonstrations. The main goals include:
+ * A description of each package used, including an outline of its utility and how it is used
+ * A review of the most useful functions used in the course of the various demos in this repository
+ * Links to and suggestions for external resources for learning more about these packages, often including work done by the original package authors and developers.
+ 
+These packages are currently presented in no particular order. Once the initial set of packages are included and described, subsequent revisions will group packages according to type of package or functionality accomplished by the package.
+
+\newpage
+
+
+## Data Manipulation and Programmatic Tools
+
+[MSDR](https://bookdown.org/rdpeng/RProgDA/), @MSDR, and [Advanced R](https://adv-r.hadley.nz/index.html), @AdvancedR, each cover a variety of advanced topics in developing with and programming in R
+
+
+
+### *<span style = "color:red">`` `r "magrittr"` ``</span>*, @magrittr
+
+#### Description
+
+The *<span style = "color:red">`` `r "magrittr"` ``</span>* package implements the pipe operator <span style = "color:blue">`` `r "%>%"` ``</span> in R to facilitate operations on objects. 
+
+#### Functions Used
+
+Aside from the pipe operator <span style = "color:blue">`` `r "%>%"` ``</span>, no other functions from *<span style = "color:red">`` `r "magrittr"` ``</span>* were utilized in these demos.  
+
+#### External Resources
+
+*<span style = "color:red">`` `r "magrittr"` ``</span>* is a part of the [`r "tidyverse"`](https://www.tidyverse.org/) and therefore many guides and walkthroughs have been create to explore its usage. The `r "tidyverse"` website has a [section devoted to the package](https://magrittr.tidyverse.org/). Hadley Wickham, a major contributor to and proponent of the `r "tidyverse"`, also has two books on using R that each discuss *<span style = "color:red">`` `r "magrittr"` ``</span>* and piping to varying degrees. [Chapter 18](https://r4ds.had.co.nz/pipes.html?q=magrittr#prerequisites-11) of R for Data Science, @R4DS, provides a comprehensive, ground-level review of implementing the pipe operator. More advanced R users can refer to [Chapter 6](https://adv-r.hadley.nz/functions.html#function-composition) of Wickham's Advanced R Book, @AdvancedR.
+
+Both books are freely available online, and I strongly encourage checking them out!
+
+
+
+### *<span style = "color:red">`` `r "purrr"` ``</span>*, @purrr
+
+#### Description
+
+*<span style = "color:red">`` `r "purrr"` ``</span>*, like *<span style = "color:red">`` `r "magrittr"` ``</span>* previously, is a member of the `r "tidyverse"`. The package implements additional tools for functional programming. I use it primarily for its additional features for mapping functions over object spaces.
+
+#### Functions Used
+
+A variety of **<span style = "color:blue">`` `r "map()"` ``</span>**-related functions are used throughout my demos to efficiently iterate and apply functions over a collection of objects or multiple components within a single complicated object.
+
+Additionally, the **<span style = "color:blue">`` `r "safely()"` ``</span>** was one of the most useful functions I discovered over the course of my PhD research. This allows you to run code without fear of the function outright stopping in the face of an error. When running hundreds of thousands (not joking) of models for my primary research, I really did **not** want my progress to halt because one round ran into an error. **<span style = "color:blue">`` `r "safely()"` ``</span>** will run whatever is passed to it and produce 2-element list as a result. One list element will produce the results of a completed function, while the second list element will populate only if the function being passed runs into an error. In that case, the corresponding error message will be stored to this list element. This allows a mapped function to continue running when it hits an error on an iteration rather than completely stopping its progress. 
+
+#### External Resources
+
+[Tidyverse website section](https://purrr.tidyverse.org/)
+
+The [Iteration chapter](https://r4ds.had.co.nz/iteration.html) of _R for Data Science_ heavily features this package.
+
+The [Functionals chapter](https://adv-r.hadley.nz/functionals.html) of _Advanced R_ likewise focuses heavily on related concepts.
+
+
+
+
+
+
+
+### *<span style = "color:red">`` `r "data.table"` ``</span>*, @data.table
+
+#### Description
+
+Implements the <span style = "color:blue">`` `r "data.table"` ``</span> object and includes tools for managing, manipulating, and generally using them. Comparable to Python's *<span style = "color:red">`` `r "numpy"` ``</span>* library.
+
+#### Functions Used
+
+The package's utility in these demos comes primarily from operations on data.tables.
+
+#### External Resources
+
+The package's [main web page](https://rdatatable.gitlab.io/data.table/), which includes a Cheat Sheet.
+
+[This blog](https://www.machinelearningplus.com/data-manipulation/datatable-in-r-complete-guide/) was very helpful to me as I first started learning how to use *<span style = "color:red">`` `r "data.table"` ``</span>*.
+
+
+
+### *<span style = "color:red">`` `r "rlang"` ``</span>*, @rlang
+
+#### Description
+
+A collection of tools for interacting with R's core language characteristics.
+
+#### Functions Used
+
+I only used one function from this package: **<span style = "color:blue">`` `r "parse_expr()"` ``</span>**, which turns a character string into a code-usable expression. 
+
+#### External Resources
+
+The package's [main website](https://rlang.r-lib.org/), which includes a Cheat Sheet.
+
+\newpage
+
+
+
+
+## Visualization
+
+[This chapter](https://bookdown.org/rdpeng/RProgDA/building-data-visualization-tools.html) provides an extensive overview of more advanced topics in visualization in R, @MSDR.
+
+
+### *<span style = "color:red">`` `r "ggplot2"` ``</span>*, @ggplot2
+
+#### Description
+
+Another `r "tidyverse"` package that provides an extensive set of tools for visualization.
+
+#### Functions Used
+
+So many, and many aesthetic mappings within functions, aka "layers" on top of created visual objects.
+
+#### External Resources
+
+[Tidyverse website](https://ggplot2.tidyverse.org/), plus Cheat Sheet
+
+The [Visualization chapter](https://r4ds.had.co.nz/data-visualisation.html) of _R for Data Science_ focuses on this package.
+
+
+
+### *<span style = "color:red">`` `r "gridExtra"` ``</span>*, @gridExtra
+
+#### Description
+
+To be honest, I only used this package to be able to create a text-based grob (grid object) for titling my multi-plot visualization.
+
+#### Functions Used
+
+**<span style = "color:blue">`` `r "textGrob()"` ``</span>** makes a grid object out of a character string.
+
+#### External Resources
+
+The visualation tools chapter in MSDR, @MSDR, features [a section](https://bookdown.org/rdpeng/RProgDA/the-grid-package.html) about using the package for developing your own visual objects.
+
+\newpage
+
+
+
+
+
+## Document & Presentation Creation in R
+
+### *<span style = "color:red">`` `r "xaringan"` ``</span>*, @xaringan
+
+#### Description 
+
+I _cannot_ extoll the virtues of the *<span style = "color:red">`` `r "xaringan"` ``</span>* package enough. The author, Yihui Xie, will come up again in this document, as he is one of the biggest contributors to document and presentation functionality in RStudio. 
+
+I don't actively use this package all that often, but the passive support it provides while putting together Markdown reports incredible. The main benefit of this package is to allow for an actively-updating view of a compiled markdown document within RStudio itself in the View pane. The package also adds functionality for making presentations, being based heavily on remark.js.
+
+#### Functions Used
+
+No specific functions are used from this package throughout these various demos.
+
+#### External Resources
+
+[Yihui Xie's extensive R Markdown ebook](https://bookdown.org/yihui/rmarkdown/xaringan.html) is absolutely free and includes an entire chapter on using *<span style = "color:red"> `` `r "xaringan"` ``</span>*. The link leads directly to that chapter.
+
+[Yihui also created a slide presentation using *<span style = "color:red"> `` `r "xaringan"` ``</span>*](https://slides.yihui.org/xaringan/#1)
+
+#### Nerd Things
+
+This next section is for individuals who immediately thought *<span style = "color:red"> `` `r "xaringan"` ``</span>* looked familiar except for _one_ letter. The answers to this tickling sense of familiarity can be found in the last few slides of the slideshow presentation, where Yihui explains the naming conventions he used while developing this package. 
+
+As it turns out, X in some Chinese dialects is pronounced "sh", so the name of the package is actually read as "sharingan," aka that thing you thought of when you first read it. Reading into some of the package functionality, the connection with the manga/anime _Naruto_ becomes even more explicit. For example: the tool within *<span style = "color:red"> `` `r "xaringan" ` ``</span>* that renders the actively-updating markdown document within RStudio is named "Infinite Moon Reader," aka the Infinite Tsukuyomi.
+
+I hope a few people get as much joy out of this revelation as I did!
+
+\newpage
+
+
+
+
+
+
+
+
+## Packages for Implementing Specific Statistical Models
+
+I will not spend too much time explaining the models implemented by each of the following packages. Please see 00A_Lasso_ENet_Adaptations.Rmd for an introduction the lasso, the elastic net, and the relevant adaptations, including rationale, mathematical formulation, and computational implementation.
+
+### *<span style = "color:red">`` `r "glmnet"` ``</span>*, @glmnet
+
+#### Description
+
+A package for fitting lasso- and elastic net-regularized regression models with a variety of link functions.
+
+#### Functions Used
+
+This package is mostly included because the implementation for the lasso/elastic net adaptations of interest all rely on it. Additionally, I make use of the **<span style = "color:blue">`` `r "cv.glmnet()"` ``</span>** for selecting the optimatl value for the adaptive lasso tuning hyperparameter. This function conducts a cross-validation-driven regularization model.
+
+#### External Resources
+
+[The main website](https://glmnet.stanford.edu/) for the package.
+
+
+
+### *<span style = "color:red">`` `r "hqreg"` ``</span>*, @hqreg
+
+#### Description
+
+This package adds functionality on top of the *<span style = "color:red">`` `r "glmnet"` ``</span>* model functions to incorporate additional loss functions, including quantile/LAD loss and Huber loss.
+
+#### Functions Used
+
+**<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** implements cross-validated lasso/ridge/elastic net regression but allows the use of quantile and Huber loss functions. 
+
+#### External Resources
+
+See the [CRAN package guide](https://cran.r-project.org/web/packages/hqreg/hqreg.pdf) as well as the [related paper](https://arxiv.org/abs/1509.02957) for more details.
+
+
+
+### *<span style = "color:red">`` `r "msaenet"` ``</span>*, @msaenet
+
+#### Description
+
+Implements a multiple-step adaptive procedure for the lasso and elastic net.
+
+#### Functions Used
+
+**<span style = "color:blue">`` `r "msaenet()"` ``</span>** implements the multi-step adaptive elastic net.
+
+#### External Resources
+
+[The main website](https://nanx.me/msaenet/) for the package.
+
+[The related paper](https://www.tandfonline.com/doi/abs/10.1080/00949655.2015.1016944?journalCode=gscs20).
+
+
+\newpage
+
+
+
+
+
+## Mathematical Functionality and Other Statistical Tools
+
+### *<span style = "color:red"> `` `r "mvtnorm" ` `` </span>*, @mvtnorm
+
+#### Description
+
+This package deals with multivariate-normal data and relevant distributional tests and characteristics.
+
+#### Functions Used
+
+My data-generating function, **<span style = "color:blue">`` `r "data_gen()" ` ``</span>**, uses the **<span style = "color:blue">`` `r "rmvnorm"` ``</span>**. I applied the function to generate data values from multivariate normal distributions with one of two characteristic sets (uncontaminated or outlier-contaminated). Three arguments were used to accomplish this:
+
+ * 'n' = number of values to be generated
+ * 'mean' = the mean of each of 'p' variables whose values will be generated
+ * 'sigma' = the covariance matrix used to generate the values
+
+#### External Resources
+
+The [CRAN reference manual](https://cran.r-project.org/web/packages/mvtnorm/mvtnorm.pdf) describes the various functions in the package and their usage.
+
+
+
+### *<span style = "color:red">`` `r "WRS2"` ``</span>*, @WRS2
+
+#### Description
+
+A collection of functions for implementing robust hypothesis-testing techniques and procedures.
+
+#### Functions Used
+
+An adapted version of **<span style = "color:blue">`` `r "gandh()"` ``</span>** for generating values from the **g-and-h distribution**. More details on this distribution can be found in 01_Data_Generation.
+
+#### External Resources
+
+A publication-length [series of vignettes](https://cran.r-project.org/web/packages/WRS2/vignettes/WRS2.pdf) introducing the package.
+
+\newpage 
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## References
