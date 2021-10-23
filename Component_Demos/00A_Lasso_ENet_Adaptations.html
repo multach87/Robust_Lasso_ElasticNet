@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-22" />
+<meta name="date" content="2021-10-23" />
 
 <title>Lasso, Elastic Net, and Adaptations</title>
 
@@ -1501,20 +1501,36 @@ div.tocify {
 
 <h1 class="title toc-ignore">Lasso, Elastic Net, and Adaptations</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-22</h4>
+<h4 class="date">2021-10-23</h4>
 
 </div>
 
 
 <div id="some-preliminary-notes" class="section level2">
 <h2><span class="header-section-number">0.1</span> Some Preliminary Notes</h2>
+<div id="a-note-on-formatting" class="section level3">
+<h3><span class="header-section-number">0.1.1</span> A note on formatting</h3>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<ul>
+<li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
+<li><em>italics</em> will be used primarily for emphasis.</li>
+<li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
+<li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
+<li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+</ul>
+<p>Generally, I use line breaks to:</p>
+<ul>
+<li>Break up separate arguments for a single command/function or chain of operations</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+</ul>
+</div>
 <div id="it-came-from-the-deep-darkness-of-my-dissertation" class="section level3">
-<h3><span class="header-section-number">0.1.1</span> It Came from the Deep (Darkness of My Dissertation)</h3>
+<h3><span class="header-section-number">0.1.2</span> It Came from the Deep (Darkness of My Dissertation)</h3>
 <p>This document is a slimmed-down version of one chapter of my dissertation, <span class="citation">Multach (2021)</span>. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in the combined model being demo’d throughout these components, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.</p>
 <p>Due to the nature of the topics covered, this section is <strong>Very Math Heavy</strong>. I recommend this section only for those interested in technical details of the adaptations that I am including in my “combined model.” Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.</p>
 </div>
 <div id="notes-on-mathematical-formatting" class="section level3">
-<h3><span class="header-section-number">0.1.2</span> Notes on Mathematical Formatting</h3>
+<h3><span class="header-section-number">0.1.3</span> Notes on Mathematical Formatting</h3>
 <p>Generally, an unbolded symbol (typically a letter or Greek letter) represents a singular value, while a <strong>bolded</strong> symbol represents a vector or piece information composed of multiple values. Some examples below:</p>
 <ul>
 <li><span class="math inline">\(\boldsymbol{y}\)</span> or <span class="math inline">\(\boldsymbol{\beta}\)</span> are bolded because they are vectors of response values and coefficients, respectively
@@ -1528,7 +1544,7 @@ div.tocify {
 </ul>
 </div>
 <div id="a-note-on-mathematical-norms" class="section level3">
-<h3><span class="header-section-number">0.1.3</span> A Note on Mathematical Norms</h3>
+<h3><span class="header-section-number">0.1.4</span> A Note on Mathematical Norms</h3>
 <p>The descriptions provided below are simplified descriptions provided for practical clarity. They do not represent the complete formal definitions of norms more generally, nor of specific norms mentioned. Mathematical norms measure a “distance” of sorts between points along a vector, typically represented symbolically by <span class="math inline">\(\ell_q\)</span> or <span class="math inline">\(\ell_p\)</span>. As a representation of abstracted distance, this value is always nonnegative. Given the use of <span class="math inline">\(p\)</span> in the current research to indicate the number of potential predictors from which a method selects model variables, <span class="math inline">\(\ell_q\)</span> represents the generalized norm throughout this research. Mathematically, the <span class="math inline">\(\ell_q\)</span>-norm is:</p>
 <p><span class="math display">\[\begin{equation}
      \parallel\cdot\parallel_q = \big( \sum_{i=1}^{n} \left|\cdot_i\right|^q \big)^{1/q}

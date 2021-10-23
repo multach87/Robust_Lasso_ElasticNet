@@ -21,6 +21,21 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Some Preliminary Notes
 
+### A note on formatting
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+
+ * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
+ * _italics_ will be used primarily for emphasis.
+ * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
+ * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
+ * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+
+Generally, I use line breaks to:
+
+ * Break up separate arguments for a single command/function or chain of operations
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+
 ### It Came from the Deep (Darkness of My Dissertation)
 
 This document is a slimmed-down version of one chapter of my dissertation, @MattDiss. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in the combined model being demo'd throughout these components, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
