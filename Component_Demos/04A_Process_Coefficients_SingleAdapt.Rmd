@@ -1,5 +1,5 @@
 ---
-title: 'Process Coefficients'
+title: 'Process Coefficients from a Single Adaptation and All Data Splits'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
 output: 
@@ -21,15 +21,36 @@ bibliography: Component_Refs.bib
 
 ## Introduction
 
-This document demo's the processing of model coefficients from a list of multiple model objects produced by the previous _hqmsa.sim.funct()_ function. Note that the function created herein will be designed to run on all model results from a single adaptation, _across all data splits_. 
+This document demonstrates the processing of model coefficients from a list of multiple model objects produced by the previous **<span style = "color:blue">`` `r "hqmsa.sim.funct()"` ``</span>** function. Note that the function created herein will be designed to run on all model results from a single adaptation, _across all data splits_. 
 
-## Preamble
+## Preamble and Setup
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-First, let's load the necessary packages. I've also set this code chunk to not print warnings, as they are largely not helpful for the current example.
+### A note on formatting
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+
+ * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
+ * _italics_ will be used primarily for emphasis.
+ * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
+ * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
+ * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ 
+Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
+
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+
+Generally, I use line breaks to:
+
+ * Break up separate arguments for a single command/function or chain of operations
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+ 
+### Packages
+
+Let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries , warning = FALSE}
 # This chunk loads the packages used in this workbook
@@ -49,7 +70,9 @@ nocite: |
   @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg , @rlang , @msaenet
 ---
 
-Let's also load our model data. 
+### Load and Process 10-Split Model Data
+
+Let's also load our model data. Note that this is a collection of all adaptations run 
 
 ```{r load model results}
 models_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models10.RData")
@@ -62,7 +85,7 @@ ladlasso.models <- models_all[["ladlasso"]]
 ```
 
 
-And finally let's get rid of the full model object.
+And finally let's get rid of the full model object from the environment.
 
 ```{r remove combined model data}
 rm(list = c("models_all"))
@@ -72,15 +95,16 @@ rm(list = c("models_all"))
 
 ### Coefficient frequency function
 
-There are many pieces of information that might be extracted from such a rich collection of model results. However, the combined model that I am working towards is particularly interested in selection frequency for each of the potential predictors. 
+There are many pieces of information that might be extracted from such a rich collection of model results. Let's focus, however, on predictor selection/inclusion frequency.
 
-I'd like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does *not* include intercepts, given that some models do not include them.
+I'd like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does _not_ include intercepts, given that some models do not include them.
 
 Also note that this function relies on a list with a comparable structure to my processed models:
- * Level 1 of list corresponds with each data split
- * Level 2 of list corresponds with different model result objects from a given data split
-   * One list element at Level 2 contains the model summary object _model.info_
-     *which contains a list element _coefs_, a numeric vector of coefficient values (and intercept, if applicable)
+ 
+ * Level 1 of the list corresponds with each data split
+ * Level 2 of the list corresponds with different model result objects from a given data split
+   * One list element at Level 2 contains the model summary object 'model.info'
+     * which contains a list element 'coefs', a numeric vector of coefficient values (and intercept, if applicable)
 
 ```{r extract coefficient information}
 coefs_freq <- function(models) {
@@ -104,13 +128,19 @@ coefs_freq <- function(models) {
 }
 ```
 
-### Example 
+## Example 
 
 Now let's run it and see what happens when I run the function.
 
 ```{r run coef frequency function on ladlasso models}
 ladlasso.models[["coef.freq"]] <- ladlasso.models %>%
        coefs_freq
+```
+
+And let's examine the structure of the resulting frequency object within **<span style = "color:blue">`` `r "ladlasso.models"` ``</span>**. The other elements of the model object will resemble what was seen in 03A-C.
+
+```{r coeffreq str}
+str(ladlasso.models[["coef.freq"]])
 ```
 
 ## References
