@@ -21,17 +21,40 @@ bibliography: Component_Refs.bib
 
 ## Introduction
 
-This file demonstrates application of *hqreg()*-based models through a singular model-application function. The models this function applies, via *hqreg()*, include the adaptive LAD lasso, adaptive LAD elastic net, adaptive Huber lasso, and adaptive Huber elastic net. 
+This file demonstrates application of **<span style = "color:blue">`` `r "hqreg()"` ``</span>**-based models through a singular model-application function. The models this function applies, via **<span style = "color:blue">`` `r "hqreg()"` ``</span>**, include the adaptive LAD lasso, adaptive LAD elastic net, adaptive Huber lasso, and adaptive Huber elastic net. 
 
-Basically, this is a wrapper for *cv.hqreg()* which applies it to a dataset in a manner convenient with the subsequent combined model that these files build towards.
+Basically, this is a wrapper for **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** which applies it to a dataset in a manner convenient with the subsequent combined model that these files build towards.
 
-## Preamble
+Further mathematical and statistical details on the Adaptive LAD Lasso, Adaptive LAD Elastic Net, Adaptive Huber Lasso, and Adaptive Huber Elastic Net can be found in 00A_Lasso_ENet_Adaptations.
+
+## Preamble and Setup
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-First, let's load the necessary packages.
+### A note on formatting
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+
+ * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
+ * _italics_ will be used primarily for emphasis.
+ * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
+ * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
+ * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ 
+Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
+
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+
+Generally, I use line breaks to:
+
+ * Break up separate arguments for a single command/function or chain of operations
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+ 
+### Packages
+
+First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries}
 # This chunk loads the packages used in this workbook
@@ -59,18 +82,42 @@ demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Las
 
 ## Model-Application Function
 
-The function in the code chunk below applies the *cv.hqreg()*-based models to specified data for predictors and a single response. For *glmnet*-related functions, multi-dimensional inputs must be in matrix format. Y can be in a single-column matrix, or just a vector, but it must contain a number of elements equal to the number of rows of "X" if given in a vector. Likewise, if your desired "Y" is in tabular format, the number of rows should equal number of rows of "X." Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.
+### Data Input Formatting
 
-Note that the function takes a list of data elements as its sole argument, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." Subsequent, more comprehensive demos will provide functionality for putting your data in this structure.
+Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function **<span style = "color:blue">`` `r "kfold_subsetter"` ``</span>** described in 02A_KFold_Subsetter, setting the 'list' argument to 'list = "traintest" '.
 
- * EXPLAIN EXTRA ARGUMENTS AND ANY CONSTRAINTS PLACED BY WRAPPER
+If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as 'eval = F'). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.
+
+```{r split pre-indexed data for model function , eval = F}
+data_for_hqreg <- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
+                        X_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
+                        Y_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , YCOL.NUMBER])
+```
+
+### The Function
+
+There are a few additional arguments beyond the function presented in 03A_AdaLAD_SingleDemo:
+ 
+ * 'method' = tells the function which adaptation you would like to implement. You should specify one of the three when running the function on your own
+   * "quantile" is just a generalization of LAD loss. I don't go over quantile-based regularization in these demos. If you are familiar with this type of regression and its use in this context, feel free to specify this and the corresponding argument 'tau' as you see fit
+ * 'tau'/'gamma' = these arguments specify hyperparameters related to quantile loss and Huber loss, respectively
+   * 'tau' defaults to 0.5 for quantile loss, which corresponds with LAD loss
+   * 'gamma' defaults to 1.345 for Huber loss. Details on this choice can be found in 00A_Lasso_ENet_Adaptations, or from the original source, @Huber1981
+   * NOTE: This "gamma" is NOT the same as the weighting hyperparameter used for adaptive weighting of the lasso tuning hyperparameter $\lambda_1$.
+ * 'alpha' = balancing hyperparameter for contributions of lasso and ridge components to the overall elastic net mod
+ * 'print.time' = tells the function whether you want it print out the model run.time or not
+
 
 ```{r hqreg model application function , echo = T}
 
 # adaptive LAD lasso application function
 hqreg.sim.fnct <- function(data.list , 
                            method = c("quantile" , "LAD" , "huber") , 
-                           tau = 0.5 , gamma = 1.345 , alpha = 0.5) {
+                           tau = 0.5 , 
+                           gamma = 1.345 , 
+                           alpha = 0.5 , 
+                           print.time = TRUE) {
        # Store training X and Y to temporary objects
        X_train <- data.list[["X"]]
        Y_train <- data.list[["Y"]]
@@ -210,7 +257,9 @@ hqreg.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
                
                # put conditions, model info, and metrics into list
                return(list(full.model = ladlasso.model.min ,
@@ -237,7 +286,9 @@ hqreg.sim.fnct <- function(data.list ,
                            )
                
                # print the total runtime of the current model
-               cat("time = " , time , "\n")
+               if(print.time) {
+                       cat("time = " , time , " ;;; ")
+               }
                
                # put conditions, model info, and metrics into list
                return(list(full.model = hqreg.model.min ,
@@ -259,10 +310,41 @@ hqreg.sim.fnct <- function(data.list ,
 }
 ```
 
-Initially, this function was developed to give users the option of including or excluding a model intercept. However, the *hqreg* family of functions inherently include an intercept in model estimation. Excluding the intercept might therefore create issues with proper interpretation of the results, particularly if prediction accuracy is of interest. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.
+### On Model Intercepts
 
-## EXAMPLES
+Initially, this function was intended to give users the option of including or excluding a model intercept. However, the **<span style = "color:blue">`` `r "hqreg()"` ``</span>** family of functions inherently include an intercept in model estimation. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.
 
-ADD EXAMPLES
+### On **<span style = "color:blue">`` `r "invisible(capture.output())"` ``</span>**
+
+Astute readers might have noticed a pair of commands outside the use of **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** above. This is to prevent an excess of model output getting printed, particularly from repeated model-application during the cross-validation process. **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** will produce a large amount of output _for each cv data split_. Although the information is useful, having it printed out on-screen whenever you run the function is impractical, especially since we will ultimately be mapping this function over many datasets with one command.
+
+## Function Testing
+
+Now let's try running the model on our demo.data. Note that we're only running the function a single time and without any holdout data. Let's produce an adaptive Huber elastic net model.
+
+```{r run adalad function}
+huberelnet.test <- hqreg.sim.fnct(demo.data , 
+                                  method = "huber")
+```
+
+Let's explore the structure of the resulting object.
+
+```{r ladlasso.test str}
+str(huberelnet.test)
+```
+
+The resulting object looks very similar to the one produced in 03A_AdaLAD_SingleDemo, although our first list element has a few additional pieces of information corresponding with values for $\tau$ / $\gamma$ / $\alpha$.
+
+That said, let's review the structure of the resulting object anyways.
+
+A 3-element list is produced, each themselves containing various structures. The first list element contains the span of models produced **<span style = "color:blue">`` `r "cv.qreg()"` ``</span>** in the cross-validated selection of the lasso tuning hyperparameter $\lambda_1$, _for the cross-validation-selected minimizing scaling hyperparameter $\nu$ / $\gamma$_. The function itself generates a model for each potential value of this scaling hyperparameter, but ultimately only stores the minimizing model results (which are themselves a cross-validation-guided procedure for selecting another hyperparameter).
+
+The second list element contains the main model results:
+
+ * The cv-selected lasso tuning hyperparameter $\lambda_1$
+ * The resulting coefficients with names
+ * The adaptive weighting vector applied to the resulting coefficients
+
+The final list element contains metrics produced by the model-application function, which in this case were just the number of nonzero coefficients in the final model and the run.time of the model.
 
 ## References
