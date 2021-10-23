@@ -21,23 +21,42 @@ bibliography: Component_Refs.bib
 
 ## Introduction
 
-This document demonstrates the visualization of coefficient inclusion results from our 100-split model data. Graphical objects and manipulation also feature heavily, so we will discuss the many tools I used to present the visuals used.
+This document demonstrates the visualization of coefficient inclusion results from our 100-split model data. Graphical objects and manipulation also feature heavily, so we will discuss the many tools I used to present these visuals.
 
 Due to the multiple tools used to visualize the data effectively, this demo will be a bit longer and more involved than most other demos.
 
-I will not be interpreting the plots produced in this demo. This walkthrough is intended primarily to demonstrate this component of the overall combined model process being proposed and the tools necessary to make this component function. That way, newer users can understand the complex combination of tools that create the larger combined model without detracting from the full walkthrough that these components build towards.
+I will not be interpreting the plots produced in this demo. This walkthrough is intended primarily to demonstrate this component of the overall combined model process being proposed and the tools necessary to make this component accomplish its goals. That way, newer users can understand the combination of tools that create the larger combined model without detracting from the full walkthrough that these components build towards.
 
-## Preamble
+## Preamble and Setup
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
+### A note on formatting
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+
+ * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
+ * _italics_ will be used primarily for emphasis.
+ * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
+ * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
+ * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ 
+Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
+
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+
+Generally, I use line breaks to:
+
+ * Break up separate arguments for a single command/function or chain of operations
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+ 
 ### Packages
 
-First, let's load the necessary packages. I've also set this code chunk to not print warnings, as they are largely not helpful for the current example.
+Let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the "References" section at the end of this document.
 
-```{r libraries , warning = FALSE}
+```{r libraries , warning = FALSE , message = FALSE}
 # This chunk loads the packages used in this workbook
 library(xaringan)     # Allows active preview of report in RStudio
 library(magrittr)     # Used for piping
@@ -55,12 +74,12 @@ library(ggplot2)      # For generating and manipulation graphical objects
 ---
 nocite: |
   @magrittr , @purrr , @xaringan , @data.table , @glmnet , @hqreg , @rlang , @msaenet , 
-  @gridExtra , @grid , @dplyr , @ggplot2 , @RColorBrewer
+  @gridExtra , @grid , @ggplot2
 ---
 
 ### Model Loading
 
-Let's load our 100-split model file with "Frequencies" data.table.
+Let's load our 100-split model file with **<span style = "color:blue">`` `r "\"Frequencies\""` ``</span>** data.table.
 
 ```{r load 100-split model RData}
 models_freqs <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData")
@@ -71,9 +90,10 @@ models_freqs <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_
 ## Visualization
 
 Now we're going to set up our visualizations. There are going to be three sets of plots:
+  
   * Plots of selection frequencies of all predictors by each adaptation
-  * Plots of $100/%$ and $0\%$ selection by each adaptation
-  * Plots of frequency of $100/%$ and $0/%$ selection of each predictor across adaptations
+  * Plots of $100\%$ and $0\%$ selection by each adaptation
+  * Plots of frequency of $100\%$ and $0\%$ selection of each predictor across adaptations
   
 ### Visualization Setup
 
@@ -81,7 +101,7 @@ I'm going to create a few practical tools/objects that will be used in our subse
 
 #### Custom Color Palette
 
-The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is a tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
+The first thing I'm going to do is create a custom color palette that ensures that the colors are sufficiently distinct. This isn't super necessary for the plots we're generating, but it is an easy tool I picked up for more intricate plots used in my dissertation and is worth including for interested users. This command just creates a vector of strings that correspond with html color codes.
 
 First, I'm going to make a palette of 11 distinct colors. These are the colors I used when visualizing 11 different lasso and elastic net adaptations in my dissertation. I found that these colors produced pretty meaningful distinctions, so we should be able to sample a practical color palette from these 11 for our purposes. We need two color palettes: one for each of 7 adaptations, and one for each of 8 potential predictors in our models.
 
@@ -101,14 +121,17 @@ P8 <- sample(x = P11 , size = 8 , replace = FALSE)
 
 #### Plot legend function
 
-I'm also going to implement a function that stores a plot legend to an object for use with multi-plot displays. I can't remember where I found the function and can't relocate the original post, but I did *not* create this function myself! Should I ever run across this function again in the wild, I'll update this section to give proper credit.
+I'm also going to implement a function that stores a plot legend to an object for use with multi-plot displays. I can't remember where I found the function and can't relocate the original post, but I did _not_ create this function myself! Should I ever run across this function again in the wild, I'll update this section to give proper credit.
+
+Update 10/23/2021: [Found it!](https://stackoverflow.com/questions/11883844/inserting-a-table-under-the-legend-in-a-ggplot2-histogram). See the top-rated response - the first one that appears below the asker's post.
 
 ```{r legend function for multi-plots}
 g_legend<-function(a.gplot){
        tmp <- ggplot_gtable(ggplot_build(a.gplot))
-       leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+       leg <- which(sapply(tmp$grobs , function(x) x$name) == "guide-box")
        legend <- tmp$grobs[[leg]]
-       return(legend)}
+       return(legend)
+       }
 ```
 
 ### Visualization: All Predictors and Adaptations
@@ -116,6 +139,8 @@ g_legend<-function(a.gplot){
 #### Plot Objects
 
 Now, I'm going to create 7 separate plots. The plots will present the selection frequencies of each potential predictor for each of the 7 lasso/elastic net adaptations included in the combined model.
+
+As in 04B, when processing coefficient selection frequencies, I will not be #-commenting on each line to explain it. Instead, see below the chunk for a line-by-line walkthrough of the code.
 
 ```{r huberelnet selection frequencies}
 huberelnet.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("huberelnet" , "predictor") , ] , 
@@ -125,13 +150,16 @@ huberelnet.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ 
        y = "Frequency") + 
   theme(legend.position = "none" , 
         plot.title = element_text(hjust = 0.5 , 
-                                  size = 8)) +
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
   scale_fill_manual(values = P8)
 ```
 
-Let's break down what's happening in the code chunk above. _ggplot2_ works by creating layers of visual elements on top of a visual object. We're going to define a ggplot object named "huberlasso" using the _ggplot()_ function. We then add each subsequent visual layer by taking the initial ggplot object with a '+', and then the next layer.
+Let's break down what's happening in the code chunk above. _ggplot2_ works by creating layers of visual elements on top of a visual object. We're going to define a ggplot object named "huberlasso" using the **<span style = "color:blue">`` `r "ggplot()"` ``</span>** function. We then add each subsequent visual layer by taking the initial ggplot object with a '+', and then the next layer.
 
 In defining our ggplot object, we are specifying "aesthetics," in this case the characteristics represented on the x-axis and the variable used to define our y-axis. In order, the subsequent layers:
+  
   * Specify that our plot is a column plot (a bar graph with particular characteristics)
     * We are further specifying that the fill color of each column will vary based on which potential predictor is being represented
   * Specify the plot title and y-axis label 
@@ -255,7 +283,16 @@ plotA.legend <- g_legend(msak5.l)
 
 #### Put Plot Objects Together
 
-Lastly (for this plot), we're going to create a grid arrangement of our plots so that they are all presented in a simultaneous object.
+Lastly (for this plot), we're going to create a grid arrangement of our plots so that they are all presented in a simultaneous object. A few explanations:
+
+ * **<span style = "color:blue">`` `r "arrangeGrob()"` ``</span>** and **<span style = "color:blue">`` `r "grid.arrange()"` ``</span>** take a set of grid objects ("Grobs"), specified as distinct arguments, along with an argument specifying either number of columns or number of rows ('nrow' here)
+   * Note that it reads in the Grobs row-wise - so it will populate Row 1-Column 1, then R1C2, R1C3, move down to R2C1, etc.
+ * We're using a second **<span style = "color:blue">`` `r "arrangeGrob()"` ``</span>** command for the legend, which will take up its own space in the overall plot grid
+ * We then specify that the collection of these two **<span style = "color:blue">`` `r "arrangeGrob()"` ``</span>** commands will take up 2 columns
+ * We specify the width of each of our two columns
+   * Note that the number of widths specified needs to match the number of columns specified by 'ncol'
+ * Finally, we're adding a Grob at the top containing our title, which was created using **<span style = "color:blue">`` `r "textGrob()"` ``</span>** from the *<span style = "color:red">`` `r "grid"` ``</span>* package
+ 
 
 ```{r multiplotA arrange}
 plotA <- grid.arrange(arrangeGrob(huberelnet.pl , blank.pl , huberlasso.pl , 
@@ -273,9 +310,11 @@ plotA <- grid.arrange(arrangeGrob(huberelnet.pl , blank.pl , huberlasso.pl ,
 
 #### Plot Objects
 
-Now, I'm going to create 2 separate. One plot will display the number of predictors selected into $100\%$ of models for each of the 7 adaptations, while the second plot will display similar information for number of predictors selected into *no* models by adaptation. We can mostly just take our previous code and make slight changes, but the structure of creating these objects is largely the same. 
+Now, I'm going to create 2 separate plots. One plot will display the number of predictors selected into $100\%$ of models by each of the 7 adaptations, while the second plot will display similar information for number of predictors selected into *no* models by adaptation. We can mostly just take our previous code and make slight changes, but the structure of creating these objects is largely the same. 
 
-Two noteworthy additions/changes were made, though. First, an additional visual layer was specified by _coord_cartesian()_, which explicitly controls range of y values displayed on the plots. I've also angled the axis ticks for the x-axis to facilitate a later plot. This is specified by the argument "axis.text.x" in the _theme()_ layer. I've also vertically- and horizontally-justified these labels in the same argument to prevent collision with the plots themselves.
+Two noteworthy additions/changes were made, though. First, an additional visual layer was specified by **<span style = "color:blue">`` `r "coord_cartesian()"` ``</span>**, which explicitly controls the range of the plot display. I'm only specifying the limits of the range with respect to y, but a similar 'xlim' argument can be specified within **<span style = "color:blue">`` `r "coord_cartesian()"` ``</span>** as well.
+
+I've also angled the axis ticks for the x-axis to facilitate a later plot. This is specified by the argument "axis.text.x" in the **<span style = "color:blue">`` `r "theme()"` ``</span>** layer. I've also vertically- and horizontally-justified these labels in the same argument to prevent collision with the plots themselves.
 
 Notably, we only need two plots this time.
 
@@ -301,7 +340,7 @@ adapt0.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Adaptation"]][ , c
                      aes(x = method , y = none)) +
   geom_col(aes(fill = method)) + 
   labs(title = "0% Selection" ,
-       y = "0% Selection (out of 7)" , 
+       y = "0% Selection (out of 8)" , 
        x = "Adaptation") + 
   coord_cartesian(ylim = c(0 , 5)) + 
   theme(legend.position = "none" , 
@@ -322,7 +361,7 @@ adapt100.l <- ggplot(data = models_freqs[["Frequencies"]][["By_Adaptation"]][ , 
                      aes(x = method , y = all)) +
   geom_col(aes(fill = method)) + 
   labs(title = "100% Selection" ,
-       y = "100% Selection (out of 7)" , 
+       y = "100% Selection (out of 8)" , 
        x = "Adaptation") + 
   coord_cartesian(ylim = c(0 , 5)) + 
   theme(plot.title = element_text(hjust = 0.5 , 
@@ -353,14 +392,14 @@ plotB <- grid.arrange(arrangeGrob(adapt0.pl ,
 
 #### Plot Objects
 
-I'm going to analogous plots to those in the previous subsection. This time, however, the plots look at the number of adaptations for which a given predictor was *always* or *never* selected across the 100 data splits. 
+I'm going to create analogous plots to those in the previous subsection. This time, however, the plots look at the number of adaptations for which a given predictor was _always_ or _never_ selected across the 100 data splits. 
 
 ```{r predictor 100 plot}
 pred100.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("all" , "predictor") , ] , 
                      aes(x = predictor , y = all)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "100% Selection" ,
-       y = "100% Selection (out of 100)" , 
+       y = "100% Selection (out of 8 possible)" , 
        x = "Predictor") + 
   coord_cartesian(ylim = c(0 , 5)) + 
   theme(legend.position = "none" , 
@@ -375,7 +414,7 @@ pred0.pl <- ggplot(data = models_freqs[["Frequencies"]][["By_Predictor"]][ , c("
                      aes(x = predictor , y = none)) +
   geom_col(aes(fill = predictor)) + 
   labs(title = "0% Selection" ,
-       y = "0% Selection (out of 100)" , 
+       y = "0% Selection (out of 8 possible)" , 
        x = "Predictor") + 
   coord_cartesian(ylim = c(0 , 5)) + 
   theme(legend.position = "none" , 
@@ -419,21 +458,45 @@ plotC <- grid.arrange(arrangeGrob(pred0.pl ,
 ```
 
 
-### One Last Visualization
+## One Last Visualization
 
-I'm going to combine combine the elements of the last two plots into a single plot to finalize this walkthrough and emphasize some of the visual display tools at our disposal in R.
+I'm going to combine combine the elements of the last two plots into a single display to finalize this walkthrough and emphasize some of the visual display tools at our disposal in R.
 
 First, though, I would like you to attempt this on your own. There is a hint below as to how I am going to accomplish this, although multiple formats could be used.
 
 \newpage
 
-#### Hint
+### Hint
 
-I'm going to take the four previous plot objects (corresponding to $100\%$ and $0\%$ selection frequency by predictor and adaptation) and the two previous legend objects and use grid.arrange to make two columns: a 4x4 grid of our 4 plots, and a 2x1 grid of our two legends. I'm then going to adjust the overall plot title accordingly.
+extra space
+
+extra space
+
+lots of meaningless, extra space
+
+bloop
+
+bleep
+
+blop
+
+I'm going to take the four previous plot objects (corresponding to $100\%$ and $0\%$ selection frequency by predictor and adaptation) and the two previous legend objects and use **<span style = "color:blue">`` `r "grid.arrange()"` ``</span>** to make two columns: a 4x4 grid of our 4 plots and a 2x1 grid of our two legends. I'm then going to adjust the overall plot title accordingly.
 
 \newpage
 
-#### An extra page break so you don't mistakenly see the answer if you're trying to avoid it!
+### Extra space so you don't mistakenly see the answer if you're trying to avoid it!
+
+extra space
+
+extra space
+
+lots of meaningless, extra space
+
+bloop
+
+bleep
+
+blop
 
 \newpage
 
