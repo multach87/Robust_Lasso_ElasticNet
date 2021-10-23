@@ -49,9 +49,7 @@ library(rlang)        # For parse_expr() to parse data name in k-fold subsetting
 library(msaenet)      # For the multi-step adaptive elastic net
 library(gridExtra)    # For displaying grids of objects
 library(grid)         # For creating a title for multiplot grid
-library(dplyr)        # For manipulating data
 library(ggplot2)      # For generating and manipulation graphical objects
-library(RColorBrewer) # For generating custom color palettes
 ```
 
 ---
