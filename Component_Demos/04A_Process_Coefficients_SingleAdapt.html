@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-23" />
+<meta name="date" content="2021-10-25" />
 
 <title>Process Coefficients from a Single Adaptation and All Data Splits</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Process Coefficients from a Single Adaptation and All Data Splits</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-23</h4>
+<h4 class="date">2021-10-25</h4>
 
 </div>
 
@@ -1567,9 +1567,10 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </ul>
 <pre class="r"><code>coefs_freq &lt;- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
-       coefs.freq &lt;- numeric(length = 8)
+       coefs.freq &lt;- numeric(length = length(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
+                             )
        
-       # label frequency vector with predictor names, accounting for 
+       # label frequency vector with predictor names, accounting for intercept
        names(coefs.freq) &lt;- names(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
        
        # update each predictors' selection frequency if the corresponding coefficient value
@@ -1582,19 +1583,44 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
               }
        }
        
-       return(coefs.freq)       
+       return(coefs.freq)
 }</code></pre>
+</div>
+<div id="coefficient-selection-rank-function" class="section level3">
+<h3>Coefficient selection rank function</h3>
+<p>The function below calculates the selection frequency rank of each potential predictor.</p>
+<pre class="r"><code>coefs_rank &lt;- function(freqs) {
+       # initialize vector of selection rank, with all values set to NA
+       coefs.rank &lt;- numeric(length = length(freqs)
+                             )
+       
+       coefs.rank &lt;- frankv(as.numeric(freqs) , order = -1 , ties.method = &quot;min&quot;)
+       
+       # label rank vector with predictor names, accounting for intercept
+       names(coefs.rank) &lt;- names(freqs)
+       
+       return(coefs.rank)       
+}</code></pre>
+<div id="some-improvements-to-be-made" class="section level4">
+<h4>Some improvements to be made</h4>
+<p>One way I hope to improve the function above is to eliminate the looping for calculating frequencies. I’d also like to incorporate the frequency and rank functions into a single function, but currently the easiest way to do both in conjunction with all adaptations is to separate them.</p>
+</div>
 </div>
 </div>
 <div id="example" class="section level2">
 <h2>Example</h2>
 <p>Now let’s run it and see what happens when I run the function.</p>
-<pre class="r"><code>ladlasso.models[[&quot;coef.freq&quot;]] &lt;- ladlasso.models %&gt;%
+<pre class="r"><code>ladlasso.models[[&quot;coef.frequencies&quot;]] &lt;- ladlasso.models %&gt;%
        coefs_freq</code></pre>
-<p>And let’s examine the structure of the resulting frequency object within <strong><span style="color:blue"><code>ladlasso.models</code></span></strong>. The other elements of the model object will resemble what was seen in 03A-C.</p>
-<pre class="r"><code>str(ladlasso.models[[&quot;coef.freq&quot;]])</code></pre>
+<pre class="r"><code>ladlasso.models[[&quot;coef.ranks&quot;]] &lt;- coefs_rank(ladlasso.models[[&quot;coef.frequencies&quot;]])</code></pre>
+<p>And let’s examine the structure of the resulting frequency and rank objects within <strong><span style="color:blue"><code>ladlasso.models</code></span></strong>. The other elements of the model object will resemble what was seen in 03A-C.</p>
+<pre class="r"><code>str(ladlasso.models[[&quot;coef.frequencies&quot;]])</code></pre>
 <pre><code>##  Named num [1:8] 10 10 10 10 0 0 2 3
 ##  - attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...</code></pre>
+<pre class="r"><code>str(ladlasso.models[[&quot;coef.ranks&quot;]])</code></pre>
+<pre><code>##  Named int [1:8] 1 1 1 1 7 7 6 5
+##  - attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...</code></pre>
+<p>We see a named numeric object and a named integer object.</p>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>

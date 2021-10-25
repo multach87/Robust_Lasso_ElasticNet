@@ -106,12 +106,13 @@ Also note that this function relies on a list with a comparable structure to my 
    * One list element at Level 2 contains the model summary object 'model.info'
      * which contains a list element 'coefs', a numeric vector of coefficient values (and intercept, if applicable)
 
-```{r extract coefficient information}
+```{r extract coefficient frequency information}
 coefs_freq <- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
-       coefs.freq <- numeric(length = 8)
+       coefs.freq <- numeric(length = length(models[[1]][["model.info"]][["coefs"]][-1])
+                             )
        
-       # label frequency vector with predictor names, accounting for 
+       # label frequency vector with predictor names, accounting for intercept
        names(coefs.freq) <- names(models[[1]][["model.info"]][["coefs"]][-1])
        
        # update each predictors' selection frequency if the corresponding coefficient value
@@ -124,23 +125,59 @@ coefs_freq <- function(models) {
               }
        }
        
-       return(coefs.freq)       
+       return(coefs.freq)
 }
 ```
+
+### Coefficient selection rank function
+
+The function below calculates the selection frequency rank of each potential predictor.
+
+```{r extract coefficient rank information}
+coefs_rank <- function(freqs) {
+       # initialize vector of selection rank, with all values set to NA
+       coefs.rank <- numeric(length = length(freqs)
+                             )
+       
+       coefs.rank <- frankv(as.numeric(freqs) , order = -1 , ties.method = "min")
+       
+       # label rank vector with predictor names, accounting for intercept
+       names(coefs.rank) <- names(freqs)
+       
+       return(coefs.rank)       
+}
+```
+
+
+#### Some improvements to be made
+
+One way I hope to improve the function above is to eliminate the looping for calculating frequencies. I'd also like to incorporate the frequency and rank functions into a single function, but currently the easiest way to do both in conjunction with all adaptations is to separate them.
+
+
 
 ## Example 
 
 Now let's run it and see what happens when I run the function.
 
 ```{r run coef frequency function on ladlasso models}
-ladlasso.models[["coef.freq"]] <- ladlasso.models %>%
+ladlasso.models[["coef.frequencies"]] <- ladlasso.models %>%
        coefs_freq
 ```
 
-And let's examine the structure of the resulting frequency object within **<span style = "color:blue">`` `r "ladlasso.models"` ``</span>**. The other elements of the model object will resemble what was seen in 03A-C.
+```{r run coef rank function on ladlasso models}
+ladlasso.models[["coef.ranks"]] <- coefs_rank(ladlasso.models[["coef.frequencies"]])
+```
+
+And let's examine the structure of the resulting frequency and rank objects within **<span style = "color:blue">`` `r "ladlasso.models"` ``</span>**. The other elements of the model object will resemble what was seen in 03A-C.
 
 ```{r coeffreq str}
-str(ladlasso.models[["coef.freq"]])
+str(ladlasso.models[["coef.frequencies"]])
 ```
+
+```{r coefrank str}
+str(ladlasso.models[["coef.ranks"]])
+```
+
+We see a named numeric object and a named integer object.
 
 ## References
