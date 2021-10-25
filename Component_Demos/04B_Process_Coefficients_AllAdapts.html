@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-23" />
+<meta name="date" content="2021-10-25" />
 
 <title>Process Coefficients from All Adaptations and Data Splits</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Process Coefficients from All Adaptations and Data Splits</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-23</h4>
+<h4 class="date">2021-10-25</h4>
 
 </div>
 
@@ -1563,9 +1563,10 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </ul>
 <pre class="r"><code>coefs_freq &lt;- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
-       coefs.freq &lt;- numeric(length = 8)
+       coefs.freq &lt;- numeric(length = length(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
+                             )
        
-       # label frequency vector with predictor names, accounting for 
+       # label frequency vector with predictor names, accounting for intercept
        names(coefs.freq) &lt;- names(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
        
        # update each predictors' selection frequency if the corresponding coefficient value
@@ -1578,30 +1579,46 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
               }
        }
        
-       return(coefs.freq)       
+       return(coefs.freq)
+}</code></pre>
+</div>
+<div id="coefficient-selection-rank-function" class="section level3">
+<h3>Coefficient selection rank function</h3>
+<p>The function below calculates the selection frequency rank of each potential predictor.</p>
+<pre class="r"><code>coefs_rank &lt;- function(freqs) {
+       # initialize vector of selection rank, with all values set to NA
+       coefs.rank &lt;- numeric(length = length(freqs)
+                             )
+       
+       coefs.rank &lt;- frankv(as.numeric(freqs) , order = -1 , ties.method = &quot;min&quot;)
+       
+       # label rank vector with predictor names, accounting for intercept
+       names(coefs.rank) &lt;- names(freqs)
+       
+       return(coefs.rank)       
 }</code></pre>
 </div>
 <div id="minor-functions" class="section level3">
 <h3>Minor functions</h3>
 <p>I’d like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping to generate these values.</p>
 <pre class="r"><code>all_splits &lt;- function(data) {
-        return(length(which(data[1:8] == 100)
+        return(length(which(data[1:length(data)] == 100) #8
                       )
                )
 }</code></pre>
 <pre class="r"><code>no_splits &lt;- function(data) {
-        return(length(which(data[1:8] == 0)
+        return(length(which(data[1:length(data)] == 0)  #8
                       )
         )
 }</code></pre>
 <p>Similarly, I would like to calculate the number of adaptations which selected each variable <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> of the time.</p>
 <pre class="r"><code>adapts_100 &lt;- function(data) {
-        return(length(which(data[1:7] == 100)
+        return(length(which(data[1:length(data)] == 100)  #7
                       )
                )
 }</code></pre>
 <pre class="r"><code>adapts_0 &lt;- function(data) {
-        return(length(which(data[1:7] == 0)
+        return(length(which(data[1:length(data)] == 0) #7
                       )
         )
 }</code></pre>
@@ -1620,15 +1637,15 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <h3>Coefficient frequency processing: By Adaptation</h3>
 <p>Now let’s map our coefficient frequency function across all adaptations and model results to create our first data.table. Rather than include # comments in the code itself to describe each step, I will walk through the operations line-by-line below.</p>
 <pre class="r"><code>models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]] &lt;- models_all[1:7] %&gt;%
-         map(coefs_freq) %&gt;%
-         setDT %&gt;%
-         t %&gt;%
-         data.frame %&gt;%
-         setDT %&gt;%
-         .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
-         .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
-         .[ , &quot;method&quot; := names(models_all[-8])] %&gt;%
-         setkey(. , method) </code></pre>
+       map(coefs_freq) %&gt;%
+       setDT %&gt;%
+       t %&gt;%
+       data.frame %&gt;%
+       setDT %&gt;%
+       .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
+       .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
+       .[ , &quot;method&quot; := names(models_all[-8])] %&gt;%
+       setkey(. , method) </code></pre>
 <p>Let’s walk through what’s going on in the last code chunk.</p>
 <ul>
 <li>First, establish reference to the <strong><span style="color:blue"><code>models_all</code></span></strong> object for the subsequent pipe operations</li>
@@ -1678,7 +1695,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
         setDT %&gt;%
         .[ , &quot;all&quot; := apply(. , 1 , adapts_100)] %&gt;%
         .[ , &quot;none&quot; := apply(. , 1 , adapts_0)] %&gt;%
-        .[ , &quot;predictor&quot; := names(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:8]] %&gt;%
+        .[ , &quot;predictor&quot; := names(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:(ncol(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]]) - 3)]] %&gt;%
         setkey(. , predictor) </code></pre>
 <p>Let’s take a look at the new data.table using <strong><span style="color:blue"><code>str()</code></span></strong>.</p>
 <pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]])</code></pre>
@@ -1691,16 +1708,42 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  $ msak5     : num  99 100 100 100 3 0 4 6
 ##  $ msak10    : num  100 100 100 100 5 0 2 6
 ##  $ all       : int  6 7 7 7 0 0 0 0
-##  $ none      : int  0 0 0 0 0 6 0 0
+##  $ none      : int  0 0 0 0 1 7 1 1
 ##  $ predictor : chr  &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;predictor&quot;</code></pre>
+</div>
+<div id="coefficient-frequency-processing---selection-rank" class="section level3">
+<h3>Coefficient frequency processing - selection rank</h3>
+<p>Now we’re going to generate the selection ranks of each potential predictor, <em>by adaptation</em>. This will only be by adaptation. The interpretation of the results made in the full walkthrough will make use of information regarding false positive inclusion rates by the adaptations studied. By combining selection rank with this information about each adaptation, we can refine our view of which potential predictors are valid and which are false positives.</p>
+<pre class="r"><code>models_all[[&quot;Ranks&quot;]] &lt;- models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , 
+                                                                         1:8 , 
+                                                                         with = F] %&gt;%
+       apply(. , 1 , coefs_rank) %&gt;%
+       t %&gt;%
+       as.data.frame %&gt;%
+       setDT %&gt;%
+       cbind(. , models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , &quot;method&quot;])</code></pre>
+<p>Let’s take a look at the new data.table using <strong><span style="color:blue"><code>str()</code></span></strong>.</p>
+<pre class="r"><code>str(models_all[[&quot;Ranks&quot;]])</code></pre>
+<pre><code>## Classes 'data.table' and 'data.frame':   7 obs. of  9 variables:
+##  $ X1    : int  1 1 1 1 1 1 4
+##  $ X2    : int  1 1 1 1 1 1 1
+##  $ X3    : int  1 1 1 1 1 1 1
+##  $ X4    : int  1 1 1 1 1 1 1
+##  $ X5    : int  7 6 7 7 6 6 7
+##  $ X6    : int  8 8 8 8 8 8 8
+##  $ X7    : int  6 7 6 6 7 6 6
+##  $ X8    : int  5 5 5 5 5 5 5
+##  $ method: chr  &quot;huberelnet&quot; &quot;huberlasso&quot; &quot;ladelnet&quot; &quot;ladlasso&quot; ...
+##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
+##  - attr(*, &quot;sorted&quot;)= chr &quot;method&quot;</code></pre>
 </div>
 </div>
 <div id="save-the-last-dance-file" class="section level2">
 <h2>Save the Last <del>Dance</del> File</h2>
 <p>Let’s save the model results file which also includes our new “Frequencies” data.table so that we can load it during the full walkthrough.</p>
-<pre class="r"><code>saveRDS(models_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqs.RData&quot;)</code></pre>
+<pre class="r"><code>saveRDS(models_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqsranks.RData&quot;)</code></pre>
 </div>
 <div id="references" class="section level2 unnumbered">
 <h2>References</h2>
