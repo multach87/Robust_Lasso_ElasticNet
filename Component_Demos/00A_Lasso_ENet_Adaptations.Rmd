@@ -38,9 +38,9 @@ Generally, I use line breaks to:
 
 ### It Came from the Deep (Darkness of My Dissertation)
 
-This document is a slimmed-down version of one chapter of my dissertation, @MattDiss. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in the combined model being demo'd throughout these components, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
+This document is a slimmed-down version of one chapter of my dissertation, @MattDiss. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in components being demonstrated in this page, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
 
-Due to the nature of the topics covered, this section is **Very Math Heavy**. I recommend this section only for those interested in technical details of the adaptations that I am including in my "combined model." Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.
+Due to the nature of the topics covered, this section is **Very Math Heavy**. I recommend this section only for those interested in technical details of the adaptations that I am including in a forthcoming "combined model approach." Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.
 
 ### Notes on Mathematical Formatting
 
@@ -48,7 +48,7 @@ Generally, an unbolded symbol (typically a letter or Greek letter) represents a 
 
  * $\boldsymbol{y}$ or $\boldsymbol{\beta}$ are bolded because they are vectors of response values and coefficients, respectively
    * $y_i$ or $\beta_j$ are _not_ bolded because they correspond with the $i$-th observation's response value or the $j$-th potential predictor's coefficient value.
- * $\boldsymbol{X}$ and its componenents are generally all bolded, as they represent a collection of predictor values for each unit of observation
+ * $\boldsymbol{X}$ and its components are generally all bolded, as they represent a collection of predictor values for each unit of observation
    * $\boldsymbol{x}_i$, then, represents a vector of _all_ predictor values for observation $i$
 
 ### A Note on Mathematical Norms
