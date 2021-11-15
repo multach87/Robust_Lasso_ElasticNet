@@ -40,6 +40,7 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
  * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
  
 Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
 
@@ -52,7 +53,7 @@ Generally, I use line breaks to:
  
 ### Packages
 
-First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the "References" section at the end of this document.
+First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries}
 # This chunk loads the packages used in this workbook
@@ -82,7 +83,7 @@ demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Las
 
 ### Data Input Formatting
 
-Note that the function takes a list of data elements as its sole required argument, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function **<span style = "color:blue">`` `r "kfold_subsetter"` ``</span>** described in 02A_KFold_Subsetter, setting the 'list' argument to 'list = "traintest" '.
+Note that the function takes a list of data elements as its sole required argument, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function **<span style = "color:blue">`` `r "kfold_subsetter"` ``</span>** described in <span style = "color:green">`` `r "02A_KFold_Subsetter"` ``</span>, setting the 'list' argument to 'list = "traintest" '.
 
 If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as 'eval = F'). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.
 

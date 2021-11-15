@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-23" />
+<meta name="date" content="2021-11-15" />
 
 <title>Single-Model Demo: Generalized hqreg() + msaenet() Model</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Single-Model Demo: Generalized hqreg() + msaenet() Model</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-23</h4>
+<h4 class="date">2021-11-15</h4>
 
 </div>
 
@@ -1516,6 +1516,7 @@ div.tocify {
 <li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
 <li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+<li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
 <p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
 <p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
@@ -1527,7 +1528,7 @@ div.tocify {
 </div>
 <div id="packages" class="section level3">
 <h3>Packages</h3>
-<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1548,7 +1549,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <h2>Model-Application Function</h2>
 <div id="data-input-formatting" class="section level3">
 <h3>Data Input Formatting</h3>
-<p>Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in 02A_KFold_Subsetter, setting the ‘list’ argument to ‘list = “traintest”’.</p>
+<p>Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in <span style="color:green"><code>02A_KFold_Subsetter</code></span>, setting the ‘list’ argument to ‘list = “traintest”’.</p>
 <p>If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as ‘eval = F’). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.</p>
 <pre class="r"><code>data_for_hqreg &lt;- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
                         Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
@@ -1557,7 +1558,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </div>
 <div id="the-function" class="section level3">
 <h3>The Function</h3>
-<p>There are a few additional arguments beyond the function presented in 03A_AdaLAD_SingleDemo:</p>
+<p>There are a few additional arguments beyond the function presented in <span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span>:</p>
 <ul>
 <li>‘method’ = tells the function which adaptation you would like to implement. You should specify one of the four when running the function on your own
 <ul>
@@ -1567,7 +1568,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <li>‘tau’/‘gamma’ = these arguments specify hyperparameters related to quantile loss and Huber loss, respectively
 <ul>
 <li>‘tau’ defaults to 0.5 for quantile loss, which corresponds with LAD loss</li>
-<li>‘gamma’ defaults to 1.345 for Huber loss. Details on this choice can be found in 00A_Lasso_ENet_Adaptations, or from the original source, <span class="citation">Huber (1981)</span></li>
+<li>‘gamma’ defaults to 1.345 for Huber loss. Details on this choice can be found in <span style="color:green"><code>00A_Lasso_ENet_Adaptations</code></span>, or from the original source, <span class="citation">Huber (1981)</span></li>
 <li>NOTE: This “gamma” is NOT the same as the weighting hyperparameter used for adaptive weighting of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>.</li>
 </ul></li>
 <li>‘alpha’ = balancing hyperparameter for contributions of lasso and ridge components to the overall elastic net model. Defaults to 0.5, which equates to an equal contribution of each regularization term</li>
@@ -1822,7 +1823,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 <p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data. Let’s produce a 5-step multi-step adaptive elastic net.</p>
 <pre class="r"><code>msaenet5k.test &lt;- hqmsa.sim.fnct(demo.data , 
                                   method = &quot;msaenet&quot;)</code></pre>
-<pre><code>## time =  47.3567  ;;;</code></pre>
+<pre><code>## time =  38.03841  ;;;</code></pre>
 <p>Let’s explore the structure of the resulting object.</p>
 <pre class="r"><code>str(msaenet5k.test)</code></pre>
 <pre><code>## List of 3
@@ -2041,7 +2042,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 ##   .. .. ..$ : Named num [1:8] 1.06 0.995 0.969 0.944 22.986 ...
 ##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:8] &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
 ##   .. ..$ seed          : num 1001
-##   .. ..$ call          : language msaenet(x = X_train, y = Y_train, family = &quot;gaussian&quot;, init = &quot;ridge&quot;, alphas = 0.5, tune = &quot;cv&quot;,      nfolds = 5| __truncated__
+##   .. ..$ call          : language msaenet(x = X_train, y = Y_train, family = &quot;gaussian&quot;, init = &quot;ridge&quot;, alphas = 0.5,      tune = &quot;cv&quot;, nfolds = 5| __truncated__ ...
 ##   .. ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;msaenet&quot; &quot;msaenet.msaenet&quot;
 ##  $ model.info:List of 3
 ##   ..$ lambda : num 2.25
@@ -2049,7 +2050,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 ##   ..$ weights: num [1:8] 1.065 0.994 0.968 0.944 1.398 ...
 ##  $ metrics   :List of 2
 ##   ..$ n.coefs: int 4
-##   ..$ runtime: num 47.4</code></pre>
+##   ..$ runtime: num 38</code></pre>
 <p>The 2nd and 3rd list elements of the resulting object looks very similar to the one produced in 03A and 03B, although our first list element has many more pieces of information corresponding with the multi-step adaptive tuning process. The max depth of the full model object is 5 as a result. I encourage those who are familiar with regression model output in R, or with elastic net-type models, to explore the many elements contained in ‘full.model’. However, the ‘model.info’ and ‘metrics’ list elements were created so that less-familiar and less-technically-oriented users can locate and examine the most relevant model information with ease.</p>
 <p>The second list element contains the main model results:</p>
 <ul>

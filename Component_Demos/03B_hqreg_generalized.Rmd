@@ -42,6 +42,7 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
  * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
  
 Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
 
@@ -54,7 +55,7 @@ Generally, I use line breaks to:
  
 ### Packages
 
-First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the "References" section at the end of this document.
+First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries}
 # This chunk loads the packages used in this workbook
@@ -84,7 +85,7 @@ demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Las
 
 ### Data Input Formatting
 
-Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function **<span style = "color:blue">`` `r "kfold_subsetter"` ``</span>** described in 02A_KFold_Subsetter, setting the 'list' argument to 'list = "traintest" '.
+Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named "X," "Y," "X_test," and "Y_test." If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function **<span style = "color:blue">`` `r "kfold_subsetter"` ``</span>** described in <span style = "color:green">`` `r "02A_KFold_Subsetter"` ``</span>, setting the 'list' argument to 'list = "traintest" '.
 
 If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as 'eval = F'). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.
 
@@ -97,13 +98,13 @@ data_for_hqreg <- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBER
 
 ### The Function
 
-There are a few additional arguments beyond the function presented in 03A_AdaLAD_SingleDemo:
+There are a few additional arguments beyond the function presented in <span style = "color:green">`` `r "03A_AdaLAD_SingleDemo"` ``</span>:
  
  * 'method' = tells the function which adaptation you would like to implement. You should specify one of the three when running the function on your own
    * "quantile" is just a generalization of LAD loss. I don't go over quantile-based regularization in these demos. If you are familiar with this type of regression and its use in this context, feel free to specify this and the corresponding argument 'tau' as you see fit
  * 'tau'/'gamma' = these arguments specify hyperparameters related to quantile loss and Huber loss, respectively
    * 'tau' defaults to 0.5 for quantile loss, which corresponds with LAD loss
-   * 'gamma' defaults to 1.345 for Huber loss. Details on this choice can be found in 00A_Lasso_ENet_Adaptations, or from the original source, @Huber1981
+   * 'gamma' defaults to 1.345 for Huber loss. Details on this choice can be found in <span style = "color:green">`` `r "00A_Lasso_ENet_Adaptations"` ``</span>, or from the original source, @Huber1981
    * NOTE: This "gamma" is NOT the same as the weighting hyperparameter used for adaptive weighting of the lasso tuning hyperparameter $\lambda_1$.
  * 'alpha' = balancing hyperparameter for contributions of lasso and ridge components to the overall elastic net mod
  * 'print.time' = tells the function whether you want it print out the model run.time or not
@@ -333,7 +334,7 @@ Let's explore the structure of the resulting object.
 str(huberelnet.test)
 ```
 
-The resulting object looks very similar to the one produced in 03A_AdaLAD_SingleDemo, although our first list element has a few additional pieces of information corresponding with values for $\tau$ / $\gamma$ / $\alpha$.
+The resulting object looks very similar to the one produced in <span style = "color:green">`` `r "03A_AdaLAD_SingleDemo"` ``</span>, although our first list element has a few additional pieces of information corresponding with values for $\tau$ / $\gamma$ / $\alpha$.
 
 That said, let's review the structure of the resulting object anyways.
 

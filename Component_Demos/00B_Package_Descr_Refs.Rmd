@@ -38,6 +38,7 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * 'single quotations' will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation
  * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
+ * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
 
 Generally, I use line breaks to:
 
@@ -215,7 +216,7 @@ I hope a few people get as much joy out of this revelation as I did!
 
 ## Packages for Implementing Specific Statistical Models
 
-I will not spend too much time explaining the models implemented by each of the following packages. Please see 00A_Lasso_ENet_Adaptations.Rmd for an introduction the lasso, the elastic net, and the relevant adaptations, including rationale, mathematical formulation, and computational implementation.
+I will not spend too much time explaining the models implemented by each of the following packages. Please see <span style = "color:green">`` `r "00A_Lasso_ENet_Adaptations"` ``</span> for an introduction the lasso, the elastic net, and the relevant adaptations, including rationale, mathematical formulation, and computational implementation.
 
 ### *<span style = "color:red">`` `r "glmnet"` ``</span>*, @glmnet
 
@@ -302,7 +303,7 @@ A collection of functions for implementing robust hypothesis-testing techniques 
 
 #### Functions Used
 
-An adapted version of **<span style = "color:blue">`` `r "gandh()"` ``</span>** for generating values from the **g-and-h distribution**. More details on this distribution can be found in 01_Data_Generation.
+An adapted version of **<span style = "color:blue">`` `r "gandh()"` ``</span>** for generating values from the **g-and-h distribution**. More details on this distribution can be found in <span style = "color:green">`` `r "01_Data_Generation"` ``</span>.
 
 #### External Resources
 

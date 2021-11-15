@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-10-23" />
+<meta name="date" content="2021-11-15" />
 
 <title>Single-Model Demo: Generalized hqreg() Model</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Single-Model Demo: Generalized hqreg() Model</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-10-23</h4>
+<h4 class="date">2021-11-15</h4>
 
 </div>
 
@@ -1517,6 +1517,7 @@ div.tocify {
 <li>‘single quotations’ will be used to clarify specific arguments for a function, or specific parameters of a mathemtical/statistical formulation</li>
 <li>Inline references to code (functions, objects, specific commands, etc.) will use <strong><span style="color:blue"><code>code_chunk_formatting</code></span></strong> in <strong><span style="color:blue"><code>bolded blue font</code></span></strong></li>
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
+<li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
 <p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
 <p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
@@ -1528,7 +1529,7 @@ div.tocify {
 </div>
 <div id="packages" class="section level3">
 <h3>Packages</h3>
-<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in 00B_Package_Descr_Refs. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1548,7 +1549,7 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <h2>Model-Application Function</h2>
 <div id="data-input-formatting" class="section level3">
 <h3>Data Input Formatting</h3>
-<p>Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in 02A_KFold_Subsetter, setting the ‘list’ argument to ‘list = “traintest”’.</p>
+<p>Note that the function takes a list of data elements as one of its required (non-defaulted) arguments, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in <span style="color:green"><code>02A_KFold_Subsetter</code></span>, setting the ‘list’ argument to ‘list = “traintest”’.</p>
 <p>If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as ‘eval = F’). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.</p>
 <pre class="r"><code>data_for_hqreg &lt;- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
                         Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
@@ -1557,7 +1558,7 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 </div>
 <div id="the-function" class="section level3">
 <h3>The Function</h3>
-<p>There are a few additional arguments beyond the function presented in 03A_AdaLAD_SingleDemo:</p>
+<p>There are a few additional arguments beyond the function presented in <span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span>:</p>
 <ul>
 <li>‘method’ = tells the function which adaptation you would like to implement. You should specify one of the three when running the function on your own
 <ul>
@@ -1566,7 +1567,7 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</cod
 <li>‘tau’/‘gamma’ = these arguments specify hyperparameters related to quantile loss and Huber loss, respectively
 <ul>
 <li>‘tau’ defaults to 0.5 for quantile loss, which corresponds with LAD loss</li>
-<li>‘gamma’ defaults to 1.345 for Huber loss. Details on this choice can be found in 00A_Lasso_ENet_Adaptations, or from the original source, <span class="citation">Huber (1981)</span></li>
+<li>‘gamma’ defaults to 1.345 for Huber loss. Details on this choice can be found in <span style="color:green"><code>00A_Lasso_ENet_Adaptations</code></span>, or from the original source, <span class="citation">Huber (1981)</span></li>
 <li>NOTE: This “gamma” is NOT the same as the weighting hyperparameter used for adaptive weighting of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>.</li>
 </ul></li>
 <li>‘alpha’ = balancing hyperparameter for contributions of lasso and ridge components to the overall elastic net mod</li>
@@ -1784,7 +1785,7 @@ hqreg.sim.fnct &lt;- function(data.list ,
 <p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data. Let’s produce an adaptive Huber elastic net model.</p>
 <pre class="r"><code>huberelnet.test &lt;- hqreg.sim.fnct(demo.data , 
                                   method = &quot;huber&quot;)</code></pre>
-<pre><code>## time =  20.29441  ;;;</code></pre>
+<pre><code>## time =  15.84644  ;;;</code></pre>
 <p>Let’s explore the structure of the resulting object.</p>
 <pre class="r"><code>str(huberelnet.test)</code></pre>
 <pre><code>## List of 3
@@ -1795,7 +1796,7 @@ hqreg.sim.fnct &lt;- function(data.list ,
 ##   .. ..$ type.measure: chr &quot;mse&quot;
 ##   .. ..$ lambda      : num [1:100] 1400 1242 1102 978 867 ...
 ##   .. ..$ fit         :List of 11
-##   .. .. ..$ call          : language FUN(X = X, y = y, method = ..1, gamma = ..3, tau = ..2, alpha = ..5, lambda = ..4, preprocess = &quot;standardize&quot;,   | __truncated__
+##   .. .. ..$ call          : language FUN(X = X, y = y, method = ..1, gamma = ..3, tau = ..2, alpha = ..5, lambda = ..4,      preprocess = &quot;standardize| __truncated__
 ##   .. .. ..$ beta          : num [1:9, 1:100] 0.961 0 0 0 0 ...
 ##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
 ##   .. .. .. .. ..$ : chr [1:9] &quot;(Intercept)&quot; &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; ...
@@ -1806,22 +1807,22 @@ hqreg.sim.fnct &lt;- function(data.list ,
 ##   .. .. ..$ alpha         : num 0.5
 ##   .. .. ..$ gamma         : num 1.34
 ##   .. .. ..$ tau           : NULL
-##   .. .. ..$ penalty.factor: num [1:8] 2.457 0.913 0.631 0.443 115.272 ...
+##   .. .. ..$ penalty.factor: num [1:8] 2.185 0.924 0.67 0.493 62.113 ...
 ##   .. .. ..$ method        : chr &quot;huber&quot;
 ##   .. .. ..$ nv            : int 0
 ##   .. .. ..- attr(*, &quot;class&quot;)= chr &quot;hqreg&quot;
-##   .. ..$ lambda.1se  : num 0.0679
+##   .. ..$ lambda.1se  : num 0.0765
 ##   .. ..$ lambda.min  : num 0.01
 ##   .. ..- attr(*, &quot;class&quot;)= chr &quot;cv.hqreg&quot;
 ##  $ model.info:List of 3
 ##   ..$ lambda : num 0.01
-##   ..$ coefs  : Named num [1:9] 0.0534 0.4091 1.0668 1.4853 2.0071 ...
+##   ..$ coefs  : Named num [1:9] 0.0571 0.4328 1.0647 1.4795 1.9918 ...
 ##   .. ..- attr(*, &quot;names&quot;)= chr [1:9] &quot;(Intercept)&quot; &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; ...
-##   ..$ weights: num [1:8] 2.457 0.913 0.631 0.443 115.272 ...
+##   ..$ weights: num [1:8] 2.185 0.924 0.67 0.493 62.113 ...
 ##  $ metrics   :List of 2
 ##   ..$ n.coefs: int 4
-##   ..$ runtime: num 20.3</code></pre>
-<p>The resulting object looks very similar to the one produced in 03A_AdaLAD_SingleDemo, although our first list element has a few additional pieces of information corresponding with values for <span class="math inline">\(\tau\)</span> / <span class="math inline">\(\gamma\)</span> / <span class="math inline">\(\alpha\)</span>.</p>
+##   ..$ runtime: num 15.8</code></pre>
+<p>The resulting object looks very similar to the one produced in <span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span>, although our first list element has a few additional pieces of information corresponding with values for <span class="math inline">\(\tau\)</span> / <span class="math inline">\(\gamma\)</span> / <span class="math inline">\(\alpha\)</span>.</p>
 <p>That said, let’s review the structure of the resulting object anyways.</p>
 <p>A 3-element list is produced, each themselves containing various structures. The first list element contains the span of models produced <strong><span style="color:blue"><code>cv.qreg()</code></span></strong> in the cross-validated selection of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>, <em>for the cross-validation-selected minimizing scaling hyperparameter <span class="math inline">\(\nu\)</span> / <span class="math inline">\(\gamma\)</span></em>. The function itself generates a model for each potential value of this scaling hyperparameter, but ultimately only stores the minimizing model results (which are themselves a cross-validation-guided procedure for selecting another hyperparameter).</p>
 <p>The second list element contains the main model results:</p>
