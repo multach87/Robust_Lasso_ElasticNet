@@ -8,37 +8,16 @@ output:
     toc_depth: 4
     toc_float: true
     number_sections: false
-bibliography: Component_Refs.bib
+bibliography: Component_Demos/Component_Refs.bib
 ---
 
-
-## Introduction
-
-This document combines components described in the various Component_Demos files to implement a combination of lasso and elastic net adaptations for improving variable selection capabilities of these adaptations.
-
-The goal of this walkthrough is to demonstrate the combined approach I propose in the applied chapter of my dissertation (CITE). Over the course of my dissertation, I showed that with non-collinear data, no one lasso or elastic net adaptation dominates others across outlier- and skew-/kurtosis-related scenarios. Some adaptations, like the **multi-step adaptive elastic net**, @XiaoXu2015, perform incredibly well at eliminating variables which were not true predictors of the outcome, even in the presence of extreme outlier contamination. This strong elimination performance unfortunately coincided with a greater tendency to remove true predictors from the model. 
-
-Other methods, including the adaptive LAD (CITE) and adaptive Huber adaptations (CITE) of both the lasso and the elastic net, demonstrated consistently competitive performance in proper inclusion of true predictors and exclusion of non-predictors form a model. However, these adaptations typically did not show superior performance across scenarios relative to other adaptations.
-
-Given these various results, I ultimately proposed a combined approach to implementing the more useful adaptations in a way that leverages their respective strengths. By taking a holistic view of the results across these methods, subjective interpretation can permit us better insight into true predictors of an unknown process.
-
-Much room exists to develop objective and empirical metrics for proper application of such an approach. **Figure 1** below presents the ideal form of this combined approach, given empirically-derived metrics for variable inclusion and exclusion. *Figure 1** also suggests relevant research questions for guiding the development of said objective selection metrics. These questions are indicated below the main diagram in orange boxes. 
-
-![Figure 1: Empirically-Driven Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Full_Walkthrough_Files/Combined_Method.png)
-
-**Figure 2**, meanwhile, presents a version of this approach which utilizes subjective interpretation in lieu of objective and empirically-derived metrics and until such metrics are developed. 
-
-![Figure 2: Subjective Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Full_Walkthrough_Files/Combined_Qual.png)
-
-The current walkthrough presents a slimmed-down version of the subjective approach. I will not spend too much time on any of the given functions or procedures conducted in the current demontration. I focus primarily on the application and interpretation of combined model approach. Please see the files in the <span style = "color:green">`` `r "Component Demonstrations"` ``</span> section for details on any of the individual components or functions which make up the original
-
-## Preamble and Setup
+## Preamble and Setup {.unlisted .unnumbered}
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-### A note on formatting
+#### A note on formatting
 
 This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
 
@@ -58,7 +37,7 @@ Generally, I use line breaks to:
  * Break up separate arguments for a single command/function or chain of operations
  * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
 
-### Packages
+#### Packages
 
 First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
@@ -87,17 +66,57 @@ nocite: |
 Note that if you do not have any of the listed packages, you should install them using **<span style = "color:blue">`` `r "install.packages(\"pkg-name-in-quotes-here\")"` ``</span>**.
 
 
+## Introduction
+
+This document combines components described in the various Component_Demos files to implement a combination of lasso and elastic net adaptations for improving variable selection capabilities of these adaptations.
+
+The goal of this walkthrough is to demonstrate the combined approach I propose in the applied chapter of my dissertation, @MattDiss. Over the course of my dissertation, I showed that with non-collinear data, no one lasso or elastic net adaptation dominates others across outlier- and skew-/kurtosis-related scenarios. Some adaptations, like the **multi-step adaptive elastic net**, @XiaoXu2015, perform incredibly well at eliminating variables which were not true predictors of the outcome, even in the presence of extreme outlier contamination. This strong elimination performance unfortunately coincided with a greater tendency to remove true predictors from the model. 
+
+Other methods also performed well in the opposite direction, including the adaptive LAD lasso, @Wangetal2007; the adaptive LAD elastic net, currently un-proposed but possible thanks to @YiHuang2017 and their *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg; the adaptive Huber lasso, @RossetZhu2007 and  @LambertLacroixZwald2011; and the adaptive Huber elastic net, @YiHuang2017. These adaptations demonstrated consistently competitive performance in proper inclusion of true predictors and exclusion of non-predictors form a model. However, these adaptations typically did not show superior performance across scenarios relative to other adaptations.
+
+Given these various results, I ultimately proposed a combined approach to implementing the more useful adaptations in a way that leverages their respective strengths. By taking a holistic view of the results across these methods, subjective interpretation can permit us better insight into true predictors of an unknown process.
+
+Much room exists to develop objective and empirical metrics for proper application of such an approach. **Figure 1** below presents the ideal form of this combined approach, given empirically-derived metrics for variable inclusion and exclusion. **Figure 1** also suggests relevant research questions for guiding the development of said objective selection metrics. These questions are indicated below the main diagram in orange boxes.
+
+An important note regarding one step of this process and related components of these demonstrations. While conducting my dissertation, I decided to utilize cross-validation splits as an ad-hoc resampling procedure given that out-of-sample prediction error was already a part of my metrics of interest in that research. However, an important question to add to this line of research would be:
+
+ * What resampling procedure provides the most utility for improving variable selection?
+    * Furthermore: How many resamples should be taken? For Example: If using a Bootstrap method, how many bootstrap samples provides the most robust variable selection characteristics?
+    
+In the months since defending my dissertation, I completely forgot how I created these wonderful charts. Once I am able to find the website, I will update **Figure 1** to include the additional step and research question.
+
+![Figure 1: Empirically-Driven Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Method.png)
+
+**Figure 2**, meanwhile, presents a version of this approach which utilizes subjective interpretation in lieu of objective and empirically-derived metrics and until such metrics are developed. 
+
+![Figure 2: Subjective Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Qual.png)
+
+The current walkthrough presents a slimmed-down version of the subjective approach. I will not spend too much time on any of the given functions or procedures conducted in the current demontration. I focus primarily on the application and interpretation of combined model approach. Consequently, I generally set code chunks in the preliminary setup portion to **<span style = "color:blue">`` `r "echo = F"` ``</span>** so that they are not included in the compiled html file, but will be in the .Rmd file. I will also include references to the appropriate component demonstrations where appropriate; please see the files in the <span style = "color:green">`` `r "Component Demonstrations"` ``</span> section for details on any of the individual components or functions which make up the original
+
+
+
+
 ## Data Generation
+
+### Random Betas function and Loading **<span style = "color:blue">`` `r "data_gen()"` ``</span>**
 
 To help demonstrate the combined approach in its entirety, I'm going to generate a dataset using an adapted version of my **<span style = "color:blue">`` `r "data_gen()"` ``</span>** function. This time, however, I'm going to generate a dataset with random characteristics which we will not look at until after we've interpreted the results. That way we can mimic a true applied dataset where we do *not* know the true underlying distribution or data-generating mechanism.
 
-To facilitate this, I'm going to make a simple function for randomly generating beta coefficients.
+To facilitate this, I'm going to make a simple function for randomly generating beta coefficients. Note that the process essentially samples coefficients from the vector **<span style = "color:blue">`` `r "c(0.5 , 1 , 1.5 , 2 , 0 , 0 , 0 , 0)"` ``</span>**.
 
 ```{r random betas}
-
+betas.rand <- function(x) {
+        return(sample(x = c(0.5 , 1 , 1.5 , 2 , 0) , 
+                      size = length(x) , replace = TRUE ,
+                      prob = c(0.125 , 0.125 , 0.125 , 0.125 , 0.5)
+                      )
+               )
+}
 ```
 
-```{r data-generating function}
+The original data-generating function can be found in <span style = "color:green">`` `r "01_Data_Generation"` ``</span>.
+
+```{r data-generating function , echo = F}
 data_gen <- function(n , p , eta_x , eta_y , g , h , 
                      seed , tracker) {      
   
@@ -105,31 +124,34 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
   conditions <- setDT(data.frame(n = n , p = p , 
                                  eta_x = eta_x , eta_y = eta_y , 
                                  g = g , h = h , tracker = tracker , 
-                                 seed = seed))
+                                 seed = seed)
+                      )
 
-  #create a p-column matrix containing the true coefficients
-  betas <- setDT(matrix(0 , nrow = p , ncol = 1))
-  betas[1 , 1] <- 0.5
-  betas[2,1] <- 1.0
-  betas[3,1] <- 1.5
-  betas[4,1] <- 2.0
+  # create a p-column data.table containing all 0's
+  betas <- setDT(as.data.frame(matrix(0 , nrow = 1 , ncol = p)
+                               )
+                 )
+  # sample coefficients from (0.5 , 1 , 1.5 , 2 , 0 , 0 , 0 , 0)
+  betas <- betas[ , lapply(.SD , betas.rand)] 
        
   # set seed for random process
   seed <- seed                       
        
-  #generate covariance matrix
-  covar.X <- matrix(rep(0 , p^2) , ncol = p)  
+  # generate covariance matrix
+  covar.X <- matrix(rep(0 , p ^ 2) , ncol = p)  
   # # put 1's along diagonal of covariance matrix
   diag(covar.X) <- 1 
        
   # generate uncontam. X values
-  X.UC <- rmvnorm(floor((1 - eta_x)*n) , 
+  X.UC <- rmvnorm(floor((1 - eta_x) * n
+                        ) , 
                   mean = rep(0 , p) , 
-                  sigma = covar.X)
+                  sigma = covar.X
+                  )
        
   # generate contaminated X/predictor values or 
   # # g-and-h-based X/predictor values
-  if(((g == 0) & (h == 0))){
+  if(((g == 0) & (h == 0) ) ){
         # if there is predictor contamination, generate the
         # # contaminated values
         if(eta_x > 0) {                             
@@ -145,7 +167,8 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
         }
               
         #generate uncontom. residuals
-        err.UC <- rnorm(floor((1 - eta_y) * n) , mean = 0 , sd = 1)
+        err.UC <- rnorm(floor((1 - eta_y) * n) , 
+                        mean = 0 , sd = 1)
         if(eta_y > 0) {  
                 # if there is response contamination, generate the
                 # # contaminated values
@@ -166,7 +189,7 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
   
   #generate Y values from X matrix, 
   # # coefficients vector, and residuals vector
-  Y <- X %*% betas[ , 1] + err                                    
+  Y <- X %*% t(as.matrix(betas) ) + err                                    
   
   # Create list of separate components of generated data   
   combine <- list(conditions = conditions ,
@@ -183,6 +206,10 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
 }
 ```
 
+### Generating the Data
+
+I'm going to generate a dataset with a sample size of 100, 200 potential predictors, a random amount of outlier contamination in the predictors selected from $0\%$, $10\%$, and $20\%$, and a random amount of outlier contamination in the response variable selected from $0\%$, $10\%$, and $20\%$. No skew or kurtosis will be intentionally induced in the data.
+
 ```{r generate single dataset}
 walkthru.data <- data_gen(n = 100 , p = 200 , 
                           eta_x = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
@@ -193,6 +220,8 @@ walkthru.data <- data_gen(n = 100 , p = 200 ,
 ```
 
 ## CV-Splitting data
+
+Now we need to conduct cross-validation splits of the data. The custom k-fold subsetting functions I created and demonstrated in <span style = "color:green">`` `r "02A_KFold_Subsetter"` ``</span> and <span style = "color:green">`` `r "02B_Kfold_Multi"` ``</span> are hidden from the html file. The code for those functions can be found in the .Rmd, and further details about those functions can be found in the corresponding <span style = "color:green">`` `r "Component Demonstrations"` ``</span>.
 
 ### K-fold subsetting functions
 
@@ -336,15 +365,15 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 
 ### Create cv-split data
 
-```{r create cv-split data 10 splits}
+```{r create cv-split data 10 splits , eval = F}
 wtcv.10 <- kfold_multi(data = walkthru.data , num_splits = 10)
 ```
 
-```{r create cv-split data 100 splits}
+```{r create cv-split data 100 splits , eval = F}
 wtcv.100 <- kfold_multi(data = walkthru.data , num_splits = 100)
 ```
 
-```{r create cv-split data 250 splits}
+```{r create cv-split data 250 splits , eval = F}
 wtcv.250 <- kfold_multi(data = walkthru.data , num_splits = 250)
 ```
 
