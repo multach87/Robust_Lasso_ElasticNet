@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-15" />
+<meta name="date" content="2021-11-18" />
 
 <title>Combined-Model Generation</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Combined-Model Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-15</h4>
+<h4 class="date">2021-11-18</h4>
 
 </div>
 
@@ -1706,8 +1706,8 @@ hqmsa.sim.fnct &lt;- function(data.list ,
                            nsteps = 5L , 
                            print.time = TRUE) {
        # Store training X and Y to temporary objects
-       X_train &lt;- data.list[[&quot;X&quot;]]
-       Y_train &lt;- data.list[[&quot;Y&quot;]]
+       X_train &lt;- as.matrix(data.list[[&quot;X&quot;]])
+       Y_train &lt;- as.matrix(data.list[[&quot;Y&quot;]])
        
        if(method == &quot;LAD&quot;) {
                method &lt;- &quot;quantile&quot;
@@ -1716,8 +1716,8 @@ hqmsa.sim.fnct &lt;- function(data.list ,
        # If applicable, store holdout/testing X and Y
        if(!is.null(data.list[[&quot;X_test&quot;]]) &amp; 
           !is.null(data.list[[&quot;Y_test&quot;]])) {
-               X_test &lt;- data.list[[&quot;X_test&quot;]]
-               Y_test &lt;- data.list[[&quot;Y_test&quot;]]
+               X_test &lt;- as.matrix(data.list[[&quot;X_test&quot;]])
+               Y_test &lt;- as.matrix(data.list[[&quot;Y_test&quot;]])
        } else {
                X_test &lt;- NULL
                Y_test &lt;- NULL

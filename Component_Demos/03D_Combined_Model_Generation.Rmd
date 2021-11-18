@@ -258,8 +258,8 @@ hqmsa.sim.fnct <- function(data.list ,
                            nsteps = 5L , 
                            print.time = TRUE) {
        # Store training X and Y to temporary objects
-       X_train <- data.list[["X"]]
-       Y_train <- data.list[["Y"]]
+       X_train <- as.matrix(data.list[["X"]])
+       Y_train <- as.matrix(data.list[["Y"]])
        
        if(method == "LAD") {
                method <- "quantile"
@@ -268,8 +268,8 @@ hqmsa.sim.fnct <- function(data.list ,
        # If applicable, store holdout/testing X and Y
        if(!is.null(data.list[["X_test"]]) & 
           !is.null(data.list[["Y_test"]])) {
-               X_test <- data.list[["X_test"]]
-               Y_test <- data.list[["Y_test"]]
+               X_test <- as.matrix(data.list[["X_test"]])
+               Y_test <- as.matrix(data.list[["Y_test"]])
        } else {
                X_test <- NULL
                Y_test <- NULL
