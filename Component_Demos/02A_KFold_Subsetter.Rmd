@@ -1,5 +1,5 @@
 ---
-title: 'K-Fold Subsetting Function Demo'
+title: 'Demo: Custom K-Fold Subsetting Function'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
 output: 

@@ -1,5 +1,5 @@
 ---
-title: 'Demo: Splitting Data for Cross-Validation'
+title: 'Demo: Producting Multiple Cross-Validation Splits'
 author: "Matt Multach"
 date: "`r Sys.Date()`"
 output: 
