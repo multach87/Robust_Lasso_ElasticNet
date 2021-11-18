@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-15" />
+<meta name="date" content="2021-11-18" />
 
 <title>Lasso, Elastic Net, and Adaptations</title>
 
@@ -1501,7 +1501,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Lasso, Elastic Net, and Adaptations</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-15</h4>
+<h4 class="date">2021-11-18</h4>
 
 </div>
 
@@ -1661,11 +1661,11 @@ where <span class="math inline">\(\lambda_1^{*(k)}\)</span> and <span class="mat
 </div>
 <div id="least-absolute-deviation-lad-loss-function" class="section level2">
 <h2><span class="header-section-number">2.3</span> Least Absolute Deviation (LAD) Loss Function</h2>
-<p><span class="citation">Wang, Li, and Jiang (2007)</span> Proposed one of the earliest attempts at robustifying the lasso to response outliers. They propose replacing the least squares criterion with the least absolute deviation (LAD), i.e. the <span class="math inline">\(\ell_1\)</span>-norm:</p>
+<p><span class="citation">Wang, Li, and Jiang (2007)</span> proposed one of the earliest attempts at robustifying the lasso to response outliers. They propose replacing the least squares criterion with the least absolute deviation (LAD), i.e. the <span class="math inline">\(\ell_1\)</span>-norm:</p>
 <p><span class="math display">\[\begin{equation}
      LADLasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p}\sum_{i=1}^{n} \left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right| + \lambda_{1,j}\sum_{j=1}^{p}\hat{w}_j\left|\beta_j\right|,
 \end{equation}\]</span></p>
-<p>where <span class="math inline">\(\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|\)</span>, the LAD-loss function (aka the <span class="math inline">\(\ell_1\)</span>-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, <span class="citation">Wang, Li, and Jiang (2007)</span> do not explicitly make use of the findings and techniques from <span class="citation">Zou (2006)</span>. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter <span class="math inline">\(\lambda_{1,j}\)</span> and coefficient weights vector <span class="math inline">\(\hat{w}_j\)</span>. <span class="math inline">\(\lambda_{1,j}\)</span> and <span class="math inline">\(\hat{w}_j = 1/\left|\hat{beta}\right|^\gamma\)</span> are as defined previously in ???. This method shall hereafter be referred to as “adaptive LAD lasso.”</p>
+<p>where <span class="math inline">\(\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|\)</span>, the LAD-loss function (aka the <span class="math inline">\(\ell_1\)</span>-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, <span class="citation">Wang, Li, and Jiang (2007)</span> do not explicitly make use of the findings and techniques from <span class="citation">Zou (2006)</span>. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter <span class="math inline">\(\lambda_{1,j}\)</span> and coefficient weights vector <span class="math inline">\(\hat{w}_j\)</span>. <span class="math inline">\(\lambda_{1,j}\)</span> and <span class="math inline">\(\hat{w}_j = 1/\left|\hat{beta}\right|^\gamma\)</span> are as defined previously in <strong>Section 2.1</strong>. This method shall hereafter be referred to as “adaptive LAD lasso.”</p>
 <p>The LAD elastic net has not yet been studied in the literature and exists primarily due to related software implementation developed by <span class="citation">Yi and Huang (2017)</span>. Via the <em><span style="color:red"><code>hqreg</code></span></em> package from <span class="citation">Yi (2017)</span>, it is possible to simultaneously utilize the LAD loss with lasso regularization. Consequently, the package provides implementation for the elastic net with the LAD loss function. As with the lasso formulation, LAD elastic net incorporates the adaptive lasso tuning hyperparameter. The LAD elastic net formulation is as follows:</p>
 <p><span class="math display">\[\begin{equation}
      LADENet =

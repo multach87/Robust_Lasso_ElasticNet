@@ -209,7 +209,7 @@ Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent ind
 
 ## Least Absolute Deviation (LAD) Loss Function
 
-@Wangetal2007 Proposed one of the earliest attempts at robustifying the lasso to response outliers. They propose replacing the least squares criterion with the least absolute deviation (LAD), i.e. the $\ell_1$-norm:
+@Wangetal2007 proposed one of the earliest attempts at robustifying the lasso to response outliers. They propose replacing the least squares criterion with the least absolute deviation (LAD), i.e. the $\ell_1$-norm:
 
 
 \begin{equation}
@@ -217,7 +217,7 @@ Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent ind
 \end{equation}
 
 
-where $\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|$, the LAD-loss function (aka the $\ell_1$-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, @Wangetal2007 do not explicitly make use of the findings and techniques from @Zou2006. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter $\lambda_{1,j}$ and coefficient weights vector $\hat{w}_j$. $\lambda_{1,j}$ and $\hat{w}_j = 1/\left|\hat{beta}\right|^\gamma$ are as defined previously in ???. This method shall hereafter be referred to as "adaptive LAD lasso."
+where $\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|$, the LAD-loss function (aka the $\ell_1$-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, @Wangetal2007 do not explicitly make use of the findings and techniques from @Zou2006. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter $\lambda_{1,j}$ and coefficient weights vector $\hat{w}_j$. $\lambda_{1,j}$ and $\hat{w}_j = 1/\left|\hat{beta}\right|^\gamma$ are as defined previously in **Section 2.1**. This method shall hereafter be referred to as "adaptive LAD lasso."
 
 The LAD elastic net has not yet been studied in the literature and exists primarily due to related software implementation developed by @YiHuang2017. Via the *<span style = "color:red">`` `r "hqreg"` ``</span>* package from @hqreg, it is possible to simultaneously utilize the LAD loss with lasso regularization. Consequently, the package provides implementation for the elastic net with the LAD loss function. As with the lasso formulation, LAD elastic net incorporates the adaptive lasso tuning hyperparameter. The LAD elastic net formulation is as follows:
 
