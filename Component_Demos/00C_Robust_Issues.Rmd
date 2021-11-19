@@ -1,5 +1,5 @@
 ---
-title: "Full Applied Walkthrough"
+title: "Demonstration of Issues in Robust Statistics and Hypothesis Testing"
 author: "Matt Multach"
 date: "`r Sys.Date()`"
 output: 
@@ -8,7 +8,7 @@ output:
     toc_depth: 4
     toc_float: true
     number_sections: false
-bibliography: Component_Demos/Component_Refs.bib
+bibliography: Component_Refs.bib
 ---
 
 ## Preamble and Setup {.unlisted .unnumbered}
@@ -17,9 +17,7 @@ bibliography: Component_Demos/Component_Refs.bib
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-## Introduction
 
-This file demonstrates a simplified example of concerns studied in robust hypothesis testing and statistical methods. These issues motivated my dissertation research and this repository more broadly.
 
 #### A note on formatting
 
@@ -48,8 +46,8 @@ First, let's load the necessary packages. Links to more information about each p
 ```{r libraries , warning = FALSE , message = FALSE}
 # This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
-library(psych)      # A package with some practical stats function
-library(stats)      # Another library of practical stats functions.
+#library(psych)      # A package with some practical stats function
+library(stats)      # Another library of practical stats functions, particularly power.t.test
 library(magrittr)   # Used for piping
 library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
@@ -62,204 +60,351 @@ library(ggplot2)      # For generating and manipulation graphical objects
 ---
 nocite: |
   @magrittr , @psych , @stats , @purrr , @xaringan , @data.table , @rlang , 
-  @gridExtra , @grid , @ggplot2 , @magrittr
+  @gridExtra , @grid , @ggplot2
 ---
 
 Note that if you do not have any of the listed packages, you should install them using **<span style = "color:blue">`` `r "install.packages(\"pkg-name-in-quotes-here\")"` ``</span>**.
 
-# ALL THE CODE
 
-```{r all the code}
+## Introduction
+
+This file demonstrates a simplified example of concerns studied in robust hypothesis testing and statistical methods.
+
+Below is an introduction to variable selection and robust statistical methods for contextualizing effective selection tools. This serves as a broader introduction to the issues motivating my doctoral research and, consequently, this respository. Note that a lot of the introduction and review below is lifted essentially whole-cloth from my dissertation, @MattDiss, aside form some formatting changes necessitated by the transition from LaTeX to Markdown.
+
+The importance of proper variable selection, and thereby effective model selection, is two-fold for the understanding of a data-generating process. Qualitatively, selecting the correct predictors promotes proper understanding of the process and contributes to its future study. Selection of characteristics that do not indeed underlie a process, worse than impeding understanding of a given process, negatively impacts understanding by taking researchers further from the actual mechanism involved. Statistically speaking, selecting variables that do not underlie a given process contributes to inflated coefficient instability, reduces prediction accuracy, and generally impedes efficient model performance. Meanwhile, failure to include a true variable produces a model biased in prediction capability and coefficient estimates. Given these concerns and that applied researchers can never know the actual mechanism underlying observed data, the necessity of modeling techniques that properly select the variables contributing to a data-generating mechanism cannot be understated.
+
+The presence of non-normality [@Wilcox1990; @HillDixon1982; @Micceri1989] and outliers [@RousseeuwLeroy1987] in applied data contexts have been demonstrated for many years, while heavy-tailed errors made themselves known as early as the 19th century (@Bessel1818, @Newcomb1886, @RousseeuwLeroy1987). Each of these characteristics can seriously impact inferences made by statistical models. Resulting issues with efficiency, power, bias, and analogous concerns outside of direct hypothesis testing therefore present further obstacles to proper variable selection when modeling a process. This dissertation will thus consider variable selection, and its relevance to the applied data setting, in the context of robust statistical methodology.
+
+The knowledge of non-normality , heavy-tailed errors , and outliers  in applied data contexts can be traced back to long before the modern research era. 
+
+### Robust Statistical Inference
+
+The current research begins with a treatment of robust statistical inference and its corresponding ideas and techniques. 
+Robust statistics concerns itself with statistical measures and tools that provide stability despite changes in observed data. Distributional form, accompanying issues such as tailed-ness (i.e., when values are more or less dispersed over the distributional space relative to the central tendency) and outlier contamination, and group variances are of particular concern given that relevant assumptions underpin well-known and oft-taught method (e.g., Student's t-test, Ordinary Least Squares regression). We consider here Student's t-test as a straightforward example of some of these issues:
+
+\begin{equation}
+     T = \frac{\sqrt{n}(\bar{X} - \mu)}{s},
+\end{equation}
+
+where $n$ is the sample size, $\bar{X}$ is the sample mean, $s$ is the sample standard deviation, and $\mu$ the true population mean. The typical application of the $T$-statistic for hypothesis-testing on the population mean $\mu$ relies on the fundamental assumption that the test statistic follows a Student's t distribution with degrees of freedom $\nu = n - 1$.
+
+Researchers can reasonably rely on this assumption under normality. Unfortunately, even a slight departure of the observation-generating distribution from normality can have meaningful consequences for the results of hypothesis tests. For example, when dealing with symmetric heavy-tailed distributions (where more distant values from the majority of the data are more likely to be observed), confidence intervals will be larger than the nominal level, @Benjamini1983. Thus, abstractly, the test will be less likely to reject the null hypothesis. Statistically speaking, this results in reduced power and Type I error rates relative to their respective nominal levels due to wider confidence intervals than anticipated. These problems are consistent across symmetric, heavy-tailed distributions and low power can hold under such circumstances even with large $n$ [@BasuDasGupta1995]. 
+
+Skewed distributions, even when light-tailed, present the opposite issue, and outlier-heavy distributions with heavier tails exacerbate this problem. As a result, the confidence intervals of a $T$-statistic taken from skewed data can be much smaller than the nominal level. Therefore, the test is more likely to reject the null hypothesis than expected, resulting in increased power and Type I error rates relative to the nominal level. Depending on how extreme of a departure skewed distribution is from normality, the true sample size $n$ necessary for proper inference at the nominal level can be quite large, with sample sizes of 200, 300, or larger being required [@WestfallYoung1993].
+
+#### Two Useful Distributional Tools
+
+Two useful distributional tools merit description before considering a practical example. The **g-and-h distribution** is a generalization of the normal distribution that takes the following form, given that $Z$ is normally distributed with mean $\mu = 0$ and standard deviation $\sigma = 1$ (aka, the standard normal distribution.):
+
+\begin{equation}
+    \textit{W} = 
+      \begin{cases} 
+        \frac{exp(gZ)-1}{g}exp(\frac{hZ^2}{2}) & g>0,\\
+        Zexp(\frac{hZ^2}{2}) & g=0
+     \end{cases}
+\end{equation}
+
+with greater asymmetry in increasing $g$, heavier tails in increasing $h$, and the standard normal distribution as a special case when $g=h=0$. The table below, taken from @Wilcoxetal2013, gives some distributional characteristics for certain values of $g$ and $h$. One potential criticism of the g-and-h distribution for studying departures from normality is that these values do not represent a sufficient deviation given conditions observed in real data of skew over 15 and kurtosis over 250 [@Pedersenetal2002]. @WilcoxRobust also notes real data with observed skew and kurtosis of up to 115.5 and 13,357, respectively. However, I was unable to locate the citation for this data. Insufficient non-normality using these values is a valid consideration and one worth keeping in mind while considering these simulations.
+
+```{r gandh table , echo = F}
+gandh <- setDT(data.frame(g = c(0.0 , 0.2 , 0.0 , 0.2) , 
+                         h = c(0.0 , 0.0 , 0.2 , 0.2) , 
+                         skew = c(0.00 , 0.61 , 0.00 , 2.81) , 
+                         kurtosis = c(3.00 , 3.68 , 21.46 , 155.98)
+                         )
+              )
+```
+
+```{r gandh table display , echo = F}
+gandh
+```
+
+Let's quickly implement the **g-and-h distribution** for use in the subsequent demonstration.
+
+```{r ghdist function}
 #Load function for generating data from the g-and-h distribution
 ghdist <- function(n,g=0,h=0){
        #
        # generate n observations from a g-and-h dist.
        #
        x<-rnorm(n)
-       if (g>0){
-              ghdist<-(exp(g*x)-1)*exp(h*x^2/2)/g
+       if (g > 0) {
+              ghdist <- (exp(g * x) - 1) * exp(h * x ^ 2 / 2) / g
        }
-       if(g==0)ghdist<-x*exp(h*x^2/2)
+       if(g == 0) {
+              ghdist  <- x * exp(h * x ^ 2 / 2)
+       }
        ghdist
 }
+```
 
-#Generate "population" data from each distribution
-normal.pop <- rnorm(10000)
-heavy.pop <- c(rnorm(9000) , rnorm(1000 , sd = 15))
-outlier.pop <- c(rnorm(9000) , rnorm(1000 , mean = 10))
-g0h0.pop <- ghdist(n = 10000 , g = 0 , h = 0)
-g2h0.pop <- ghdist(n = 10000 , g = 0.2 , h = 0)
-g0h2.pop <- ghdist(n = 10000 , g = 0 , h = 0.2)
-g2h2.pop <- ghdist(n = 10000 , g = 0.2 , h = 0.2)
-#combine separate population vectors into a single list 
-# #for convenience with subsequent simulation functions
-full.pop <- list(normal = list(distribution = "normal" , population = normal.pop) , 
-                 heavy = list(distribution = "heavy" , population = heavy.pop) , 
-                 outlier = list(distribution = "outlier" , population = outlier.pop) , 
-                 g0h0 = list(distribution = "g0h0" , population = g0h0.pop) , 
-                 g2h0 = list(distribution = "g2h0" , population = g2h0.pop) , 
-                 g0h2 = list(distribution = "g0h2" , population = g0h2.pop) , 
-                 g2h2 = list(distribution = "g2h2" , population = g2h2.pop))
+The second distributional tool used in this and subsequent simulations herein is the **contaminated normal** or **mixed normal** distribution. Mixed normal distributions arise from two distinct normally distributed subpopulations. Consider a random variable X such that:
+
+\begin{equation}
+     X \sim (1-\eta_x)N(\mu_1,\sigma_1^2) + \eta_x N(\mu_2,\sigma_2^2),
+\end{equation}
+
+where $\sim$ denotes "has the following probability distribution," $\mu_1$ and $\sigma_1$ represent the parameters for the first underlying subpopulation, and $\mu_2$ and $\sigma_2$ represent the parameters for the second underlying subpopulation. $\eta_x$ is a parameter expressing the proportion of each population that contributes to the generation of the overall population. A typical application of the mixed normal distribution sees the majority population distributed by a standard normal distribution with $\mu_1 = 0$ and $\sigma_1 = 1$. In contrast, the minority population is generated with a larger population mean, a larger population standard deviation, or both.
+
+Subsequent simulations use these two distributions to generate with the desired characteristics, in addition to the practical example of robust concerns below.
 
 
-#generate dataframe with conditions for simulations
+
+## Practical Demonstration
+
+An example with concrete data can help to illustrate some of the concerns underlying the field of robust statistics. Let's compare the nominal and actual power and Type I error rates for a few normal-adjacent population distributions with characteristics of interest. 
+
+### Our "Populations"
+
+Suppose populations with $N = 10,000$ are generated from each of the following:
+
+ * **Normal distribution**: The standard normal distribution, with population mean $\mu = 0$ and population standard deviation $\sigma = 1$.
+ * **Heavy-tailed normal distribution**: 90$\%$ of the data generated from the standard normal distribution, and 10$\%$ of the data generated from a distribution with population mean $\mu = 0$ and population standard deviation $\sigma = 15$.
+ * **Outlier-contaminated normal distribution**: 90$\%$ of the data generated from the standard normal distribution, and 10$\%$ data are generated from a distribution with population mean $\mu = 10$ and population standard deviation $\sigma = 0$.
+ * **g-and-h distribution(0 , 0)**: A g-and-h distribution with $g = h = 0$, which is equivalent to the standard normal distribution. 
+ * **g-and-h distribution(0.2 , 0)**: A g-and-h distribution with $g = 0.2$ and $h = 0$. This is a skewed distribution.
+ * **g-and-h distribution(0 , 0.2)**: A g-and-h distribution with $g = 0$ and $h = 0.2$. This is a heavy-tailed distribution.
+ * **g-and-h distribution(0.2 , 0.2)**: A g-and-h distribution with $g = h = 0.2$. This distribution is both skewed and heavy-tailed.
+
+Let's generate these populations.
+
+```{r create list of all population distributions}
+# create list of different populations of interest
+pop.test <- list(normal = list(distribution = "normal" , population = rnorm(10000)) , 
+                 heavy = list(distribution = "heavy" , population = c(rnorm(9000) , 
+                                                                      rnorm(1000 , 
+                                                                            sd = 15) ) ) , 
+                 outlier = list(distribution = "outlier" , population = c(rnorm(9000) , 
+                                                                          rnorm(1000 , 
+                                                                                mean = 10) ) ) , 
+                 g0h0 = list(distribution = "g0h0" , population = ghdist(n = 10000 , 
+                                                                         g = 0 , 
+                                                                         h = 0) ) , 
+                 g2h0 = list(distribution = "g2h0" , population = ghdist(n = 10000 , 
+                                                                         g = 0.2 , 
+                                                                         h = 0) ) , 
+                 g0h2 = list(distribution = "g0h2" , population = ghdist(n = 10000 , 
+                                                                         g = 0 , 
+                                                                         h = 0.2) ) , 
+                 g2h2 = list(distribution = "g2h2" , population = ghdist(n = 10000 , 
+                                                                       g = 0.2 , 
+                                                                       h = 0.2) ) )
+```
+
+### Calculating The Necessary Statistics
+
+Consider populations generated from the seven distributions listed above. After creating the simulated populations, 5000 random samples of sample size $10 \leq n \leq 500$ will be taken from each population, increasing $n$ by increments of 10. The sample t-statistic at a significance level of 0.05 will be calculated for each of these random samples given the true population mean for each distribution. The nominal Type I error rate is therefore 0.05. The actual Type I error rate will be the proportion of rejected null hypotheses, as the null-hypothesized value is the true population mean in each case, and rejection is therefore incorrect.
+
+To determine the relative performance of each method concerning power, I'm going to calculate the sample t-statistic at a significance level of 0.05 given a null-hypothesized value of 1 + the true population means of each population distribution. The nominal power at each sample size is the power of the t-statistic to detect a true difference of $\delta = 1$ at that sample size and $\alpha = 0.05$. The actual power will be the proportion of the calculated t-statistics that reject the null hypothesis.
+
+Let's also make a data.frame of all the conditions being simulated for which we're going to generate actual and nominal probability coverage. Note that this could be a data.table; I originally wrote these scripts before I became familiar with data.table, and will convert them over on subsequent passes through this demonstration. This is true of subsequent code chunks as well; later revisions will update those code sections to utilize data.tables instead of data.frames or simple matrices.
+
+
+
+```{r dataframe of simulation conditions}
+# generate dataframe with conditions for simulations
 sim.conds <- as.numeric(rep(seq(from = 10 , 
-                                to = 500 , by = 10) , 7)) %>% #sample sizes
-       cbind(as.numeric(rep(5000 , 7*50))) %>%   #number of samples - fixed at 5000
-       cbind(as.numeric(rep(1 , 7*50))) %>%      #delta for alternative hypothesis - fixed at 1
-       cbind(1:(7*50)) %>%                       #iteration tracker
-       data.frame %>%                             #make into dataframe
+                                to = 500 , 
+                                by = 10) , 
+                            7) ) %>%                 # sample sizes
+       cbind(as.numeric(rep(5000 , 7 * 50) ) ) %>%   # number of samples - fixed at 5000
+       cbind(as.numeric(rep(1 , 7 * 50) ) ) %>%      # delta for alternative hypothesis - fixed at 1
+       cbind(1 : (7 * 50) ) %>%                      # iteration tracker
+       data.frame %>%                                # make into dataframe
        cbind(c(rep("normal" , 50) , rep("heavy" , 50) , rep("outlier" , 50) , 
                       rep("g0h0" , 50) , rep("g2h0" , 50) , rep("g0h2" , 50) , 
-                      rep("g2h2" , 50))) %>%     #distribution label
+                      rep("g2h2" , 50))) %>%         # distribution labels
        setNames(c("sam_size" , "num_sam" , "delta" , "tracker.i" , "data")) #label columns
+```
 
+The **<span style = "color:blue">`` `r "t_stat()"` ``</span>** function below generates all of the samples from our population as well as the various statistical values needed to calculate:
+ * Actual Type I error rate
+ * Nominal power for each condition (since it will vary by sample and condition)
+ * The actual power for each condition
 
-
-
+```{r t_stat function}
 #function for generating t-statistics
 t_stat <- function(sam_size, num_sam , delta , tracker.i , data) {
-       #extract name of current distribution for storage and later comparison
+       # extract name of current distribution for storage and later comparison
        distribution <- names(full.pop)[which(names(full.pop) %in% data)]
        
-       #print information to console for tracking progress of t-statistic simulation
-       cat("distribution = " , distribution , 
-           " , sample size = " , sam_size , 
-           " , i = " , tracker.i , 
-           "\n")
+       # print information to console for tracking progress of t-statistic simulation
+       #cat("distribution = " , distribution , 
+       #    " , sample size = " , sam_size , 
+       #    " , i = " , tracker.i , 
+       #    "\n")
        
-       #establish current population from full list using distribution label
+       # establish current population from full list using distribution label
        data <- full.pop[[distribution]]
        
-       #initialize blank matrix for simulated samples
+       # initialize blank matrix for simulated samples
        mat <- matrix(nrow = sam_size , ncol = num_sam)
        
-       #fill each column with a sample of specified size
+       # fill each column with a sample of specified size
        for(i in 1:ncol(mat)) {
               mat[ , i] <- sample(data[["population"]] , sam_size , replace = F)
        }
        
-       #generate population mean for given distribution
+       # generate population mean for given distribution
        mu0 <- mean(data[["population"]])
        
-       #generate alternative-hypothesis mean for given delta and given population mean
+       # generate alternative-hypothesis mean for given delta and given population mean
        muA <- mu0 + delta
        
-       #generate sample means
+       # generate sample means
        xbar <- colMeans(mat)
        
-       #generate sample standard deviations
+       # generate sample standard deviations
        s <- apply(mat , 2 , sd)
        
-       #generate sample t-scores
+       # generate sample t-scores
        t <- (xbar - mu0) / (s / sqrt(sam_size))
        
-       #generate corresponding p-values for testing against
-       # #true population mean
+       # generate corresponding p-values for testing against
+       # # true population mean
        p.vals0 <- mat %>%
               data.frame() %>%
               map(t.test , mu = mu0) %>%
               map_dbl("p.value") %>%
               as.numeric()
        
-       #generate corresponding p-values for testing against
-       # #alternative hypothesis with delta = 1
+       # generate corresponding p-values for testing against
+       # # alternative hypothesis with delta = 1
        p.valsA <- mat %>%
               data.frame() %>%
               map(t.test , mu = muA) %>%
               map_dbl("p.value") %>%
               as.numeric()
        
-       #store all data to dataframe
+       # store all data to dataframe
        data <- data.frame(#(matrix(nrow = num_sam)) , 
                           distribution = distribution , sam_size = sam_size , num_sam = num_sam , 
                           mu0 = mu0 , muA = muA , delta = delta , 
                           xbar = xbar , s = s , t = t , 
                           p.vals0 = p.vals0 , p.valsA = p.valsA)
        
-       #save dataframe to permanent object
+       # save dataframe to permanent object
        return(data)
 
 }
+```
 
+Let's map **<span style = "color:blue">`` `r "t_stat()"` ``</span>** over all conditions.
+
+```{r map t_stat function over data conditions , eval = F}
 #map t-statistic function over all simulation conditions
 simulated.data <- sim.conds %>%
        pmap(t_stat)
+```
 
+```{r save simulated data , eval = F , echo = F}
+saveRDS(simulated.data , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/robustsim_fulldata.RData")
+```
 
+```{r load simulated data , echo = F}
+simulated.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/robustsim_fulldata.RData")
+```
+
+### Generating True Probability Coverage
+
+The **<span style = "color:blue">`` `r "t_cov()"` ``</span>** function below generates the true/actual probability coverage for each condition.
+
+```{r tcov function}
 #function for generating true probability coverage, type I, power
 tcov <- function(data , conf.level = .95) {
        #print information to console for tracking progress of simulation
-       cat("distribution = " , levels(data[ , "distribution"])[1] , 
-           " , sample size = " , data[1 , "sam_size"] , 
-           "\n")
+       #cat("distribution = " , levels(data[ , "distribution"])[1] , 
+       #    " , sample size = " , data[1 , "sam_size"] , 
+       #    "\n")
        
-       #set degrees of freedom for theoretical t-distribution: n-1
+       # set degrees of freedom for theoretical t-distribution: n-1
        df <- (data[1 , "sam_size"] - 1)
        
-       #set upper quantile for theoretical CI
+       # set upper quantile for theoretical CI
        conf.hi <- 1 - (1 - conf.level) / 2
        
-       #set lower quantile for theoretical CI
+       # set lower quantile for theoretical CI
        conf.lo <- 1 - conf.hi
        
-       #sort simulated t-statistics
+       # sort simulated t-statistics
        t_statistics <- sort(data[ , "t"])
        
-       #store current null-hypothesis p-vals
-       # #to object for convenience
+       # store current null-hypothesis p-vals
+       # # to object for convenience
        p.vals0 <- data[ , "p.vals0"]
        
-       #store current alt-hypothesis p-vals
-       # #to object for convenience
+       # store current alt-hypothesis p-vals
+       # # to object for convenience
        p.valsA <- data[ , "p.valsA"]
        
-       #store delta
-       # #to object for convenience
+       # store delta
+       # # to object for convenience
        delta <- data[1 , "delta"]
        
-       #store arguments for "power.t.test"
-       # #to object for convenience
+       # store arguments for "power.t.test"
+       # # to object for convenience
        power.args <- list(delta = delta , 
                           sd = data[ , "s"] , 
                           sig.level = rep(conf.level , times = data[1 , "num_sam"]) , 
                           n = rep(data[1 , "sam_size"] , times = data[1 , "num_sam"]))
        
-       #calculate nominal power level for each sample to detect
-       # #delta
+       # calculate nominal power level for each sample to detect
+       # # delta
        nominal.power <- power.args %>%
               pmap(power.t.test) %>%
               map_dbl("power")
-       #calculate actual power level for given data condition overall
-       # #aka the rate of rejections to the total number of samples
+       
+       # calculate actual power level for given data condition overall
+       # # aka the rate of rejections to the total number of samples
        power <- sum(p.valsA < 0.05) / length(p.valsA)
        
-       #calculate the actual probability coverage of the 95% CI
-       # #in given data condition
+       # calculate the actual probability coverage of the 95% CI
+       # # in given data condition
        actual_prob <- length(which(t_statistics >= qt(conf.lo , df = df) &
                                           t_statistics <= qt(conf.hi,df = df))) / length(t_statistics)
 
-       #calculate actual Type I error rate for given data condition + model
-       # #aka the rate of rejections to the total number of samples
+       # calculate actual Type I error rate for given data condition + model
+       # # aka the rate of rejections to the total number of samples
        typeI <- sum(p.vals0 < 0.05) / length(p.vals0)
        
-       #store simulation data to dataframe
+       # store simulation data to dataframe
        sim.data <- data.frame(distribution = data[1 , "distribution"] , 
                               samplesize = data[1 , "sam_size"] , 
                               TypeI = typeI , 
                               nominalpower = mean(nominal.power) , 
                               actualpower = power)
        
-       #save simulation to permanent object
+       # save simulation to permanent object
        return(sim.data)
 }
+```
 
-#generate type I error rates and power for all simulated samples
+Now let's map **<span style = "color:blue">`` `r "t_cov()"` ``</span>** over the data we generated using **<span style = "color:blue">`` `r "t_stat()"` ``</span>**.
+
+```{r generate type I error and power by mapping tcov , eval = F}
+# generate type I error rates and power for all simulated samples
 perf.data <- simulated.data %>%
        map_dfr(tcov)
+```
 
+```{r save perf data , eval = F , echo = F}
+saveRDS(perf.data , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/robustsim_perfdata.RData")
+```
 
+```{r load perf data , echo = F}
+perf.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/robustsim_perfdata.RData")
+```
 
+### Visualizing the Results
+
+Note that I do not delve into details regarding the visualization tools used below. Please see <span style = "color:green">`` `r "05_Coefficient_Visualization"` ``</span> ([Demo 5](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient_Visualization.html)) for a full walkthrough and demonstration of the visualization tools I used.
+
+As a reminder: the actual Type I error rate is the proportion of rejected null hypotheses, as the null-hypothesized value is the true population mean in each case. For the most part, the actual Type I error rates are relatively close to the nominal level of $\alpha = 0.05$, even with small samples. However, two distributions do not stabilize around the nominal level until much larger sample sizes. The actual Type I error rate for the outlier-contaminated population is much larger than the nominal level until $n > 100$, with actual error rates greater than 0.10 at $n = 50$. On the other hand, the actual error rate for the heavy-tailed normal distribution is far less than the nominal with sample sizes less than 50.
+
+You might be thinking: isn't it good that our error rate is lower than we expect? Unfortunately, our actual Type I error rate being reduced also means that our power iwould also be reduced relative to our expectation if we were to apply this in a situation where, in truth, the null hypothesis is incorrect. Given all else is held constant, Type I error rate and Power are directly proportional, so changing one relative to our expectation will impact the other.
+
+```{r Type I plot object , echo = F , message = F}
 #plot sim results: Type I error
 typeI.plot <- ggplot(data = perf.data) + 
        geom_smooth(mapping = aes(x = samplesize, y = TypeI, color = distribution) , se = FALSE)
@@ -270,7 +415,11 @@ typeI.plot + coord_cartesian(ylim = c(0 , 0.20)) +
                             breaks = c("normal" , "heavy" , "outlier" , "g0h0" , "g2h0" , "g0h2" , "g2h2"),
                             labels = c("Standard\nNormal", "Heavy-Tailed\nNormal", "Outlier-Contaminated\nNormal" , 
                                        "g-and-h(0,0)\naka Standard Normal" , "g-and-h(0.2,0)" , "g-and-h(0,0.2)" , "g-and-h(0.2,0.2)"))
+```
 
+The actual power, on the other hand, is the proportion of the calculated t-statistics that reject the null hypothesis. Suppose the test statistic's actual probability coverage is close to the nominal. In that case, the corresponding lines in the nominal and actual power plots should roughly match, while disparate line trends reflect a discrepancy between the nominal and actual power. As seen in the plots below, at the smallest of sample sizes, nominal power overestimates the actual power at least moderately for all methods except the two standard normal distributions as well as the g-and-h distribution with $g = 0.2$ and $h = 0$ (aka the skewed, normal-tailed distribution). **g-and-h(0,0.2)** (symmetric, heavy-tailed distribution) and **g-and-h(0.2,0.2)** (skewed and heavy-tailed distribution) do not stabilize around their nominal levels until sample sizes of $n > 100$, the outlier-contaminated distribution until approximately $n = 200$, and the heavy-tailed distribution until $n > 400$.
+
+```{r Power plot object , echo = F , message = F}
 #plot sim results: Power
 # #generate and store plot objects
 nominalpower.plot <- ggplot(data = perf.data) + 
@@ -280,24 +429,35 @@ nominalpower.plot + coord_cartesian(ylim = c(0 , 1.0))
 actualpower.plot <- ggplot(data = perf.data) + 
        geom_smooth(mapping = aes(x = samplesize, y = actualpower , color = distribution) , se = FALSE)
 actualpower.plot + coord_cartesian(ylim = c(0 , 1.0))
+```
 
+```{r generate plot object for legend , echo = F , message = F}
 # #generate legend for combined
 newlegend.plot <- nominalpower.plot +
         scale_color_discrete(name = "Distribution",
                              breaks = c("normal" , "heavy" , "outlier" , "g0h0" , "g2h0" , "g0h2" , "g2h2"),
                              labels = c("Standard\nNormal", "Heavy-Tailed\nNormal", "Outlier-Contaminated\nNormal" , 
                                         "g-and-h(0,0)\naka Standard Normal" , "g-and-h(0.2,0)" , "g-and-h(0,0.2)" , "g-and-h(0.2,0.2)"))
+```
 
+```{r g_legend function , echo = F}
 #function which stores legend from plot into object for subsequent use
 g_legend<-function(a.gplot){
        tmp <- ggplot_gtable(ggplot_build(a.gplot))
        leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
        legend <- tmp$grobs[[leg]]
        return(legend)}
-mylegend <- g_legend(newlegend.plot)
+```
 
+```{r create plot legend , echo = F , message = F}
+mylegend <- g_legend(newlegend.plot)
+```
+
+
+
+```{r create full multiplot of power and type I error rate , eval = F , echo = F , message = F}
 #generate simultaneous plot of nominal + actual power + stored legend
-grid.arrange(arrangeGrob((nominalpower.plot + 
+plot.c <- grid.arrange(arrangeGrob((nominalpower.plot + 
                      coord_cartesian(ylim = c(0 , 1.0)) + 
                      xlab("Sample Size") + ylab("Power") + 
                      theme(legend.position = "none") + ggtitle("Nominal Power") + 
@@ -307,6 +467,9 @@ grid.arrange(arrangeGrob((nominalpower.plot +
                     xlab("Sample Size") + ylab("Power")  + 
                      theme(legend.position = "none") + ggtitle("Actual Power") + 
                       theme(plot.title = element_text(hjust = 0.5))) , 
-             nrow = 1) , mylegend , ncol = 2 , widths = c(200 , 40))
+             nrow = 1) , mylegend , ncol = 2 , widths = c(100 , 20))
 ```
+
+
+## References
 
