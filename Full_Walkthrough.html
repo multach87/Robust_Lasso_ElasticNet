@@ -1584,7 +1584,7 @@ library(ggplot2)      # For generating and manipulation graphical objects</code>
 <div id="generating-the-data" class="section level3">
 <h3>Generating the Data</h3>
 <p>I’m going to generate a dataset with a sample size of 100, 200 potential predictors, a random amount of outlier contamination in the predictors selected from <span class="math inline">\(0\%\)</span>, <span class="math inline">\(10\%\)</span>, and <span class="math inline">\(20\%\)</span>, and a random amount of outlier contamination in the response variable selected from <span class="math inline">\(0\%\)</span>, <span class="math inline">\(10\%\)</span>, and <span class="math inline">\(20\%\)</span>. No skew or kurtosis will be intentionally induced in the data.</p>
-<pre class="r"><code>walkthru.data &lt;- data_gen(n = 100 , p = 200 , 
+<pre class="r"><code>wt.data &lt;- data_gen(n = 100 , p = 200 , 
                           eta_x = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
                           eta_y = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
                           g = 0 , h = 0 , 
@@ -1595,143 +1595,345 @@ library(ggplot2)      # For generating and manipulation graphical objects</code>
 <div id="cv-splitting-data" class="section level2">
 <h2>CV-Splitting data</h2>
 <p>Now we need to conduct cross-validation splits of the data. The custom k-fold subsetting functions I created and demonstrated in <span style="color:green"><code>02A_KFold_Subsetter</code></span> and <span style="color:green"><code>02B_Kfold_Multi</code></span> are hidden from the html file. The code for those functions can be found in the .Rmd, and further details about those functions can be found in the corresponding <span style="color:green"><code>Component Demonstrations</code></span>.</p>
-<div id="k-fold-subsetting-functions" class="section level3">
-<h3>K-fold subsetting functions</h3>
-<pre class="r"><code># k-fold subsetting function
-kfold_subsetter &lt;- function(data , y_col = 1 , 
-                            x_cols = c(2:ncol(data)) , 
-                            subset_col = (ncol(data) + 1) , 
-                            k = 5 , seed = 7 , list = FALSE) {
-        # check for string object in data argument
-        if(is.character(data)) {
-                data &lt;- eval(parse_expr(data))
-        }
-        
-        # check for data.table and setDT() if not a data.table
-        if(!(TRUE %in% (class(data) == &quot;data.table&quot;))) {
-                data &lt;- setDT(data.frame(data))
-        }
-        
-        # check for 0 &lt; k &lt;= n/2
-        if((k &lt;= 0) | (k &gt; (nrow(data) / 2) ) ) {
-                stop(&quot;ERROR: number of folds 'k' must be greater than 0 and less than or equal to half of the sample size&quot;)
-        }
-        
-        # determine number of subsets which contain an extra observation
-        # # if n is not evenly divisible by k
-        # # # note that this value will be 0 if n/k is evenly divisible
-        nsams.large &lt;- nrow(data) %% k
-        
-        # determine number of smaller subset if n 
-        # # is not evenly divisible by k
-        # # # note that this will be the total number of samples if 
-        # # # # n/k is evenly divisible
-        nsams.small &lt;- k - nsams.large
-        
-        # determine sample size of larger subsets if applicable
-        samsize.large &lt;- ceiling(nrow(data) / k) * (nsams.large != 0)
-        
-        # determine sample size of smaller/all subsets
-        samsize.small &lt;- floor(nrow(data) / k)
-                
-        # create indicator for each subset
-        subset.indicator &lt;- c(rep( (1 : k) , 
-                                   floor(nrow(data) / k)
-                                  ) ,
-                              rep( (1 : (nsams.large) ) , 
-                                   (1 * (nsams.large != 0) ) 
-                                  )
-                              )
-                
-        # fix random assignment process
-        if(seed) {
-                set.seed(seed)
-        }
-        
-        # combine subset indicator with original data  
-        newdata &lt;- cbind(data , 
-                         subset = sample(subset.indicator)
-                         )
-        
-        # create k-split list if desired
-        if(list == TRUE) {
-                newdata &lt;- return(split(newdata , 
-                                        newdata[ , &quot;subset&quot;])
-                                  )
-        } else if(list == &quot;traintest&quot;) {
-                newdata &lt;- return(list(
-                    X = subset(newdata[ , c(x_cols, subset_col) , 
-                                            with = F] , subset &lt; k) %&gt;%
-                        .[ , c(1:8) , with = F] , #%&gt;% 
-                        #as.matrix() , 
-                    Y = subset(newdata[ , c(y_col , subset_col) , 
-                                        with = F] , subset &lt; k) %&gt;%
-                        .[ , 1 , with = F] , #%&gt;%
-                        #as.matrix() , 
-                    X_Test = subset(newdata[ , c(x_cols, subset_col) , 
-                                            with = F] , subset %in% k) %&gt;%
-                        .[ , c(1:8) , with = F] , # %&gt;%
-                        #as.matrix() , 
-                    Y_Test = subset(newdata[ , c(y_col , subset_col) , 
-                                        with = F] , subset %in% k) %&gt;%
-                        .[ , 1 , with = F] , # %&gt;%
-                        #as.matrix() , 
-                    Seed = seed , 
-                    Subsets = newdata[ , &quot;subset&quot;]
-                    )
-                    )
-        } else {
-                newdata &lt;- return(newdata)
-        }
-}</code></pre>
-<pre class="r"><code>kfold_multi &lt;- function(data , ... , seed_multi = 713 , 
-                        num_splits = 100 , test_percent = .2) {
-        # set the seed for generating individual kfold seeds
-        set.seed(seed_multi)
-        
-        # turn data object name into character string for subsequent use
-        data.name &lt;- deparse(substitute(data))
-        
-        # generate random numbers equal to num_splits so that each
-        # # individual run of the subsetter has a unique seed
-        seeds &lt;- sample(c(1:100000) , size = num_splits , replace = FALSE)
-        
-        # set value of k corresponding with test_percent
-        if((test_percent &gt;= 1) | (test_percent &lt;= 0)) {
-                stop(&quot;ERROR: 'test_percent' must be greater than and less than 1&quot;)
-        }
-        
-        # set k for individual splits
-        k &lt;- 1 / test_percent
-        
-        # initialize and data.table of kfold arguments
-        split_repped.dt &lt;- setDT(as.data.frame(matrix(ncol = 1 , 
-                                              nrow = num_splits)))
-        
-        # fill data.table with arguments for kfold function
-        split_repped.dt[ , ':=' (data = data.name , 
-                         k = k , 
-                         seed = seeds , 
-                         list = &quot;traintest&quot;
-                         )
-                 ]
-        
-        # remove blank column from initializing
-        split_repped.dt &lt;- split_repped.dt[ , !1 , with = F]
-        
-        # run subsetter for the desired number of splits
-        full.data &lt;- split_repped.dt %&gt;%
-                pmap(kfold_subsetter)
-        
-        # store single object of all training/testing splits
-        return(full.data)
-}</code></pre>
-</div>
 <div id="create-cv-split-data" class="section level3">
 <h3>Create cv-split data</h3>
-<pre class="r"><code>wtcv.10 &lt;- kfold_multi(data = walkthru.data , num_splits = 10)</code></pre>
-<pre class="r"><code>wtcv.100 &lt;- kfold_multi(data = walkthru.data , num_splits = 100)</code></pre>
-<pre class="r"><code>wtcv.250 &lt;- kfold_multi(data = walkthru.data , num_splits = 250)</code></pre>
+<p>I’m going to conduct 100 splits, similarly to in the component demos and in my dissertation research. First I need to extract the X’s and Y’s into a single data object to be split.</p>
+<pre class="r"><code>wt.data2 &lt;- setDT(data.frame(cbind(wt.data[[&quot;Y&quot;]] , wt.data[[&quot;X&quot;]]
+                                     )
+                               )
+                    )</code></pre>
+<pre class="r"><code>wtcv.100 &lt;- kfold_multi(data = wt.data2 , num_splits = 100)</code></pre>
+</div>
+<div id="save-the-date-a" class="section level3">
+<h3>Save the Date-a</h3>
+<p>Let’s save the original dataset, including the conditions which generated it, as well as our cv-split data.</p>
+<pre class="r"><code>saveRDS(wt.data , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/walkthrough_data.RData&quot;)</code></pre>
+<pre class="r"><code>saveRDS(wtcv.100 , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/wtdata_cvsplit.RData&quot;)</code></pre>
+</div>
+</div>
+<div id="generating-lasso-and-elastic-net-models" class="section level2">
+<h2>Generating Lasso and Elastic Net Models</h2>
+<p>Let’s generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <span style="color:green"><code>03D_Combined_Model_Generation</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html">Demo 3D</a>). Additional demonstrations of the steps leading up to the full model generation can be found in <span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html">Demo 3A</a>), <span style="color:green"><code>03B_hqreg_generalized</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html">Demo 3B</a>), and <span style="color:green"><code>03C_hqreg_msaenet_generalized</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html">Demo 3C</a>).</p>
+<p><em>However</em>, because the actual application of the model function and the subsequent processing of the model results would be a part of the actual use of my combined approach in a real setting, I <em>will</em> be including those code chunks in the current walkthrough.</p>
+<pre class="r"><code># adaptive LAD lasso application function
+hqmsa.sim.fnct &lt;- function(data.list , 
+                           method = c(&quot;msaenet&quot; , 
+                                      &quot;quantile&quot; , &quot;LAD&quot; , 
+                                      &quot;huber&quot;) , 
+                           tau = 0.5 , 
+                           gamma = 1.345 , 
+                           alpha = 0.5 , 
+                           nsteps = 5L , 
+                           print.time = TRUE) {
+       # Store training X and Y to temporary objects
+       X_train &lt;- data.list[[&quot;X&quot;]]
+       Y_train &lt;- data.list[[&quot;Y&quot;]]
+       
+       if(method == &quot;LAD&quot;) {
+               method &lt;- &quot;quantile&quot;
+       }
+       
+       # If applicable, store holdout/testing X and Y
+       if(!is.null(data.list[[&quot;X_test&quot;]]) &amp; 
+          !is.null(data.list[[&quot;Y_test&quot;]])) {
+               X_test &lt;- data.list[[&quot;X_test&quot;]]
+               Y_test &lt;- data.list[[&quot;Y_test&quot;]]
+       } else {
+               X_test &lt;- NULL
+               Y_test &lt;- NULL
+       }
+        
+       # lambdas to try for regularization
+       lambda.try &lt;- seq(log(1400) , log(0.01) , length.out = 100)
+       lambda.try &lt;- exp(lambda.try)
+       
+       # set a timer start point
+       start &lt;- Sys.time()
+       
+       # cross-validated selection of adaptive lasso
+       # # tuning hyperparameter nu/gamma
+       
+       # # select ridge coefs for weighting
+       ridge.model &lt;- cv.glmnet(x = X_train , y = Y_train , 
+                                lambda = lambda.try , alpha = 0)
+       lambda.ridge.opt &lt;- ridge.model$lambda.min
+       best.ridge.coefs &lt;- predict(ridge.model , 
+                                           type = &quot;coefficients&quot; ,
+                                           s = lambda.ridge.opt)[-1]
+
+       
+       # # grid of nu/gamma values to try for cross-validation
+       nu.try &lt;- exp(seq(log(0.01) , log(10) , length.out = 100))
+       
+       # # initialize full list of LAD lasso results from each nu/gamma
+       hqmsa.nu.cv.full &lt;- list()
+       
+       # # initialize matrices of metrics and minimizing results
+       hqmsa.nu.cv.lambda &lt;- numeric()
+       hqmsa.nu.cv.mse &lt;- numeric()
+       hqmsa.nu.cv.msesd &lt;- numeric()
+       hqmsa.nu.cv.coefs &lt;- list()
+       
+       # # Loop over nu/gamma values for CV, 
+       # # # storing minimizing lambda within each nu/gamma
+       if(method == &quot;msaenet&quot;) {
+               for(i in 1:length(nu.try)) {
+                       #single adaptive lasso run with ridge weighting and nu = 1
+                       hqmsa.nu.cv.full[[i]] &lt;- msaenet(x = X_train , 
+                                                    y = Y_train , 
+                                                    family = &quot;gaussian&quot; , 
+                                                    init = &quot;ridge&quot; ,
+                                                    alphas = 0.5 , 
+                                                    tune = &quot;cv&quot; , 
+                                                    nfolds = 5L , 
+                                                    rule = &quot;lambda.min&quot; , 
+                                                    nsteps = nsteps , 
+                                                    tune.nsteps = &quot;max&quot; , 
+                                                    scale = nu.try[i])
+                       
+                       hqmsa.nu.cv.lambda[i] &lt;-
+                               hqmsa.nu.cv.full[[i]]$best.lambdas[[nsteps + 1]]
+                       
+                       hqmsa.nu.cv.coefs[[i]] &lt;- c(NA , coef(hqmsa.nu.cv.full[[i]]))
+                               
+                       
+                       hqmsa.nu.cv.mse[i] &lt;- min(hqmsa.nu.cv.full[[i]]$step.criterion[[nsteps + 1]])
+                       }
+       } else {
+               for(i in 1:length(nu.try)) {
+                       invisible(capture.output(
+                               hqmsa.nu.cv.full[[i]] &lt;- 
+                                       cv.hqreg(X = X_train , 
+                                                y = Y_train , 
+                                                method = method , 
+                                                tau = tau , 
+                                                gamma = gamma , 
+                                                lambda = lambda.try ,
+                                                alpha = alpha , 
+                                                preprocess =
+                                                        &quot;standardize&quot; , 
+                                                screen = &quot;ASR&quot; , 
+                                                penalty.factor = 
+                                                        1 / abs(best.ridge.coefs) ^ nu.try[i] , 
+                                                FUN = &quot;hqreg&quot; , 
+                                                type.measure = &quot;mse&quot;
+                                                )
+                                        )
+                               )
+                       hqmsa.nu.cv.mse[i] &lt;-
+                               min(hqmsa.nu.cv.full[[i]]$cve)
+                       hqmsa.nu.cv.msesd[i] &lt;-
+                               hqmsa.nu.cv.full[[i]]$cvse[
+                         which.min(hqmsa.nu.cv.full[[i]]$cve)
+                                                         ]
+                       hqmsa.nu.cv.lambda[i] &lt;-
+                               hqmsa.nu.cv.full[[i]]$lambda.min
+                       hqmsa.nu.cv.coefs[[i]] &lt;- 
+                               hqmsa.nu.cv.full[[i]]$fit$beta[ , 
+                         which.min(hqmsa.nu.cv.full[[i]]$cve)
+                                                             ]
+                       }
+       }
+
+       
+       #specify minimizing nu value and resulting model info
+       nu.opt &lt;- nu.try[which.min(hqmsa.nu.cv.mse)]
+       lambda.opt &lt;- 
+               hqmsa.nu.cv.lambda[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]
+       weights.opt &lt;- 1 / abs(best.ridge.coefs) ^ nu.opt
+       hqmsa.coefs &lt;-
+               hqmsa.nu.cv.coefs[[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]]
+       hqmsa.mse.min &lt;- min(hqmsa.nu.cv.mse)
+       if(!is.null(hqmsa.nu.cv.msesd[1])) {
+               hqmsa.mse.min.se &lt;- hqmsa.nu.cv.msesd[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]               
+       }
+
+       hqmsa.model.min &lt;- 
+               hqmsa.nu.cv.full[
+                       which.min(hqmsa.nu.cv.mse)
+                       ]
+       n.coefs &lt;- sum(hqmsa.coefs[-1] != 0)
+       
+       # calculate metrics using holdout data, if applicable
+       if(!is.null(X_test) &amp; !is.null(Y_test)) {
+               # store n
+               n &lt;- nrow(data.list[[&quot;X_test&quot;]])
+               
+               # calculate predicted values
+               y.pred &lt;- data.list[[&quot;X_test&quot;]] %*% hqmsa.coefs[-1]
+               if(!is.na(hqmsa.coefs[1])) {
+                       y.pred &lt;- y.pred + hqmsa.coefs[1]
+               }
+   
+               # calculate residual
+               resid &lt;- y.pred - Y_test
+               
+               # square the residuals
+               resid.sq &lt;- resid ^ 2
+               
+               # sum the square of residuals
+               sum.resid.sq &lt;- sum(resid.sq)
+               
+               #calculate root mse
+               mse &lt;- sum.resid.sq / n
+               
+               # set endpoint for timer
+               end &lt;- Sys.time()
+               
+               # temporarily store time of current model
+               time &lt;- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = &quot;secs&quot;
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               if(print.time) {
+                       cat(&quot;time = &quot; , time , &quot; ;;; &quot;)
+               }
+               
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = hqmsa.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = hqmsa.coefs , 
+                                             weights = weights.opt
+                                             ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time , 
+                                          mse = mse
+                                          )
+                           )
+                      )
+       } else {
+               # set endpoint for timer
+               end &lt;- Sys.time()
+               
+               # temporarily store time of current model
+               time &lt;- abs(as.numeric(difftime(start , 
+                                               end , 
+                                               units = &quot;secs&quot;
+                                               )
+                                      )
+                           )
+               
+               # print the total runtime of the current model
+               if(print.time) {
+                       cat(&quot;time = &quot; , time , &quot; ;;; &quot;)
+               }
+               
+               # put conditions, model info, and metrics into list
+               return(list(full.model = hqmsa.model.min ,
+                           model.info = list(lambda = lambda.opt , 
+                                             coefs = hqmsa.coefs , 
+                                             weights = weights.opt
+                                             ) , 
+                           metrics = list(n.coefs = n.coefs , 
+                                          runtime = time
+                                          )
+                           )
+                      )
+       }
+       
+       
+
+       
+
+}</code></pre>
+<div id="generating-the-models" class="section level3">
+<h3>Generating the models</h3>
+<div id="adaptive-lad-lasso" class="section level4">
+<h4>Adaptive LAD Lasso</h4>
+<pre class="r"><code>#run across data subset
+ladlasso.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 1)</code></pre>
+</div>
+<div id="adaptive-lad-elastic-net-alpha-0.5" class="section level4">
+<h4>Adaptive LAD Elastic Net, Alpha = 0.5</h4>
+<pre class="r"><code>#run across data subset
+ladelnet5.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 0.5)</code></pre>
+</div>
+<div id="adaptive-huber-lasso" class="section level4">
+<h4>Adaptive Huber Lasso</h4>
+<pre class="r"><code>#run across data subset
+huberlasso.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 1)</code></pre>
+</div>
+<div id="adaptive-huber-elastic-net-alpha-0.5" class="section level4">
+<h4>Adaptive Huber Elastic Net, Alpha = 0.5</h4>
+<pre class="r"><code>#run across data subset
+huberelnet5.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 0.5)</code></pre>
+</div>
+<div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level4">
+<h4>Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5</h4>
+<pre class="r"><code>#run across data subset
+msaelnetk3.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 3L)</code></pre>
+</div>
+<div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level4">
+<h4>Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5</h4>
+<pre class="r"><code>#run across data subset
+msaelnetk5.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 5L)</code></pre>
+</div>
+<div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level4">
+<h4>Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5</h4>
+<pre class="r"><code>#run across data subset
+msaelnetk10.100 &lt;- wtcv.100 %&gt;%
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 10L)</code></pre>
+</div>
+</div>
+<div id="processing-the-model-results" class="section level3">
+<h3>Processing the model results</h3>
+<p>Now we would like to process the resulting objects to eliminate any extra information. In this context, we’re mainly interested in getting rid of the overarching ‘result’/‘error’ list structure that is produced by <strong><span style="color:blue"><code>safely()</code></span></strong>.</p>
+<div id="get-rid-of-resulterror-level-of-each-model-function" class="section level4">
+<h4>Get rid of result/error level of each model: Function</h4>
+<p>The following code chunk will check a data list produced by <strong><span style="color:blue"><code>safely()</code></span></strong> and return either the ‘result’ element or the ‘error’ element, depending on which contains information.</p>
+<pre class="r"><code>#eliminate result/error level
+res_or_err &lt;- function(data) {
+        # if the 'error' list element is NULL, store the 'result' element contents
+        if(is.null(data[[&quot;error&quot;]])) {
+                temp &lt;- data[[&quot;result&quot;]]
+        } else { 
+                # otherwise, store the 'error' element contents
+                temp &lt;- data[[&quot;error&quot;]]
+        }
+        
+        # save the resulting object
+        return(temp)
+}</code></pre>
+</div>
+<div id="get-rid-of-resulterror-and-combine" class="section level4">
+<h4>Get rid of result/error and combine</h4>
+<p>Now, we’re going to map <strong><span style="color:blue"><code>res_or_err()</code></span></strong> across all of our 100-split model results and combine those objects into a single overarching list.</p>
+<pre class="r"><code>models_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
+                       map(res_or_err) , 
+                   ladelnet = ladelnet5.100 %&gt;%
+                       map(res_or_err) , 
+                   huberlasso = huberlasso.100 %&gt;%
+                       map(res_or_err) , 
+                   huberelnet = huberelnet5.100 %&gt;%
+                       map(res_or_err) , 
+                   msak3 = msaelnetk3.100 %&gt;%
+                       map(res_or_err) , 
+                   msak5 = msaelnetk5.100 %&gt;%
+                       map(res_or_err) ,
+                   msak10 = msaelnetk10.100 %&gt;%
+                       map(res_or_err))</code></pre>
+</div>
+</div>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2>References</h2>
 <div id="refs" class="references">
 <div id="ref-gridExtra">
 <p>Auguie, Baptiste. 2017. <em>GridExtra: Miscellaneous Functions for &quot;Grid&quot; Graphics</em>. <a href="https://CRAN.R-project.org/package=gridExtra">https://CRAN.R-project.org/package=gridExtra</a>.</p>
@@ -1783,7 +1985,6 @@ kfold_subsetter &lt;- function(data , y_col = 1 ,
 </div>
 <div id="ref-YiHuang2017">
 <p>Yi, C., and J. Huang. 2017. “Semismooth Newton Coordinate Descent Algorithm for Elastic-Net Penalized Huber Loss Regression and Quantile Regression.” <em>Journal of Computational and Graphical Statistics</em> 26 (3): 547–57.</p>
-</div>
 </div>
 </div>
 </div>
