@@ -85,7 +85,7 @@ demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
 
 ### Custom k-fold subsetting function
 
-```{r kfold subsetting function}
+```{r kfold subsetting function , echo = F}
 # k-fold subsetting function
 kfold_subsetter <- function(data , y_col = 1 , 
                             x_cols = c(2:ncol(data)) , 
@@ -151,7 +151,7 @@ kfold_subsetter <- function(data , y_col = 1 ,
                 newdata <- return(list(
                     X = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset < k) %>%
-                        .[ , c(1:8) , with = F] , #%>% 
+                        .[ , c(1:length(x_cols)) , with = F] , #%>% 
                         #as.matrix() , 
                     Y = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset < k) %>%
@@ -159,7 +159,7 @@ kfold_subsetter <- function(data , y_col = 1 ,
                         #as.matrix() , 
                     X_Test = subset(newdata[ , c(x_cols, subset_col) , 
                                             with = F] , subset %in% k) %>%
-                        .[ , c(1:8) , with = F] , # %>%
+                        .[ , c(1:length(x_cols)) , with = F] , # %>%
                         #as.matrix() , 
                     Y_Test = subset(newdata[ , c(y_col , subset_col) , 
                                         with = F] , subset %in% k) %>%
