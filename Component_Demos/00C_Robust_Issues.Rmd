@@ -423,21 +423,28 @@ The actual power, on the other hand, is the proportion of the calculated t-stati
 #plot sim results: Power
 # #generate and store plot objects
 nominalpower.plot <- ggplot(data = perf.data) + 
-       geom_smooth(mapping = aes(x = samplesize, y = nominalpower , color = distribution) , se = FALSE)
-nominalpower.plot + coord_cartesian(ylim = c(0 , 1.0))
+  geom_smooth(mapping = aes(x = samplesize, y = nominalpower , color = distribution) , se = FALSE) + 
+  coord_cartesian(ylim = c(0 , 1.0)) +
+  xlab("Sample Size") + ylab("Power") + 
+  theme(legend.position = "none") + 
+  ggtitle("Nominal Power") + 
+  theme(plot.title = element_text(hjust = 0.5))
 
 actualpower.plot <- ggplot(data = perf.data) + 
-       geom_smooth(mapping = aes(x = samplesize, y = actualpower , color = distribution) , se = FALSE)
-actualpower.plot + coord_cartesian(ylim = c(0 , 1.0))
+  geom_smooth(mapping = aes(x = samplesize, y = actualpower , color = distribution) , se = FALSE) + 
+  coord_cartesian(ylim = c(0 , 1.0)) + 
+  xlab("Sample Size") + ylab("Power")  + 
+  theme(legend.position = "none") + 
+  ggtitle("Actual Power") + 
+  theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ```{r generate plot object for legend , echo = F , message = F}
 # #generate legend for combined
-newlegend.plot <- nominalpower.plot +
-        scale_color_discrete(name = "Distribution",
-                             breaks = c("normal" , "heavy" , "outlier" , "g0h0" , "g2h0" , "g0h2" , "g2h2"),
-                             labels = c("Standard\nNormal", "Heavy-Tailed\nNormal", "Outlier-Contaminated\nNormal" , 
-                                        "g-and-h(0,0)\naka Standard Normal" , "g-and-h(0.2,0)" , "g-and-h(0,0.2)" , "g-and-h(0.2,0.2)"))
+newlegend.plot <- ggplot(data = perf.data) + 
+  geom_smooth(mapping = aes(x = samplesize, 
+                            y = nominalpower , 
+                            color = distribution) , se = FALSE)
 ```
 
 ```{r g_legend function , echo = F}
@@ -455,19 +462,10 @@ mylegend <- g_legend(newlegend.plot)
 
 
 
-```{r create full multiplot of power and type I error rate , eval = F , echo = F , message = F}
+```{r create full multiplot of power and type I error rate , echo = F , message = F}
 #generate simultaneous plot of nominal + actual power + stored legend
-plot.c <- grid.arrange(arrangeGrob((nominalpower.plot + 
-                     coord_cartesian(ylim = c(0 , 1.0)) + 
-                     xlab("Sample Size") + ylab("Power") + 
-                     theme(legend.position = "none") + ggtitle("Nominal Power") + 
-                             theme(plot.title = element_text(hjust = 0.5))) , 
-             (actualpower.plot + 
-                    coord_cartesian(ylim = c(0 , 1.0)) + 
-                    xlab("Sample Size") + ylab("Power")  + 
-                     theme(legend.position = "none") + ggtitle("Actual Power") + 
-                      theme(plot.title = element_text(hjust = 0.5))) , 
-             nrow = 1) , mylegend , ncol = 2 , widths = c(100 , 20))
+plot.c <- grid.arrange(arrangeGrob(nominalpower.plot , actualpower.plot) , 
+             nrow = 1 , arrangeGrob(mylegend) , ncol = 2 , widths = c(100 , 20))
 ```
 
 
