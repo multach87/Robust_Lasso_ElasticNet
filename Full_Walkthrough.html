@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-18" />
+<meta name="date" content="2021-11-22" />
 
 <title>Full Applied Walkthrough</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Full Applied Walkthrough</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-18</h4>
+<h4 class="date">2021-11-22</h4>
 
 </div>
 
@@ -1584,12 +1584,23 @@ library(ggplot2)      # For generating and manipulation graphical objects</code>
 <div id="generating-the-data" class="section level3">
 <h3>Generating the Data</h3>
 <p>I’m going to generate a dataset with a sample size of 100, 200 potential predictors, a random amount of outlier contamination in the predictors selected from <span class="math inline">\(0\%\)</span>, <span class="math inline">\(10\%\)</span>, and <span class="math inline">\(20\%\)</span>, and a random amount of outlier contamination in the response variable selected from <span class="math inline">\(0\%\)</span>, <span class="math inline">\(10\%\)</span>, and <span class="math inline">\(20\%\)</span>. No skew or kurtosis will be intentionally induced in the data.</p>
-<pre class="r"><code>wt.data &lt;- data_gen(n = 100 , p = 200 , 
+<div id="update-11182021-1" class="section level4">
+<h4>UPDATE 11/18/2021-1</h4>
+<p>So it seems that with this n and p, null models (aka models with 0 coefficients) were generally being produced. It’s unclear why this was happening, as even the lasso models should be at least producing some coefficients. These models have also worked in prior real-data applications with p &gt; n when I was working on my dissertation.</p>
+<p>Probably what’s going on is that the idiosyncracies of the generated data give the models trouble. Turns out, this is <em>not</em> a real dataset.</p>
+<p>In the meantime, I’m going to set the data to be generated with sample size of 100 and 50 potential predictors.</p>
+</div>
+<div id="update-11182021-2" class="section level4">
+<h4>UPDATE 11/18/2021-2</h4>
+<p>Matt did another dumb when he originally wrote up the k-fold subsetting function. I made that function such that the new X objects would specifically have 8 columns - corresponding with the 8 predictors in my first first super original dataset I tested on in the early days of this repository. <strong><span style="color:blue"><code>kfold_subsetter()</code></span></strong>, as well as the corresponding functions in various component demos, have all but updated to reflect this change.</p>
+<p>All that said, I am still going to reduce the number of potential predictors down to 50. Dealing with dimensionality adds a huge computational burden to the model estimation process, one which makes rendering an appropriate markdown file impractical on my current hardware. When finances permit, I plan on generating those models with an AWS EC2 instance and re-compiling this walkthrough, except setting certain model-estimating code chunks to <strong><span style="color:blue"><code>eval = F</code></span></strong> and including hidden chunks that load the AWS-generated data.</p>
+<pre class="r"><code>wt.data &lt;- data_gen(n = 100 , p = 50 , 
                           eta_x = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
                           eta_y = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
                           g = 0 , h = 0 , 
                           seed = rnorm(1) , tracker = 1
                           )</code></pre>
+</div>
 </div>
 </div>
 <div id="cv-splitting-data" class="section level2">
@@ -1626,8 +1637,8 @@ hqmsa.sim.fnct &lt;- function(data.list ,
                            nsteps = 5L , 
                            print.time = TRUE) {
        # Store training X and Y to temporary objects
-       X_train &lt;- data.list[[&quot;X&quot;]]
-       Y_train &lt;- data.list[[&quot;Y&quot;]]
+       X_train &lt;- as.matrix(data.list[[&quot;X&quot;]])
+       Y_train &lt;- as.matrix(data.list[[&quot;Y&quot;]])
        
        if(method == &quot;LAD&quot;) {
                method &lt;- &quot;quantile&quot;
@@ -1636,8 +1647,8 @@ hqmsa.sim.fnct &lt;- function(data.list ,
        # If applicable, store holdout/testing X and Y
        if(!is.null(data.list[[&quot;X_test&quot;]]) &amp; 
           !is.null(data.list[[&quot;Y_test&quot;]])) {
-               X_test &lt;- data.list[[&quot;X_test&quot;]]
-               Y_test &lt;- data.list[[&quot;Y_test&quot;]]
+               X_test &lt;- as.matrix(data.list[[&quot;X_test&quot;]])
+               Y_test &lt;- as.matrix(data.list[[&quot;Y_test&quot;]])
        } else {
                X_test &lt;- NULL
                Y_test &lt;- NULL
@@ -1796,7 +1807,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
                
                # print the total runtime of the current model
                if(print.time) {
-                       cat(&quot;time = &quot; , time , &quot; ;;; &quot;)
+                       cat(&quot;time = &quot; , time , &quot; \n &quot;)
                }
                
                
@@ -1826,7 +1837,7 @@ hqmsa.sim.fnct &lt;- function(data.list ,
                
                # print the total runtime of the current model
                if(print.time) {
-                       cat(&quot;time = &quot; , time , &quot; ;;; &quot;)
+                       cat(&quot;time = &quot; , time , &quot; \n &quot;)
                }
                
                # put conditions, model info, and metrics into list
@@ -1849,52 +1860,61 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 }</code></pre>
 <div id="generating-the-models" class="section level3">
 <h3>Generating the models</h3>
+<p>Note that the following code chunks have not been evaluated in this document. Due to the of generating these datasets on my personal computer, I opted to run these chunks on a personal AWS EC2 cluster and then import the resulting dataset. The total cost to me to do so was less than $10 after splitting up my code to run simultaneously across processors using RStudio’s “Jobs” functionality. This is not necessarily the most streamlined or efficient way to accomplish this. A future goal for my return to this project is to be able automate efficient parallelization of these tasks, rather than manually splitting the code up and using Jobs. If you would like support in getting an EC2 set up, please feel free to email me: matt.multach87 at gmail dot com.</p>
 <div id="adaptive-lad-lasso" class="section level4">
 <h4>Adaptive LAD Lasso</h4>
 <pre class="r"><code>#run across data subset
 ladlasso.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 1)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 1 , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="adaptive-lad-elastic-net-alpha-0.5" class="section level4">
 <h4>Adaptive LAD Elastic Net, Alpha = 0.5</h4>
 <pre class="r"><code>#run across data subset
 ladelnet5.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 0.5)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 0.5 , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="adaptive-huber-lasso" class="section level4">
 <h4>Adaptive Huber Lasso</h4>
 <pre class="r"><code>#run across data subset
 huberlasso.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 1)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 1 , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="adaptive-huber-elastic-net-alpha-0.5" class="section level4">
 <h4>Adaptive Huber Elastic Net, Alpha = 0.5</h4>
 <pre class="r"><code>#run across data subset
 huberelnet5.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 0.5)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 0.5 , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level4">
 <h4>Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5</h4>
 <pre class="r"><code>#run across data subset
 msaelnetk3.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 3L)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 3L , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level4">
 <h4>Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5</h4>
 <pre class="r"><code>#run across data subset
 msaelnetk5.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 5L)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 5L , 
+            print.time = FALSE)</code></pre>
 </div>
 <div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level4">
 <h4>Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5</h4>
 <pre class="r"><code>#run across data subset
 msaelnetk10.100 &lt;- wtcv.100 %&gt;%
-        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 10L)</code></pre>
+        map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 10L , 
+            print.time = FALSE)</code></pre>
 </div>
 </div>
 <div id="processing-the-model-results" class="section level3">
 <h3>Processing the model results</h3>
 <p>Now we would like to process the resulting objects to eliminate any extra information. In this context, we’re mainly interested in getting rid of the overarching ‘result’/‘error’ list structure that is produced by <strong><span style="color:blue"><code>safely()</code></span></strong>.</p>
+<p>Note that the model-processing code chunks have also been set to <strong><span style="color:blue"><code>eval = F</code></span></strong>, as I conducted this processing step after generating the files in AWS EC2.</p>
 <div id="get-rid-of-resulterror-level-of-each-model-function" class="section level4">
 <h4>Get rid of result/error level of each model: Function</h4>
 <p>The following code chunk will check a data list produced by <strong><span style="color:blue"><code>safely()</code></span></strong> and return either the ‘result’ element or the ‘error’ element, depending on which contains information.</p>
@@ -1915,7 +1935,7 @@ res_or_err &lt;- function(data) {
 <div id="get-rid-of-resulterror-and-combine" class="section level4">
 <h4>Get rid of result/error and combine</h4>
 <p>Now, we’re going to map <strong><span style="color:blue"><code>res_or_err()</code></span></strong> across all of our 100-split model results and combine those objects into a single overarching list.</p>
-<pre class="r"><code>models_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
+<pre class="r"><code>modelswt_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
                        map(res_or_err) , 
                    ladelnet = ladelnet5.100 %&gt;%
                        map(res_or_err) , 
@@ -1929,6 +1949,391 @@ res_or_err &lt;- function(data) {
                        map(res_or_err) ,
                    msak10 = msaelnetk10.100 %&gt;%
                        map(res_or_err))</code></pre>
+</div>
+</div>
+</div>
+<div id="process-model-coefficients" class="section level2">
+<h2>Process Model Coefficients</h2>
+<p>See <span style="color:green"><code>04B_Process_Coefficients_AllAdapts</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html">Demo 4B</a>) for a more detailed walkthrough of this step, and <span style="color:green"><code>04A_Process_Coefficients_SingleAdapt</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html">Demo 4A</a>) for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.</p>
+<div id="coefficient-frequency-function" class="section level3">
+<h3>Coefficient frequency function</h3>
+<p>There are many pieces of information that might be extracted from such a rich collection of model results. Let’s focus, however, on predictor selection/inclusion frequency.</p>
+<pre class="r"><code>coefs_freq &lt;- function(models) {
+       # initialize vector of predictor selection frequency, with all values set to 0
+       coefs.freq &lt;- numeric(length = length(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
+                             )
+       
+       # label frequency vector with predictor names, accounting for intercept
+       names(coefs.freq) &lt;- names(models[[1]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][-1])
+       
+       # update each predictors' selection frequency if the corresponding coefficient value
+       # # in each data split is nonzero (aka, was selected into the model)
+       for(i in 1:length(models)) {
+              for(j in 1:length(coefs.freq)) {
+                     if(models[[i]][[&quot;model.info&quot;]][[&quot;coefs&quot;]][(j + 1)] != 0) {
+                            coefs.freq[j] &lt;- coefs.freq[j] + 1
+                     }
+              }
+       }
+       
+       return(coefs.freq)
+}</code></pre>
+</div>
+<div id="coefficient-selection-rank-function" class="section level3">
+<h3>Coefficient selection rank function</h3>
+<p>The function below calculates the selection frequency rank of each potential predictor.</p>
+<pre class="r"><code>coefs_rank &lt;- function(freqs) {
+       # initialize vector of selection rank, with all values set to NA
+       coefs.rank &lt;- numeric(length = length(freqs)
+                             )
+       
+       coefs.rank &lt;- frankv(as.numeric(freqs) , order = -1 , ties.method = &quot;min&quot;)
+       
+       # label rank vector with predictor names, accounting for intercept
+       names(coefs.rank) &lt;- names(freqs)
+       
+       return(coefs.rank)       
+}</code></pre>
+</div>
+<div id="minor-functions-allno-splitsadaptations" class="section level3">
+<h3>Minor functions: All/No Splits/Adaptations</h3>
+<p>I’d like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping to generate these values.</p>
+<pre class="r"><code>all_splits &lt;- function(data) {
+        return(length(which(data[1:length(data)] == 100)
+                      )
+               )
+}</code></pre>
+<pre class="r"><code>no_splits &lt;- function(data) {
+        return(length(which(data[1:length(data)] == 0)  
+                      )
+        )
+}</code></pre>
+<p>Similarly, I would like to calculate the number of adaptations which selected each variable <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> of the time.</p>
+<pre class="r"><code>adapts_100 &lt;- function(data) {
+        return(length(which(data[1:length(data)] == 100)  
+                      )
+               )
+}</code></pre>
+<pre class="r"><code>adapts_0 &lt;- function(data) {
+        return(length(which(data[1:length(data)] == 0) 
+                      )
+        )
+}</code></pre>
+</div>
+<div id="coefficient-processing-initialize-list" class="section level3">
+<h3>Coefficient processing: Initialize list</h3>
+<p>Let’s initialize our coefficient selection frequency list element.</p>
+<pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]] &lt;- list()</code></pre>
+</div>
+<div id="coefficient-frequency-processing-by-adaptation" class="section level3">
+<h3>Coefficient frequency processing: By Adaptation</h3>
+<p>Now let’s map our coefficient frequency function across all adaptations and model results to create our first data.table.</p>
+<pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]] &lt;- modelswt_all[1:7] %&gt;%
+       map(coefs_freq) %&gt;%
+       setDT %&gt;%
+       t %&gt;%
+       data.frame %&gt;%
+       setDT %&gt;%
+       .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
+       .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
+       .[ , &quot;method&quot; := names(modelswt_all[-8])] %&gt;%
+       setkey(. , method) </code></pre>
+</div>
+<div id="coefficient-frequency-processing-by-potential-predictor" class="section level3">
+<h3>Coefficient frequency processing: By Potential Predictor</h3>
+<p>Now we’re going to do the same thing, except by predictor instead of adaptation.</p>
+<pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] &lt;- modelswt_all[1:7] %&gt;%
+        map(coefs_freq) %&gt;%
+        data.frame %&gt;%
+        setDT %&gt;%
+        .[ , &quot;all&quot; := apply(. , 1 , adapts_100)] %&gt;%
+        .[ , &quot;none&quot; := apply(. , 1 , adapts_0)] %&gt;%
+        .[ , &quot;predictor&quot; := names(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:(ncol(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]]) - 3)]] %&gt;%
+        setkey(. , predictor) </code></pre>
+</div>
+<div id="coefficient-frequency-processing---selection-rank" class="section level3">
+<h3>Coefficient frequency processing - selection rank</h3>
+<p>Now we’re going to generate the selection ranks of each potential predictor, <em>by adaptation</em>. This will only be by adaptation.</p>
+<pre class="r"><code>modelswt_all[[&quot;Ranks&quot;]] &lt;- modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , 
+                                                                         1:length(wt.data[[&quot;betas&quot;]]) , 
+                                                                         with = F] %&gt;%
+       apply(. , 1 , coefs_rank) %&gt;%
+       t %&gt;%
+       as.data.frame %&gt;%
+       setDT %&gt;%
+       cbind(. , modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , &quot;method&quot;])</code></pre>
+</div>
+</div>
+<div id="save-the-full-models-file" class="section level2">
+<h2>Save the Full Models File</h2>
+<p>Let’s save the model results file which also includes our new “Frequencies” data.table so that we can load it during the full walkthrough.</p>
+<pre class="r"><code>saveRDS(modelswt_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100wt_plus_freqsranks.RData&quot;)</code></pre>
+</div>
+<div id="visualization" class="section level2">
+<h2>Visualization</h2>
+<p>Please see <span style="color:green"><code>05_Coefficient Visualization</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient%20Visualization.html">Demo 5</a>) for a more detailed walkthrough of this step</p>
+<p>Now we’re going to set up our visualizations. There are going to be three sets of plots:</p>
+<ul>
+<li>Plots of selection frequencies of Top-X predictors by each adaptation</li>
+<li>Plots of <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> selection by each adaptation</li>
+<li>Plots of frequency of <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> selection of each predictor across adaptations</li>
+</ul>
+<p>This time, however, our visualizations are going to be a bit more complex. Instead of 8 potential predictors, we have a total of 50. We probably want to select out a subset of variables in some way. Rank isn’t helpful as originally anticipated. Instead I am going to create a new list element in my full model file with selects only variables which were selected at least 51% of the time, on average, by <em>any</em> adaptation.</p>
+</div>
+<div id="note" class="section level2">
+<h2>NOTE</h2>
+<ul>
+<li><strong>NOTE: All code chunks after this point this point has been set to</strong> * <strong><span style="color:blue"><code>eval = F</code></span></strong>. As I progress through these steps and add further details, I will move this section further downward.</li>
+</ul>
+<div id="visualization-setup" class="section level3">
+<h3>Visualization Setup</h3>
+<div id="custom-color-palette" class="section level4">
+<h4>Custom Color Palette</h4>
+<pre class="r"><code>P11 &lt;- c(&quot;#02AD24&quot; , &quot;#FF0000&quot; , &quot;#0000FF&quot; , &quot;#9A4D42&quot; , 
+         &quot;#00FFBE&quot; , &quot;#FF00B6&quot; , &quot;#000033&quot; , &quot;#00FF00&quot; ,
+         &quot;#FFD300&quot; , &quot;#009FFF&quot; ,  &quot;#783FC1&quot;)</code></pre>
+<pre class="r"><code>P7 &lt;- sample(x = P11 , size = 7 , replace = FALSE)</code></pre>
+<pre class="r"><code>P8 &lt;- sample(x = P11 , size = 8 , replace = FALSE)</code></pre>
+</div>
+<div id="plot-legend-function" class="section level4">
+<h4>Plot legend function</h4>
+<p>The <strong><span style="color:blue"><code>0g_legend()</code></span></strong> function used to generate a plot legend object was adapted from the top-rated response to <a href="https://stackoverflow.com/questions/11883844/inserting-a-table-under-the-legend-in-a-ggplot2-histogram">this post</a>.</p>
+<pre class="r"><code>g_legend&lt;-function(a.gplot){
+       tmp &lt;- ggplot_gtable(ggplot_build(a.gplot))
+       leg &lt;- which(sapply(tmp$grobs , function(x) x$name) == &quot;guide-box&quot;)
+       legend &lt;- tmp$grobs[[leg]]
+       return(legend)
+       }</code></pre>
+</div>
+</div>
+<div id="visualization-all-predictors-and-adaptations" class="section level3">
+<h3>Visualization: All Predictors and Adaptations</h3>
+<p>Now, I’m going to create 7 separate plots. The plots will present the selection frequencies of each potential predictor for each of the 7 lasso/elastic net adaptations included in the combined model.</p>
+<div id="plot-objects" class="section level4">
+<h4>Plot Objects</h4>
+<pre class="r"><code>huberelnet.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;huberelnet&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = huberelnet)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;Adaptive Huber Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>huberlasso.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;huberlasso&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = huberlasso)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;Adaptive Huber Lasso&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>ladelnet.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;ladelnet&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = ladelnet)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;Adaptive LAD Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>ladlasso.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;ladlasso&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = ladlasso)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;Adaptive LAD Lasso&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>msak10.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;msak10&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = msak10)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;10-Step Adaptive Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>msak3.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;msak3&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = msak3)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;3-Step Adaptive Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>msak5.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;msak5&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = msak5)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;5-Step Adaptive Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+</div>
+<div id="blank-grob" class="section level4">
+<h4>Blank Grob</h4>
+<pre class="r"><code>blank.pl &lt;- ggplot() +
+  geom_blank() + 
+  theme_minimal()</code></pre>
+</div>
+<div id="create-plot-legend" class="section level4">
+<h4>Create Plot Legend</h4>
+<pre class="r"><code>msak5.l &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;msak5&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = msak5)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;5-Step Adaptive Elastic Net&quot; ,
+       y = &quot;Frequency&quot;) + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.title.x = element_text(size = 8) , 
+        axis.title.y = element_text(size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>plotA.legend &lt;- g_legend(msak5.l)</code></pre>
+</div>
+<div id="put-plot-objects-together" class="section level4">
+<h4>Put Plot Objects Together</h4>
+<p>Let’s put the plots together!</p>
+<pre class="r"><code>plotA &lt;- grid.arrange(arrangeGrob(huberelnet.pl , blank.pl , huberlasso.pl , 
+                                  ladelnet.pl , blank.pl , ladlasso.pl , 
+                                  msak3.pl , msak5.pl , msak10.pl , 
+                                  nrow = 3) , 
+                       arrangeGrob(plotA.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob(&quot;Predictor Selection Frequency by Lasso/Elastic Net Adaptation Across All 100 Data Splits&quot;))</code></pre>
+</div>
+</div>
+<div id="visualization-allnone-predictor-selection-by-adaptation" class="section level3">
+<h3>Visualization: All/None Predictor Selection by Adaptation</h3>
+<div id="plot-objects-1" class="section level4">
+<h4>Plot Objects</h4>
+<p>Now, I’m going to create 2 separate plots. One plot will display the number of predictors selected into <span class="math inline">\(100\%\)</span> of models by each of the 7 adaptations, while the second plot will display similar information for number of predictors selected into <em>no</em> models by adaptation. We can mostly just take our previous code and make slight changes, but the structure of creating these objects is largely the same.</p>
+<pre class="r"><code>adapt100.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , c(&quot;all&quot; , &quot;method&quot;) , ] , 
+                     aes(x = method , y = all)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = &quot;100% Selection&quot; ,
+       y = &quot;100% Selection (out of 7)&quot; , 
+       x = &quot;Adaptation&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(hjust = 1 , 
+                                   vjust = 1 , 
+                                   angle = 45)) +
+  scale_fill_manual(values = P7)</code></pre>
+<pre class="r"><code>adapt0.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , c(&quot;none&quot; , &quot;method&quot;) , ] , 
+                     aes(x = method , y = none)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = &quot;0% Selection&quot; ,
+       y = &quot;0% Selection (out of 8)&quot; , 
+       x = &quot;Adaptation&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(hjust = 1 , 
+                                   vjust = 1 , 
+                                   angle = 45)) +
+  scale_fill_manual(values = P7)</code></pre>
+</div>
+<div id="create-plot-legend-1" class="section level4">
+<h4>Create Plot Legend</h4>
+<p>Let’s also create the legend for this multi-plot after creating an analogous plot with the legend included.</p>
+<pre class="r"><code>adapt100.l &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , c(&quot;all&quot; , &quot;method&quot;) , ] , 
+                     aes(x = method , y = all)) +
+  geom_col(aes(fill = method)) + 
+  labs(title = &quot;100% Selection&quot; ,
+       y = &quot;100% Selection (out of 8)&quot; , 
+       x = &quot;Adaptation&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P7)</code></pre>
+<pre class="r"><code>plotB.legend &lt;- g_legend(adapt100.l)</code></pre>
+</div>
+<div id="put-plot-objects-together-1" class="section level4">
+<h4>Put Plot Objects Together</h4>
+<pre class="r"><code>plotB &lt;- grid.arrange(arrangeGrob(adapt0.pl , 
+                                  adapt100.pl , 
+                                  nrow = 2) , 
+                       arrangeGrob(plotB.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob(&quot;0% and 100% Selection Frequency by Lasso/Elastic Net Adaptation&quot;))</code></pre>
+</div>
+</div>
+<div id="visualization-allnone-predictor-selection-by-predictor" class="section level3">
+<h3>Visualization: All/None Predictor Selection by Predictor</h3>
+<p>I’m going to create analogous plots to those in the previous subsection. This time, however, the plots look at the number of adaptations for which a given predictor was <em>always</em> or <em>never</em> selected across the 100 data splits.</p>
+<div id="plot-objects-2" class="section level4">
+<h4>Plot Objects</h4>
+<pre class="r"><code>pred100.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;all&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = all)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;100% Selection&quot; ,
+       y = &quot;100% Selection (out of 8 possible)&quot; , 
+       x = &quot;Predictor&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>pred0.pl &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;none&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = none)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;0% Selection&quot; ,
+       y = &quot;0% Selection (out of 8 possible)&quot; , 
+       x = &quot;Predictor&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(legend.position = &quot;none&quot; , 
+        plot.title = element_text(hjust = 0.5 , 
+                                  size = 8) , 
+        axis.text.x = element_text(angle = 45)) +
+  scale_fill_manual(values = P8)</code></pre>
+</div>
+<div id="create-plot-legend-2" class="section level4">
+<h4>Create Plot Legend</h4>
+<p>Let’s also create the legend for this multi-plot after creating an analogous plot with the legend included.</p>
+<pre class="r"><code>pred100.l &lt;- ggplot(data = modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]][ , c(&quot;all&quot; , &quot;predictor&quot;) , ] , 
+                     aes(x = predictor , y = all)) +
+  geom_col(aes(fill = predictor)) + 
+  labs(title = &quot;100% Selection&quot; ,
+       y = &quot;100% Selection (out of 7)&quot; , 
+       x = &quot;Predictor&quot;) + 
+  coord_cartesian(ylim = c(0 , 5)) + 
+  theme(plot.title = element_text(hjust = 0.5 , 
+                                  size = 8)) +
+  scale_fill_manual(values = P8)</code></pre>
+<pre class="r"><code>plotC.legend &lt;- g_legend(pred100.l)</code></pre>
+</div>
+<div id="put-plot-objects-together-2" class="section level4">
+<h4>Put Plot Objects Together</h4>
+<pre class="r"><code>plotC &lt;- grid.arrange(arrangeGrob(pred0.pl , 
+                                  pred100.pl , 
+                                  nrow = 2) , 
+                       arrangeGrob(plotB.legend) , 
+                      ncol = 2 , widths = c(200 , 40) , 
+                      top = textGrob(&quot;0% and 100% Selection Frequency by Potential Predictor&quot;))</code></pre>
 </div>
 </div>
 </div>

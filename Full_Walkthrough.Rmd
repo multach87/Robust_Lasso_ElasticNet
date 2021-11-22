@@ -222,12 +222,12 @@ In the meantime, I'm going to set the data to be generated with sample size of 1
 
 Matt did another dumb when he originally wrote up the k-fold subsetting function. I made that function such that the new X objects would specifically have 8 columns - corresponding with the 8 predictors in my first first super original dataset I tested on in the early days of this repository. **<span style = "color:blue">`` `r "kfold_subsetter()"` ``</span>**, as well as the corresponding functions in various component demos, have all but updated to reflect this change. 
 
-All that said, I am still going to reduce the number of potential predictors down to 50. Dealing with dimensionality adds a huge computational burden to the model estimation process, one which makes rendering an appropriate markdown file impractical on my current hardware. When finances permit, I plan on generating those models with an AWS EC2 instance and re-compiling this walkthrough, except setting certain model-estimating code chunks to **<span style = "color:blue">`` `r "eval = F"` ``</span>** and including hidden chunks that load the AWS-generating data.
+All that said, I am still going to reduce the number of potential predictors down to 50. Dealing with dimensionality adds a huge computational burden to the model estimation process, one which makes rendering an appropriate markdown file impractical on my current hardware. When finances permit, I plan on generating those models with an AWS EC2 instance and re-compiling this walkthrough, except setting certain model-estimating code chunks to **<span style = "color:blue">`` `r "eval = F"` ``</span>** and including hidden chunks that load the AWS-generated data.
 
 
 
 
-```{r generate single dataset}
+```{r generate single dataset , eval = F}
 wt.data <- data_gen(n = 100 , p = 50 , 
                           eta_x = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
                           eta_y = sample(x = c(0 , 0.1 , 0.2) , size = 1) , 
@@ -382,14 +382,14 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 
 I'm going to conduct 100 splits, similarly to in the component demos and in my dissertation research. First I need to extract the X's and Y's into a single data object to be split.
 
-```{r extract X and Y for cv splitting}
+```{r extract X and Y for cv splitting , eval = F}
 wt.data2 <- setDT(data.frame(cbind(wt.data[["Y"]] , wt.data[["X"]]
                                      )
                                )
                     )
 ```
 
-```{r create cv-split data 100 splits}
+```{r create cv-split data 100 splits , eval = F}
 wtcv.100 <- kfold_multi(data = wt.data2 , num_splits = 100)
 ```
 
@@ -398,11 +398,11 @@ wtcv.100 <- kfold_multi(data = wt.data2 , num_splits = 100)
 
 Let's save the original dataset, including the conditions which generated it, as well as our cv-split data.
 
-```{r save walkthrough data}
+```{r save walkthrough data , eval = F}
 saveRDS(wt.data , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/walkthrough_data.RData")
 ```
 
-```{r save 100 cv split walkthrough data}
+```{r save 100 cv split walkthrough data , eval = F}
 saveRDS(wtcv.100 , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/wtdata_cvsplit.RData")
 ```
 
@@ -648,68 +648,83 @@ hqmsa.sim.fnct <- function(data.list ,
 }
 ```
 
+```{r knit exit1 , echo = F , eval = F}
+knitr::knit_exit()
+```
+
 ### Generating the models
+
+Note that the following code chunks have not been evaluated in this document. Due to the of generating these datasets on my personal computer, I opted to run these chunks on a personal AWS EC2 cluster and then import the resulting dataset. The total cost to me to do so was less than $10 after splitting up my code to run simultaneously across processors using RStudio's "Jobs" functionality. This is not necessarily the most streamlined or efficient way to accomplish this. A future goal for my return to this project is to be able automate efficient parallelization of these tasks, rather than manually splitting the code up and using Jobs. If you would like support in getting an EC2 set up, please feel free to email me: matt.multach87 at gmail dot com.
 
 #### Adaptive LAD Lasso
 
-```{r ladlasso}
+```{r ladlasso , eval = F}
 #run across data subset
 ladlasso.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1 , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1 , 
+            print.time = FALSE)
 ```
+
 
 #### Adaptive LAD Elastic Net, Alpha = 0.5
 
-```{r ladelnet5}
+```{r ladelnet5 , eval = F}
 #run across data subset
 ladelnet5.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5 , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5 , 
+            print.time = FALSE)
 ```
 
 #### Adaptive Huber Lasso
 
-```{r huberlasso}
+```{r huberlasso , eval = F}
 #run across data subset
 huberlasso.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1 , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1 , 
+            print.time = FALSE)
 ```
 
 #### Adaptive Huber Elastic Net, Alpha = 0.5
 
-```{r huberelnet5}
+```{r huberelnet5 , eval = F}
 #run across data subset
 huberelnet5.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
+        map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5 , 
+            print.time = FALSE)
 ```
 
 #### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
 
-```{r msaenet k3}
+```{r msaenet k3 , eval = F}
 #run across data subset
 msaelnetk3.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L , 
+            print.time = FALSE)
 ```
 
 #### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
 
-```{r msaenet k5}
+```{r msaenet k5 , eval = F}
 #run across data subset
 msaelnetk5.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 5L , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 5L , 
+            print.time = FALSE)
 ```
 
 #### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
 
-```{r msaenet k10}
+```{r msaenet k10 , eval = F}
 #run across data subset
 msaelnetk10.100 <- wtcv.100 %>%
-        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 10L , print.time = FALSE)
+        map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 10L , 
+            print.time = FALSE)
 ```
-
 
 ### Processing the model results
 
 Now we would like to process the resulting objects to eliminate any extra information. In this context, we're mainly interested in getting rid of the overarching 'result'/'error' list structure that is produced by **<span style = "color:blue">`` `r "safely()"` ``</span>**.
+
+Note that the model-processing code chunks have also been set to **<span style = "color:blue">`` `r "eval = F"` ``</span>**, as I conducted this processing step after generating the files in AWS EC2.
 
 #### Get rid of result/error level of each model: Function
 
@@ -735,7 +750,7 @@ res_or_err <- function(data) {
 
 Now, we're going to map **<span style = "color:blue">`` `r "res_or_err()"` ``</span>** across all of our 100-split model results and combine those objects into a single overarching list.
 
-```{r no resulterror and combine models}
+```{r no resulterror and combine models , eval = F}
 modelswt_all <- list(ladlasso = ladlasso.100 %>%
                        map(res_or_err) , 
                    ladelnet = ladelnet5.100 %>%
@@ -752,6 +767,32 @@ modelswt_all <- list(ladlasso = ladlasso.100 %>%
                        map(res_or_err))
 ```
 
+```{r load temp data files , eval = F , echo = F}
+models_nolad <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Temp/modelswt_nolad.RData")
+
+models_ladelnet5 <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Temp/ladelnet5_100.RData")
+
+models_ladlasso <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Temp/ladlasso_100.RData")
+```
+
+```{r combine temp data files , eval = F , echo = F}
+modelswt_all <- list(huberlasso = models_nolad[["huberlasso"]] , 
+                     huberelnet = models_nolad[["huberelnet"]] ,
+                     ladlasso = models_ladlasso , 
+                     ladelnet = models_ladelnet5 , 
+                     msak3 = models_nolad[["msak3"]] , 
+                     msak5 = models_nolad[["msak5"]] ,
+                     msak10 = models_nolad[["msak10"]]
+                     )
+```
+
+```{r save modelswt_all pre coeff process , echo = F , eval = F}
+saveRDS(modelswt_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/modelswt_precoefproc.RData")
+```
+
+```{r load precoefproc data , echo = F}
+modelswt_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/modelswt_precoefproc.RData")
+```
 
 ## Process Model Coefficients
 
@@ -886,6 +927,10 @@ modelswt_all[["Frequencies"]][["By_Predictor"]] <- modelswt_all[1:7] %>%
 
 Now we're going to generate the selection ranks of each potential predictor, _by adaptation_. This will only be by adaptation. 
 
+```{r load wtdata , echo = F , eval = F}
+wt.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/walkthrough_data.RData")
+```
+
 ```{r run coef rank function by adaptation}
 modelswt_all[["Ranks"]] <- modelswt_all[["Frequencies"]][["By_Adaptation"]][ , 
                                                                          1:length(wt.data[["betas"]]) , 
@@ -915,6 +960,16 @@ Now we're going to set up our visualizations. There are going to be three sets o
   * Plots of $100\%$ and $0\%$ selection by each adaptation
   * Plots of frequency of $100\%$ and $0\%$ selection of each predictor across adaptations
   
+This time, however, our visualizations are going to be a bit more complex. Instead of 8 potential predictors, we have a total of 50. We probably want to select out a subset of variables in some way. Rank isn't helpful as originally anticipated. Instead I am going to create a new list element in my full model file with selects only variables which were selected at least 51% of the time, on average, by *any* adaptation.
+
+## NOTE
+
+* **NOTE: All code chunks after this point this point has been set to** * **<span style = "color:blue">`` `r "eval = F"` ``</span>**. As I progress through these steps and add further details, I will move this section further downward.
+
+```{r setup2 , message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = F)
+```
+
 ### Visualization Setup
 
 #### Custom Color Palette
