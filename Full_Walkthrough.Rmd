@@ -962,9 +962,9 @@ Now we're going to set up our visualizations. There are going to be three sets o
   
 This time, however, our visualizations are going to be a bit more complex. Instead of 8 potential predictors, we have a total of 50. We probably want to select out a subset of variables in some way. Rank isn't helpful as originally anticipated. Instead I am going to create a new list element in my full model file with selects only variables which were selected at least 51% of the time, on average, by *any* adaptation.
 
-## NOTE
+## CODE-STOP NOTE
 
-* **NOTE: All code chunks after this point this point has been set to** * **<span style = "color:blue">`` `r "eval = F"` ``</span>**. As I progress through these steps and add further details, I will move this section further downward.
+**NOTE: All code chunks after this point this point have been set to** **<span style = "color:blue">`` `r "eval = F"` ``</span>**. As I progress through these steps and add further details, I will move this section further downward.
 
 ```{r setup2 , message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = F)
