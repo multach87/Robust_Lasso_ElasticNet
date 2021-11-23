@@ -174,6 +174,14 @@ adapts_0 <- function(data) {
 }
 ```
 
+The last minor function I want to add will return a 1 if a potential predictor was selected in at least 51 out of 100 data splits by *any* adaptation (even if this only occurred once). This function came up while working through my full walkthrough, and felt worth adding to this document.
+
+```{r ge51 function}
+ge51 <- function(data) {
+        ifelse(TRUE %in% (sort(data) > 50) , return(1) , return(0))
+}
+```
+
 ### Coefficient processing: Initialize list
 
 Our new list element will have two data.tables:
@@ -199,7 +207,7 @@ models_all[["Frequencies"]][["By_Adaptation"]] <- models_all[1:7] %>%
        data.frame %>%
        setDT %>%
        .[ , "all" := apply(. , 1 , all_splits)] %>%
-       .[ , "none" := apply(. , 1 , no_splits)] %>%
+       .[ , "none" := apply(.[ , !c("all")] , 1 , no_splits)] %>%
        .[ , "method" := names(models_all[-8])] %>%
        setkey(. , method) 
 ```
@@ -242,8 +250,10 @@ models_all[["Frequencies"]][["By_Predictor"]] <- models_all[1:7] %>%
         data.frame %>%
         setDT %>%
         .[ , "all" := apply(. , 1 , adapts_100)] %>%
-        .[ , "none" := apply(. , 1 , adapts_0)] %>%
+        .[ , "none" := apply(.[ , !c("all")] , 1 , adapts_0)] %>%
         .[ , "predictor" := names(models_all[["Frequencies"]][["By_Adaptation"]])[1:(ncol(models_all[["Frequencies"]][["By_Adaptation"]]) - 3)]] %>%
+        .[ , "ge51" := apply(.[ , !c("all" , "none" , "predictor")] , 
+                             1 , ge51)] %>%
         setkey(. , predictor) 
 ```
 

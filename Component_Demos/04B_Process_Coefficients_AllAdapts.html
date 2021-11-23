@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-15" />
+<meta name="date" content="2021-11-23" />
 
 <title>Process Coefficients from All Adaptations and Data Splits</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Process Coefficients from All Adaptations and Data Splits</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-15</h4>
+<h4 class="date">2021-11-23</h4>
 
 </div>
 
@@ -1623,6 +1623,10 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
                       )
         )
 }</code></pre>
+<p>The last minor function I want to add will return a 1 if a potential predictor was selected in at least 51 out of 100 data splits by <em>any</em> adaptation (even if this only occurred once). This function came up while working through my full walkthrough, and felt worth adding to this document.</p>
+<pre class="r"><code>ge51 &lt;- function(data) {
+        ifelse(TRUE %in% (sort(data) &gt; 50) , return(1) , return(0))
+}</code></pre>
 </div>
 <div id="coefficient-processing-initialize-list" class="section level3">
 <h3>Coefficient processing: Initialize list</h3>
@@ -1644,7 +1648,7 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
        data.frame %&gt;%
        setDT %&gt;%
        .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
-       .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
+       .[ , &quot;none&quot; := apply(.[ , !c(&quot;all&quot;)] , 1 , no_splits)] %&gt;%
        .[ , &quot;method&quot; := names(models_all[-8])] %&gt;%
        setkey(. , method) </code></pre>
 <p>Let’s walk through what’s going on in the last code chunk.</p>
@@ -1695,12 +1699,14 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
         data.frame %&gt;%
         setDT %&gt;%
         .[ , &quot;all&quot; := apply(. , 1 , adapts_100)] %&gt;%
-        .[ , &quot;none&quot; := apply(. , 1 , adapts_0)] %&gt;%
+        .[ , &quot;none&quot; := apply(.[ , !c(&quot;all&quot;)] , 1 , adapts_0)] %&gt;%
         .[ , &quot;predictor&quot; := names(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:(ncol(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]]) - 3)]] %&gt;%
+        .[ , &quot;ge51&quot; := apply(.[ , !c(&quot;all&quot; , &quot;none&quot; , &quot;predictor&quot;)] , 
+                             1 , ge51)] %&gt;%
         setkey(. , predictor) </code></pre>
 <p>Let’s take a look at the new data.table using <strong><span style="color:blue"><code>str()</code></span></strong>.</p>
 <pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]])</code></pre>
-<pre><code>## Classes 'data.table' and 'data.frame':   8 obs. of  10 variables:
+<pre><code>## Classes 'data.table' and 'data.frame':   8 obs. of  11 variables:
 ##  $ ladlasso  : num  100 100 100 100 4 0 9 12
 ##  $ ladelnet  : num  100 100 100 100 3 0 9 36
 ##  $ huberlasso: num  100 100 100 100 4 2 3 23
@@ -1709,8 +1715,9 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  $ msak5     : num  99 100 100 100 3 0 4 6
 ##  $ msak10    : num  100 100 100 100 5 0 2 6
 ##  $ all       : int  6 7 7 7 0 0 0 0
-##  $ none      : int  0 0 0 0 1 7 1 1
+##  $ none      : int  0 0 0 0 0 6 0 0
 ##  $ predictor : chr  &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; &quot;X4&quot; ...
+##  $ ge51      : num  1 1 1 1 0 0 0 0
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;predictor&quot;</code></pre>
 </div>
