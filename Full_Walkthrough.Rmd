@@ -850,7 +850,7 @@ I'd like to count the number of variables with $100\%$ or $0\%$ selection for ea
 
 ```{r all_splits function}
 all_splits <- function(data) {
-        return(length(which(data[1:length(data)] == 100)
+        return(length(which(data[1:(length(data))] == 100)
                       )
                )
 }
@@ -858,7 +858,7 @@ all_splits <- function(data) {
 
 ```{r no_splits function}
 no_splits <- function(data) {
-        return(length(which(data[1:length(data)] == 0)  
+        return(length(which(data[1:(length(data))] == 0)  
                       )
         )
 }
@@ -868,7 +868,7 @@ Similarly, I would like to calculate the number of adaptations which selected ea
 
 ```{r adapts_100 function}
 adapts_100 <- function(data) {
-        return(length(which(data[1:length(data)] == 100)  
+        return(length(which(data[1:(length(data))] == 100)  
                       )
                )
 }
@@ -876,7 +876,7 @@ adapts_100 <- function(data) {
 
 ```{r adapts_0 function}
 adapts_0 <- function(data) {
-        return(length(which(data[1:length(data)] == 0) 
+        return(length(which(data[1:(length(data))] == 0) 
                       )
         )
 }
@@ -902,7 +902,7 @@ modelswt_all[["Frequencies"]][["By_Adaptation"]] <- modelswt_all[1:7] %>%
        data.frame %>%
        setDT %>%
        .[ , "all" := apply(. , 1 , all_splits)] %>%
-       .[ , "none" := apply(. , 1 , no_splits)] %>%
+       .[ , "none" := apply(.[ , !c("all")] , 1 , no_splits)] %>%
        .[ , "method" := names(modelswt_all[-8])] %>%
        setkey(. , method) 
 ```
@@ -918,7 +918,7 @@ modelswt_all[["Frequencies"]][["By_Predictor"]] <- modelswt_all[1:7] %>%
         data.frame %>%
         setDT %>%
         .[ , "all" := apply(. , 1 , adapts_100)] %>%
-        .[ , "none" := apply(. , 1 , adapts_0)] %>%
+        .[ , "none" := apply(.[ , !c("all")] , 1 , adapts_0)] %>%
         .[ , "predictor" := names(modelswt_all[["Frequencies"]][["By_Adaptation"]])[1:(ncol(modelswt_all[["Frequencies"]][["By_Adaptation"]]) - 3)]] %>%
         setkey(. , predictor) 
 ```
@@ -927,14 +927,13 @@ modelswt_all[["Frequencies"]][["By_Predictor"]] <- modelswt_all[1:7] %>%
 
 Now we're going to generate the selection ranks of each potential predictor, _by adaptation_. This will only be by adaptation. 
 
-```{r load wtdata , echo = F , eval = F}
+```{r load wtdata , echo = F}
 wt.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/walkthrough_data.RData")
 ```
 
 ```{r run coef rank function by adaptation}
 modelswt_all[["Ranks"]] <- modelswt_all[["Frequencies"]][["By_Adaptation"]][ , 
-                                                                         1:length(wt.data[["betas"]]) , 
-                                                                         with = F] %>%
+                                                                         1:length(wt.data[["betas"]]) , with = F] %>%
        apply(. , 1 , coefs_rank) %>%
        t %>%
        as.data.frame %>%
@@ -950,17 +949,69 @@ Let's save the model results file which also includes our new "Frequencies" data
 saveRDS(modelswt_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100wt_plus_freqsranks.RData")
 ```
 
-## Visualization
+## Some heuristics for filtering our potential predictors
 
-Please see <span style = "color:green">`` `r "05_Coefficient Visualization"` ``</span> ([Demo 5](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient Visualization.html)) for a more detailed walkthrough of this step
+In the component demos, I was working only with 8 potential predictors with known coefficients and known data characteristics. Here we have 50 potential predictors and data characteristics are unknown for now. We will revisit the true characteristics after making an attempt to reduce interpret the combined-model results. We should create some heuristics for semi-subjectively filtering out predictors which are unlikely to be true underlying predictors of the process.
 
-Now we're going to set up our visualizations. There are going to be three sets of plots:
-  
-  * Plots of selection frequencies of Top-X predictors by each adaptation
-  * Plots of $100\%$ and $0\%$ selection by each adaptation
-  * Plots of frequency of $100\%$ and $0\%$ selection of each predictor across adaptations
-  
-This time, however, our visualizations are going to be a bit more complex. Instead of 8 potential predictors, we have a total of 50. We probably want to select out a subset of variables in some way. Rank isn't helpful as originally anticipated. Instead I am going to create a new list element in my full model file with selects only variables which were selected at least 51% of the time, on average, by *any* adaptation.
+We'll see how well these intuitions play out later. As I'm writing this, I still do not know the true underlying zero and non-zero coefficients. Note also that many of the heuristics used below correspond with research questions specified in the empirical path illustrated in **Figure 1**.
+
+### Re: Rank
+
+As I've been further refining the combined-model approach while working on this full walkthrough, I've realized that, at least for now, the selection ranks are not as helpful. I may return to the selection ranks later but am not considering them for now.
+
+### Heuristic: Unselected Variables and GE51's
+
+Two selection patterns came to mind for selecting out possible predictors as true underlying predictors. If a given adaptation failed to include a particular predictor in *any* of the 100 data splits, this is likely to reflect a consistent lack of predictive capacity on that predictor's part. Similarly, if a variable was never selected at least half of the time by any of the 7 adaptations, it also likely lacks true underlying predictive capacity. 
+
+First, let's make a function to make an indicator for a variable being included 51 times or more by any adaptation. Then, we'll make new column in the by-predictor frequency data.table using this function.
+
+```{r ge51 function}
+ge51 <- function(data) {
+        ifelse(TRUE %in% (data > 50) , return(1) , return(0))
+}
+```
+
+```{r binary 51 or greater column}
+modelswt_all[["Frequencies"]][["By_Predictor"]] <-
+  modelswt_all[["Frequencies"]][["By_Predictor"]] %>%
+  .[ , "ge51" := apply(.[ , !c("all" , "none" , "predictor")] , 
+                       1 , ge51)]
+```
+
+As it turns out, this eliminates about 10 potential predictors, 5 of which were the 5 variables which were *never* selected by one or more adaptations. Given that this ge51 group already includes all 5 variables which were never selected by at least one adaptation (confirm for yourself using R functionality if you'd like!), no additional steps are needed to address those potential predictors.
+
+Finally, we're going to make an additional data.table in **<span style = "color:blue">`` `r"Frequencies" </span>** list element. This table will contain rows of **<span style = "color:blue">`` `r"By_Predictor" </span>** which meet the ge51 criteria.
+
+```{r select only ge51}
+modelswt_all[["Frequencies"]][["By_Predictor51"]] <-
+  modelswt_all[["Frequencies"]][["By_Predictor"]] %>%
+  .[ge51 == 1 , !c("none" , "ge51")]
+```
+
+We're now down to about 40 potential predictors, which I think is a good place to start!
+
+### Heuristics based on PhD research
+
+Here is where I bring to play the knowledge I've developed about these different adaptations over the course of my PhD research. 
+
+I know, for instance, that the adaptive Huber and adaptive LAD methods trended towards middling false positive rates at a sample size of n = 100, typically ranging between $15\%$ at best and a little more than $30\%$ at worst. These methods also performed competitively in false negative rates (aka, proportion of true non-zero coefficients excluded from a model), typically falling below $5-10\%$ (with a single condition trending towards FNR's between $10-15\%$ at n = 100).
+
+The 10-step adaptive elastic net, on the other hand, always trended towards FPR's below $18\%$ for n = 100, and in most cases showed FPR's below $10\%$. This, however, corresponded with a greater tendency towards false negatives, with FNR's between $10-15\%$ in most data conditions.
+
+Here we see an important pattern emerge which guided my choice of adaptations and which can help us guide our combined-model interpretation. On one side, we have the adaptive LAD and Huber methods, which generally performed competitively but tended towards greater FPR's and lower FNR's; on the other side, the 10-step adaptive elastic net was overly conservative in excluding variable from the model, with remarkably low FPR's alongside much greater FNR's (relatively speaking).
+
+So I don't actually have data to inform inferences re: the 3-step or 5-step elastic net, as my main research only looked at the 10-step version. We can take a guess, though, that less steps will result in more-inclusive models overall relative to the 10-step - in other words, greater tendency towards false positives but also a reduced tendency towards false negatives.
+
+#### Heuristic #1: Consistent LAD and Huber selection
+
+aka: selected frequenty by all four and little variability among these four. Let's say, all greater than 80, and average greater than 90
+
+#### Heuristic #2: Selection > 50% by both 3-step and 5-step
+
+
+#### Heuristic #3: 
+
+
 
 ## CODE-STOP NOTE
 
@@ -969,6 +1020,20 @@ This time, however, our visualizations are going to be a bit more complex. Inste
 ```{r setup2 , message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = F)
 ```
+
+## Visualization
+
+Please see <span style = "color:green">`` `r "05_Coefficient Visualization"` ``</span> ([Demo 5](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient Visualization.html)) for a more detailed walkthrough of this step
+
+Now we're going to set up our visualizations. This time, however, our visualizations are going to be a bit more complex. 
+
+
+There are going to be three sets of plots:
+  
+  * Plots of selection frequencies of Top-X predictors by each adaptation
+  * Plots of $100\%$ and $0\%$ selection by each adaptation
+  * Plots of frequency of $100\%$ and $0\%$ selection of each predictor across adaptations
+  
 
 ### Visualization Setup
 

@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-22" />
+<meta name="date" content="2021-11-23" />
 
 <title>Full Applied Walkthrough</title>
 
@@ -1495,7 +1495,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Full Applied Walkthrough</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-22</h4>
+<h4 class="date">2021-11-23</h4>
 
 </div>
 
@@ -1999,23 +1999,23 @@ res_or_err &lt;- function(data) {
 <h3>Minor functions: All/No Splits/Adaptations</h3>
 <p>I’d like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping to generate these values.</p>
 <pre class="r"><code>all_splits &lt;- function(data) {
-        return(length(which(data[1:length(data)] == 100)
+        return(length(which(data[1:(length(data))] == 100)
                       )
                )
 }</code></pre>
 <pre class="r"><code>no_splits &lt;- function(data) {
-        return(length(which(data[1:length(data)] == 0)  
+        return(length(which(data[1:(length(data))] == 0)  
                       )
         )
 }</code></pre>
 <p>Similarly, I would like to calculate the number of adaptations which selected each variable <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> of the time.</p>
 <pre class="r"><code>adapts_100 &lt;- function(data) {
-        return(length(which(data[1:length(data)] == 100)  
+        return(length(which(data[1:(length(data))] == 100)  
                       )
                )
 }</code></pre>
 <pre class="r"><code>adapts_0 &lt;- function(data) {
-        return(length(which(data[1:length(data)] == 0) 
+        return(length(which(data[1:(length(data))] == 0) 
                       )
         )
 }</code></pre>
@@ -2035,7 +2035,7 @@ res_or_err &lt;- function(data) {
        data.frame %&gt;%
        setDT %&gt;%
        .[ , &quot;all&quot; := apply(. , 1 , all_splits)] %&gt;%
-       .[ , &quot;none&quot; := apply(. , 1 , no_splits)] %&gt;%
+       .[ , &quot;none&quot; := apply(.[ , !c(&quot;all&quot;)] , 1 , no_splits)] %&gt;%
        .[ , &quot;method&quot; := names(modelswt_all[-8])] %&gt;%
        setkey(. , method) </code></pre>
 </div>
@@ -2047,7 +2047,7 @@ res_or_err &lt;- function(data) {
         data.frame %&gt;%
         setDT %&gt;%
         .[ , &quot;all&quot; := apply(. , 1 , adapts_100)] %&gt;%
-        .[ , &quot;none&quot; := apply(. , 1 , adapts_0)] %&gt;%
+        .[ , &quot;none&quot; := apply(.[ , !c(&quot;all&quot;)] , 1 , adapts_0)] %&gt;%
         .[ , &quot;predictor&quot; := names(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:(ncol(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]]) - 3)]] %&gt;%
         setkey(. , predictor) </code></pre>
 </div>
@@ -2055,8 +2055,7 @@ res_or_err &lt;- function(data) {
 <h3>Coefficient frequency processing - selection rank</h3>
 <p>Now we’re going to generate the selection ranks of each potential predictor, <em>by adaptation</em>. This will only be by adaptation.</p>
 <pre class="r"><code>modelswt_all[[&quot;Ranks&quot;]] &lt;- modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , 
-                                                                         1:length(wt.data[[&quot;betas&quot;]]) , 
-                                                                         with = F] %&gt;%
+                                                                         1:length(wt.data[[&quot;betas&quot;]]) , with = F] %&gt;%
        apply(. , 1 , coefs_rank) %&gt;%
        t %&gt;%
        as.data.frame %&gt;%
@@ -2069,20 +2068,65 @@ res_or_err &lt;- function(data) {
 <p>Let’s save the model results file which also includes our new “Frequencies” data.table so that we can load it during the full walkthrough.</p>
 <pre class="r"><code>saveRDS(modelswt_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100wt_plus_freqsranks.RData&quot;)</code></pre>
 </div>
+<div id="some-heuristics-for-filtering-our-potential-predictors" class="section level2">
+<h2>Some heuristics for filtering our potential predictors</h2>
+<p>In the component demos, I was working only with 8 potential predictors with known coefficients and known data characteristics. Here we have 50 potential predictors and data characteristics are unknown for now. We will revisit the true characteristics after making an attempt to reduce interpret the combined-model results. We should create some heuristics for semi-subjectively filtering out predictors which are unlikely to be true underlying predictors of the process.</p>
+<p>We’ll see how well these intuitions play out later. As I’m writing this, I still do not know the true underlying zero and non-zero coefficients. Note also that many of the heuristics used below correspond with research questions specified in the empirical path illustrated in <strong>Figure 1</strong>.</p>
+<div id="re-rank" class="section level3">
+<h3>Re: Rank</h3>
+<p>As I’ve been further refining the combined-model approach while working on this full walkthrough, I’ve realized that, at least for now, the selection ranks are not as helpful. I may return to the selection ranks later but am not considering them for now.</p>
+</div>
+<div id="heuristic-unselected-variables-and-ge51s" class="section level3">
+<h3>Heuristic: Unselected Variables and GE51’s</h3>
+<p>Two selection patterns came to mind for selecting out possible predictors as true underlying predictors. If a given adaptation failed to include a particular predictor in <em>any</em> of the 100 data splits, this is likely to reflect a consistent lack of predictive capacity on that predictor’s part. Similarly, if a variable was never selected at least half of the time by any of the 7 adaptations, it also likely lacks true underlying predictive capacity.</p>
+<p>First, let’s make a function to make an indicator for a variable being included 51 times or more by any adaptation. Then, we’ll make new column in the by-predictor frequency data.table using this function.</p>
+<pre class="r"><code>ge51 &lt;- function(data) {
+        ifelse(TRUE %in% (data &gt; 50) , return(1) , return(0))
+}</code></pre>
+<pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] &lt;-
+  modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] %&gt;%
+  .[ , &quot;ge51&quot; := apply(.[ , !c(&quot;all&quot; , &quot;none&quot; , &quot;predictor&quot;)] , 
+                       1 , ge51)]</code></pre>
+<p>As it turns out, this eliminates about 10 potential predictors, 5 of which were the 5 variables which were <em>never</em> selected by one or more adaptations. Given that this ge51 group already includes all 5 variables which were never selected by at least one adaptation (confirm for yourself using R functionality if you’d like!), no additional steps are needed to address those potential predictors.</p>
+<p>Finally, we’re going to make an additional data.table in <strong><span style="color:blue"><code>`r&quot;Frequencies&quot; &lt;/span&gt;** list element. This table will contain rows of **&lt;span style = &quot;color:blue&quot;&gt;</code> `r“By_Predictor” </span></strong> which meet the ge51 criteria.</p>
+<pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor51&quot;]] &lt;-
+  modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] %&gt;%
+  .[ge51 == 1 , !c(&quot;none&quot; , &quot;ge51&quot;)]</code></pre>
+<p>We’re now down to about 40 potential predictors, which I think is a good place to start!</p>
+</div>
+<div id="heuristics-based-on-phd-research" class="section level3">
+<h3>Heuristics based on PhD research</h3>
+<p>Here is where I bring to play the knowledge I’ve developed about these different adaptations over the course of my PhD research.</p>
+<p>I know, for instance, that the adaptive Huber and adaptive LAD methods trended towards middling false positive rates at a sample size of n = 100, typically ranging between <span class="math inline">\(15\%\)</span> at best and a little more than <span class="math inline">\(30\%\)</span> at worst. These methods also performed competitively in false negative rates (aka, proportion of true non-zero coefficients excluded from a model), typically falling below <span class="math inline">\(5-10\%\)</span> (with a single condition trending towards FNR’s between <span class="math inline">\(10-15\%\)</span> at n = 100).</p>
+<p>The 10-step adaptive elastic net, on the other hand, always trended towards FPR’s below <span class="math inline">\(18\%\)</span> for n = 100, and in most cases showed FPR’s below <span class="math inline">\(10\%\)</span>. This, however, corresponded with a greater tendency towards false negatives, with FNR’s between <span class="math inline">\(10-15\%\)</span> in most data conditions.</p>
+<p>Here we see an important pattern emerge which guided my choice of adaptations and which can help us guide our combined-model interpretation. On one side, we have the adaptive LAD and Huber methods, which generally performed competitively but tended towards greater FPR’s and lower FNR’s; on the other side, the 10-step adaptive elastic net was overly conservative in excluding variable from the model, with remarkably low FPR’s alongside much greater FNR’s (relatively speaking).</p>
+<p>So I don’t actually have data to inform inferences re: the 3-step or 5-step elastic net, as my main research only looked at the 10-step version. We can take a guess, though, that less steps will result in more-inclusive models overall relative to the 10-step - in other words, greater tendency towards false positives but also a reduced tendency towards false negatives.</p>
+<div id="heuristic-1-consistent-lad-and-huber-selection" class="section level4">
+<h4>Heuristic #1: Consistent LAD and Huber selection</h4>
+<p>aka: selected frequenty by all four and little variability among these four. Let’s say, all greater than 80, and average greater than 90</p>
+</div>
+<div id="heuristic-2-selection-50-by-both-3-step-and-5-step" class="section level4">
+<h4>Heuristic #2: Selection &gt; 50% by both 3-step and 5-step</h4>
+</div>
+<div id="heuristic-3" class="section level4">
+<h4>Heuristic #3:</h4>
+</div>
+</div>
+</div>
+<div id="code-stop-note" class="section level2">
+<h2>CODE-STOP NOTE</h2>
+<p><strong>NOTE: All code chunks after this point this point have been set to</strong> <strong><span style="color:blue"><code>eval = F</code></span></strong>. As I progress through these steps and add further details, I will move this section further downward.</p>
+</div>
 <div id="visualization" class="section level2">
 <h2>Visualization</h2>
 <p>Please see <span style="color:green"><code>05_Coefficient Visualization</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient%20Visualization.html">Demo 5</a>) for a more detailed walkthrough of this step</p>
-<p>Now we’re going to set up our visualizations. There are going to be three sets of plots:</p>
+<p>Now we’re going to set up our visualizations. This time, however, our visualizations are going to be a bit more complex.</p>
+<p>There are going to be three sets of plots:</p>
 <ul>
 <li>Plots of selection frequencies of Top-X predictors by each adaptation</li>
 <li>Plots of <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> selection by each adaptation</li>
 <li>Plots of frequency of <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> selection of each predictor across adaptations</li>
 </ul>
-<p>This time, however, our visualizations are going to be a bit more complex. Instead of 8 potential predictors, we have a total of 50. We probably want to select out a subset of variables in some way. Rank isn’t helpful as originally anticipated. Instead I am going to create a new list element in my full model file with selects only variables which were selected at least 51% of the time, on average, by <em>any</em> adaptation.</p>
-</div>
-<div id="code-stop-note" class="section level2">
-<h2>CODE-STOP NOTE</h2>
-<p><strong>NOTE: All code chunks after this point this point have been set to</strong> <strong><span style="color:blue"><code>eval = F</code></span></strong>. As I progress through these steps and add further details, I will move this section further downward.</p>
 <div id="visualization-setup" class="section level3">
 <h3>Visualization Setup</h3>
 <div id="custom-color-palette" class="section level4">
