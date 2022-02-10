@@ -1,0 +1,116 @@
+---
+title: "Scratch_Paper"
+author: "Matt Multach"
+date: "`r Sys.Date()`"
+output: 
+  bookdown::html_document2:
+    #toc: false
+    #toc_depth: 4
+    #toc_float: true
+    #number_sections: false
+bibliography: ../Component_Demos/Component_Refs.bib
+---
+
+# Preamble and Setup {.unlisted .unnumbered .tabset .tabset-fade .tabset-pills}
+
+
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
+```
+
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+
+
+
+## Packages {.unnumbered}
+
+<details>
+
+```{r libraries , warning = FALSE , message = FALSE}
+# This chunk loads the packages used in this workbook
+library(xaringan)   # Allows active preview of report in RStudio
+library(mvtnorm)    # Generates multivariate-normal data
+library(magrittr)   # Used for piping
+library(purrr)      # Used for mapping functions efficiently
+library(data.table) # For more streamlined data structures
+library(glmnet)     # For general lasso/elastic net functionality
+library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
+library(rlang)      # For parse_expr() to parse data name in k-fold subsetting functions
+library(msaenet)      # For the multi-step adaptive elastic net
+library(gridExtra)    # For displaying grids of objects
+library(grid)         # For creating a title for multiplot grid
+library(ggplot2)      # For generating and manipulation graphical objects
+```
+
+</details>
+
+
+  
+
+## Testing collapsible notes {.unnumbered}
+
+Does the footnote function work<span class="ref">
+        <span class="refnum" onclick="footypop('test3')">[1]</span>
+        <span id="test3" class="refbody">I think so...</span>
+    </span>? Does it still work in the same paragraph? Let's try a reference<span class="ref">
+        <span class="refnum" onclick="footypop('footyreftest')">[ref]</span>
+        <span id="footyreftest" class="refbody">@MattDiss</span>
+    </span>? Yup!
+
+
+---
+nocite: |
+  @magrittr , @purrr , @xaringan , @data.table , @glmnet , @hqreg , @rlang , @msaenet , 
+  @gridExtra , @grid , @ggplot2 , @magrittr
+---
+
+# References
