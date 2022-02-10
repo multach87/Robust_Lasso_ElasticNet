@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 4
     toc_float: true
-    number_sections: false
+    number_sections: true
 bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
@@ -19,22 +19,70 @@ bibliography: Component_Refs.bib
 #              css: [default, tamu, tamu-fonts]
 ---
 
-## Introduction
-
-This file demonstrates use of a custom function for indexing and splitting a full dataset for _k_-fold cross-validation. Use this procedure if you intend to utilize out-of-sample prediction error in some fashion for your application. 
-
-If out-of-sample prediction error is _not_ relevant for your application and you would just like a resampling procedure for improved model results, see 
-
-
-## Preamble and Setup
+# Introduction, Preamble, and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-### A note on formatting
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
 
-This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+
+## Introduction {.unnumbered}
+
+This file demonstrates use of a custom function for indexing and splitting a full dataset for _k_-fold cross-validation. Use this procedure if you intend to utilize out-of-sample prediction error in some fashion for your application. I also use it here as an ad-hoc resampling procedure, since out-of-sample prediction error is not my primary metric of interest. Note that this does mean a reduction in effective sample size for any given sample. A bootstrap would be viable in this case, as well, and I hope to implement bootstramp resampling into this repo at some point in the future.
+
+
+## Formatting Notes {.unnumbered}
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish references to different types of items.
 
  * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
  * _italics_ will be used primarily for emphasis.
@@ -43,18 +91,21 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
  * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
  
-Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
+The most important aspects of how I use spacing and line breaks are detailed below.
 
-I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the element. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
 
 Generally, I use line breaks to:
 
  * Break up separate arguments for a single command/function or chain of operations
- * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
- 
-### Packages
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.
 
-First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
+
+## Packages {.unnumbered}
+
+Let's load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00C_Robust_Issues.html"><span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span></a>. Appropriate references for each package can be found in the "References" section at the end of this document.
+
+
 
 ```{r libraries}
 # This chunk loads the packages used in this workbook
@@ -73,8 +124,9 @@ nocite: |
   @magrittr , @purrr , @xaringan , @mvtnorm , @data.table , @glmnet , @hqreg
 ---
 
+## Data Loading {.unnumbered}
 
-Let's also load our demo data, which will just be our matricized singular applied dataset.
+Let's load our demo data, which will just be our matricized singular applied dataset.
 
 ```{r load synthetic applied dataset}
 demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData")
@@ -89,7 +141,9 @@ demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
                     )
 ```
 
-## Custom k-fold subsetting function
+# Custom k-fold subsetting function {.tabset .tabset-fade .tabset-pills}
+
+## Function Arguments
 
 The chunk below takes a dataset and creates a numeric variable with *k* levels. The function takes as its arguments:
 
@@ -120,15 +174,13 @@ The chunk below takes a dataset and creates a numeric variable with *k* levels. 
      * "Y" : The training set of response values
      * "X_Test" : The holdout/testing set of predictor values
      * "Y_Test" : The holdout/testing set of response values ("Y_Test")
-     * "Seed" : The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in <span style = "color:green">`` `r "02B_KFold_Multi"` ``</span>
+     * "Seed" : The random-generating seed for the dataset. This is primarily for convenience with the multi-split wrapper function in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/02B_KFold_Multi.html"><span style = "color:green">`` `r "02B_KFold_Multi"` ``</span></a>
      * "Subsets" : A *k*-level vector containing the row-ordered subset indicator for the full input dataset
      
 
- 
- 
+## K-Fold Subsetting Function
 
-
-```{r kfold subsetting function , echo = F}
+```{r kfold subsetting function}
 # k-fold subsetting function
 kfold_subsetter <- function(data , y_col = 1 , 
                             x_cols = c(2:ncol(data)) , 
@@ -221,94 +273,16 @@ kfold_subsetter <- function(data , y_col = 1 ,
 
 ```
 
-### Areas for Improvement
+## Areas for Improvement
 
  * Take arguments for X/predictors and Y/outcome instead of a 'data' argument and 'x_cols' and 'y_cols'. These are idiosyncratic and not necessarily straightforward for a general user
  * The function itself can likely be streamlined for efficiency in a number of places. 
 
-### Deprecated versions     
+## Deprecated versions     
      
-The .Rmd file contains deprecated versions of the subsetting function at the end of the report for those who are interested. 
-
-## Testing the function
-
-Now let's test the function for all three list-splitting options.
-
-### K-fold subset testing: no final data split
-
-First, run the subsetter without splitting the final data.
-
-```{r subset testing nonlist}
-nonsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
-                                 seed = 7 , list = FALSE)
-```
-
-And let's look at the structure of the data.
-
-```{r nonlist str}
-str(nonsplit.data)
-```
-
-The resulting object is a data.table/data.frame with 150 rows and 10 columns, with first column "Y" and last column "subset," and our potential predictors "X1" to "X8" in columns 2-9. There is also a row of information containing object attributes.
-
-### K-fold subset testing: list containing *k* elements
-
-Next, run the subsetter but splitting by fold index *k*.
-
-```{r subset testing full split}
-fullsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
-                                  seed = 7 , list = TRUE)
-```
-
-And let's look at the structure of the data.
-
-```{r full split str}
-str(fullsplit.data)
-```
-
-**<span style = "color:blue">`` `r "str()"` ``</span>** now produces much more information than before. Now there is an additional layer of information corresponding with the list structure, in addition to the data.table/.frame layer of information similar to what we saw previously.
-
-Let's run that chunk again. This time, though, we're going to specify an additional argument to **<span style = "color:blue">`` `r "str()"` ``</span>**:
-
-```{r full split str lvl 1}
-str(fullsplit.data , max.level = 1)
-```
-
-Now, we only see the list-level structure of the object and basic information about the data.frames/.tables within each list element. Setting 'max.level = 2' would simply produce the same structural output as **<span style = "color:blue">`` `r "str(fullsplit.data)"` ``</span>**. specifying larger values for 'max.level' would not provide any additional information for the current context, as **<span style = "color:blue">`` `r "fullsplit.data"` ``</span>** only has two levels.
-
-### K-fold subset testing: list containing training and testing elements
-
-Finally, run the subsetter but splitting by a single training/testing split.
-
-```{r subset testing traintest split}
-trtstsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
-                                  seed = 7 , list = "traintest")
-```
-
-And let's look at the structure of the data.
-
-```{r traintest split str}
-str(trtstsplit.data)
-```
-
-This last specification for **<span style = "color:blue">`` `r "kfold_subsetter()"` ``</span>** produces another list, except now we see separate list elements for the training set of our potential predictors X1-X8, the training set of our response Y, the holdout/testing set of our predictors, the holdout/testint set of our response, our random-fixing seed, and our subset indices for each row in the original dataset. All of the list elements are data.tables/.frames except the seed, which is just a single-element numeric vector.
-
-Let's specify 'max.level = 1' for this context and see what is produced, and compare it to the 1st-level structure of **<span style = "color:blue">`` `r "fullsplit.data"` ``</span>**
-
-```{r traintest split str level 1}
-str(trtstsplit.data , max.level = 1)
-```
-
-```{r fullsplit str level 1 comparison}
-str(fullsplit.data , max.level = 1)
-```
-
-## Deprecated Versions of **<span style = "color:blue">`` `r "kfold_subsetter()"` ``</span>**
-
 * The 08/05/2021 deprecation used *if* / *else if* branching to handle 1D/vector data vs. 2D/tabular data. The current version handles both data inputs without branching. 
- * The 08/06/2021 deprecation only split the resulting data into training/testing/seed elements when setting the "list" argument to "traintest." The current version splits the data into the 6 elements described above.
 
-```{r kfold subsetting function DEPRECATED 08052021 , echo = F , eval = F}
+```{r kfold subsetting function DEPRECATED 08052021 , eval = F}
 # k-fold subsetting function
 kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         if(length(dim(data)) == 2) { 
@@ -428,7 +402,9 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
 }
 ```
 
-```{r kfold subsetting function DEPRECATED2 08062021 , echo = F , eval = F}
+ * The 08/06/2021 deprecation only split the resulting data into training/testing/seed elements when setting the "list" argument to "traintest." The current version splits the data into the 6 elements described above.
+
+```{r kfold subsetting function DEPRECATED2 08062021 , eval = F}
 # k-fold subsetting function
 kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
         # check for string argument in "data"
@@ -501,4 +477,78 @@ kfold_subsetter <- function(data , k = 5 , seed = 7 , list = FALSE) {
 }
 ```
 
-## References
+# Testing the function {.tabset .tabset-fade .tabset-pills}
+
+Now let's test the function for all three list-splitting options.
+
+## No Final Data Split
+
+First, run the subsetter without splitting the final data.
+
+```{r subset testing nonlist}
+nonsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
+                                 seed = 7 , list = FALSE)
+```
+
+And let's look at the structure of the data.
+
+```{r nonlist str}
+str(nonsplit.data)
+```
+
+The resulting object is a data.table/data.frame with 150 rows and 10 columns, with first column "Y" and last column "subset," and our potential predictors "X1" to "X8" in columns 2-9. There is also a row of information containing object attributes.
+
+## Final List Containing *k* Elements
+
+Next, run the subsetter but splitting by fold index *k*.
+
+```{r subset testing full split}
+fullsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
+                                  seed = 7 , list = TRUE)
+```
+
+And let's look at the structure of the data.
+
+```{r full split str}
+str(fullsplit.data)
+```
+
+**<span style = "color:blue">`` `r "str()"` ``</span>** now produces much more information than before. Now there is an additional layer of information corresponding with the list structure, in addition to the data.table/.frame layer of information similar to what we saw previously.
+
+Let's run that chunk again. This time, though, we're going to specify an additional argument to **<span style = "color:blue">`` `r "str()"` ``</span>**:
+
+```{r full split str lvl 1}
+str(fullsplit.data , max.level = 1)
+```
+
+Now, we only see the list-level structure of the object and basic information about the data.frames/.tables within each list element. Setting 'max.level = 2' would simply produce the same structural output as **<span style = "color:blue">`` `r "str(fullsplit.data)"` ``</span>**. specifying larger values for 'max.level' would not provide any additional information for the current context, as **<span style = "color:blue">`` `r "fullsplit.data"` ``</span>** only has two levels.
+
+## Final List Containing Training and Testing Elements
+
+Finally, run the subsetter but splitting by a single training/testing split.
+
+```{r subset testing traintest split}
+trtstsplit.data <- kfold_subsetter(data = demo.data2 , k = 5 , 
+                                  seed = 7 , list = "traintest")
+```
+
+And let's look at the structure of the data.
+
+```{r traintest split str}
+str(trtstsplit.data)
+```
+
+This last specification for **<span style = "color:blue">`` `r "kfold_subsetter()"` ``</span>** produces another list, except now we see separate list elements for the training set of our potential predictors X1-X8, the training set of our response Y, the holdout/testing set of our predictors, the holdout/testint set of our response, our random-fixing seed, and our subset indices for each row in the original dataset. All of the list elements are data.tables/.frames except the seed, which is just a single-element numeric vector.
+
+Let's specify 'max.level = 1' for this context and see what is produced, and compare it to the 1st-level structure of **<span style = "color:blue">`` `r "fullsplit.data"` ``</span>**
+
+```{r traintest split str level 1}
+str(trtstsplit.data , max.level = 1)
+```
+
+```{r fullsplit str level 1 comparison}
+str(fullsplit.data , max.level = 1)
+```
+
+
+# References {.unnumbered}

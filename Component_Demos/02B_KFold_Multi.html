@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-18" />
+<meta name="date" content="2022-02-10" />
 
 <title>Demo: Producting Multiple Cross-Validation Splits</title>
 
@@ -1495,20 +1495,68 @@ div.tocify {
 
 <h1 class="title toc-ignore">Demo: Producting Multiple Cross-Validation Splits</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-18</h4>
+<h4 class="date">2022-02-10</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2">
+<div id="introduction-preamble-and-setup" class="section level1 unnumbered tabset tabset-fade tabset-pills">
+<h1>Introduction, Preamble, and Setup</h1>
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+<div id="introduction" class="section level2 unnumbered">
 <h2>Introduction</h2>
 <p>This file extends the <em>k</em>-fold subsetting function for conducting multiple training-testing splits of a single dataset.</p>
 </div>
-<div id="preamble-and-setup" class="section level2">
-<h2>Preamble and Setup</h2>
-<div id="a-note-on-formatting" class="section level3">
-<h3>A note on formatting</h3>
-<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<div id="formatting-notes" class="section level2 unnumbered">
+<h2>Formatting Notes</h2>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish references to different types of items.</p>
 <ul>
 <li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
 <li><em>italics</em> will be used primarily for emphasis.</li>
@@ -1517,17 +1565,17 @@ div.tocify {
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 <li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
-<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
-<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>The most important aspects of how I use spacing and line breaks are detailed below.</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the element. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
 <p>Generally, I use line breaks to:</p>
 <ul>
 <li>Break up separate arguments for a single command/function or chain of operations</li>
-<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.</li>
 </ul>
 </div>
-<div id="packages" class="section level3">
-<h3>Packages</h3>
-<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<div id="packages" class="section level2 unnumbered">
+<h2>Packages</h2>
+<p>Let’s load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00C_Robust_Issues.html"><span style="color:green"><code>00B_Package_Descr_Refs</code></span></a>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1536,8 +1584,11 @@ library(purrr)      # Used for mapping functions efficiently
 library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
-library(rlang)      # For parse_expr() to parse data name from argument</code></pre>
-<p>Let’s also load our demo data, which will just be our matricized singular applied dataset.</p>
+library(rlang)      # For parse_expr() to parse data name from function argument</code></pre>
+</div>
+<div id="data-loading" class="section level2 unnumbered">
+<h2>Data Loading</h2>
+<p>Let’s load our demo data, which will just be our matricized singular applied dataset.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 <p>Let’s also quickly combine the X and Y list elements into a single object for convenience with the subsetting function. We will put Y into the first column since it corresponds with a left-to-right reading of a regression model.</p>
 <pre class="r"><code>demo.data2 &lt;- setDT(data.frame(cbind(demo.data[[&quot;Y&quot;]] , demo.data[[&quot;X&quot;]]
@@ -1546,12 +1597,14 @@ library(rlang)      # For parse_expr() to parse data name from argument</code></
                     )</code></pre>
 </div>
 </div>
-<div id="custom-k-fold-subsetting-function" class="section level2">
-<h2>Custom k-fold subsetting function</h2>
-<p>This function is as described in the <span style="color:green"><code>02A_KFold_Subsetter</code></span>. A full description of the arguments of the original function can be found therein.</p>
+<div id="custom-k-fold-subsetting-function" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">1</span> Custom k-fold subsetting function</h1>
+<div id="original-function" class="section level2">
+<h2><span class="header-section-number">1.1</span> Original Function</h2>
+<p>This function is as described in the <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/02A_KFold_Subsetter.html"><span style="color:green"><code>02A_KFold_Subsetter</code></span></a>. A full description of the arguments of the original function can be found therein.</p>
 </div>
 <div id="multi-subsetting-wrapper" class="section level2">
-<h2>Multi-Subsetting Wrapper</h2>
+<h2><span class="header-section-number">1.2</span> Multi-Subsetting Wrapper</h2>
 <p>The following function serves as a wrapper around the original subsetting function which incorporates additional arguments. These arguments extend the original function to conduct multiple training-testing splits and store the resulting datasets in a singular overarching list.</p>
 <p>The wrapper’s arguments are as follows. The ellipses are arguments for the original subsetting function which are handled internally within the wrapper.</p>
 <ul>
@@ -1618,11 +1671,17 @@ library(rlang)      # For parse_expr() to parse data name from argument</code></
         return(full.data)
 }</code></pre>
 </div>
-<div id="testing-the-function" class="section level2">
-<h2>Testing the Function</h2>
+</div>
+<div id="testing-the-function" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> Testing the Function</h1>
+<div id="testing" class="section level2">
+<h2><span class="header-section-number">2.1</span> Testing</h2>
 <p>Let’s do an example run of the multi-subsetting wrapper function. To improve readability of the <strong><span style="color:blue"><code>str()</code></span></strong> on the resulting object, I’m going to set ‘num_splits = 5’.</p>
 <pre class="r"><code>trntst_multi.data &lt;- kfold_multi(data = demo.data2 , 
                                  num_splits = 5)</code></pre>
+</div>
+<div id="resulting-object-structure" class="section level2">
+<h2><span class="header-section-number">2.2</span> Resulting Object Structure</h2>
 <p>Let’s check out the structure of the resulting object.</p>
 <pre class="r"><code>str(trntst_multi.data)</code></pre>
 <pre><code>## List of 5
@@ -1855,8 +1914,9 @@ library(rlang)      # For parse_expr() to parse data name from argument</code></
 ##  $ :List of 6
 ##  $ :List of 6</code></pre>
 </div>
-<div id="references" class="section level2 unnumbered">
-<h2>References</h2>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
 <div id="refs" class="references">
 <div id="ref-magrittr">
 <p>Bache, S.M., and H. Wickham. 2016. <em>Magrittr: A Forward-Pipe Operator for R</em>. <a href="https://CRAN.R-project.org/package=magrittr">https://CRAN.R-project.org/package=magrittr</a>.</p>
