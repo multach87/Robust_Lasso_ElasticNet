@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-15" />
+<meta name="date" content="2022-02-10" />
 
 <title>Package descriptions and helpful links</title>
 
@@ -1495,22 +1495,72 @@ div.tocify {
 
 <h1 class="title toc-ignore">Package descriptions and helpful links</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-15</h4>
+<h4 class="date">2022-02-10</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2">
+<div id="file-introduction-preamble-and-setup" class="section level1 unnumbered tabset tabset-fade tabset-pills">
+<h1>File Introduction, Preamble and Setup</h1>
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+<div id="introduction" class="section level2 unnumbered">
 <h2>Introduction</h2>
 <p>This document is intended as a central glossary of the packages used throughout these demonstrations. The main goals include:
 * A description of each package used, including an outline of its utility and how it is used
 * A review of the most useful functions used in the course of the various demos in this repository
 * Links to and suggestions for external resources for learning more about these packages, often including work done by the original package authors and developers.</p>
 <p>These packages are currently presented in no particular order. Once the initial set of packages are included and described, subsequent revisions will group packages according to type of package or functionality accomplished by the package.</p>
-<div style="page-break-after: always;"></div>
-<div id="a-note-on-formatting" class="section level3">
-<h3>A note on formatting</h3>
-<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+</div>
+<div id="formatting-notes" class="section level2 unnumbered">
+<h2>Formatting Notes</h2>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish references to different types of items.</p>
 <ul>
 <li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
 <li><em>italics</em> will be used primarily for emphasis.</li>
@@ -1519,207 +1569,208 @@ div.tocify {
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 <li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
+<p>The most important aspects of how I use spacing and line breaks are detailed below.</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the element. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
 <p>Generally, I use line breaks to:</p>
 <ul>
 <li>Break up separate arguments for a single command/function or chain of operations</li>
-<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.</li>
 </ul>
 </div>
 </div>
-<div id="data-manipulation-and-programmatic-tools" class="section level2">
-<h2>Data Manipulation and Programmatic Tools</h2>
-<p><a href="https://bookdown.org/rdpeng/RProgDA/">MSDR</a>, <span class="citation">Peng, Kross, and Anderson (2020)</span>, and <a href="https://adv-r.hadley.nz/index.html">Advanced R</a>, <span class="citation">Wickham (2019)</span>, each cover a variety of advanced topics in developing with and programming in R</p>
-<div id="magrittr-magrittr" class="section level3">
-<h3><em><span style="color:red"><code>magrittr</code></span></em>, <span class="citation">Bache and Wickham (2016)</span></h3>
-<div id="description" class="section level4">
-<h4>Description</h4>
+<div id="data-manipulation-and-programmatic-tools" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">1</span> Data Manipulation and Programmatic Tools</h1>
+<div id="magrittr-magrittr" class="section level2">
+<h2><span class="header-section-number">1.1</span> <em><span style="color:red"><code>magrittr</code></span></em>, <span class="citation">Bache and Wickham (2016)</span></h2>
+<div id="description" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>The <em><span style="color:red"><code>magrittr</code></span></em> package implements the pipe operator <span style="color:blue"><code>%&gt;%</code></span> in R to facilitate operations on objects.</p>
 </div>
-<div id="functions-used" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>Aside from the pipe operator <span style="color:blue"><code>%&gt;%</code></span>, no other functions from <em><span style="color:red"><code>magrittr</code></span></em> were utilized in these demos.</p>
 </div>
-<div id="external-resources" class="section level4">
-<h4>External Resources</h4>
-<p><em><span style="color:red"><code>magrittr</code></span></em> is a part of the <a href="https://www.tidyverse.org/">tidyverse</a> and therefore many guides and walkthroughs have been create to explore its usage. The tidyverse website has a <a href="https://magrittr.tidyverse.org/">section devoted to the package</a>. Hadley Wickham, a major contributor to and proponent of the tidyverse, also has two books on using R that each discuss <em><span style="color:red"><code>magrittr</code></span></em> and piping to varying degrees. <a href="https://r4ds.had.co.nz/pipes.html?q=magrittr#prerequisites-11">Chapter 18</a> of R for Data Science, <span class="citation">Hadley Wickham (2017)</span>, provides a comprehensive, ground-level review of implementing the pipe operator. More advanced R users can refer to <a href="https://adv-r.hadley.nz/functions.html#function-composition">Chapter 6</a> of Wickham’s Advanced R Book, <span class="citation">Wickham (2019)</span>.</p>
+<div id="external-resources" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
+<p><em><span style="color:red"><code>magrittr</code></span></em> is a part of the <a href="https://www.tidyverse.org/">tidyverse</a> and therefore many guides and walkthroughs have been create to explore its usage. The tidyverse website has a <a href="https://magrittr.tidyverse.org/">section devoted to the package</a>. Hadley Wickham, a major contributor to and proponent of the tidyverse, also has two books on using R that each discuss <em><span style="color:red"><code>magrittr</code></span></em> and piping to varying degrees. <a href="https://r4ds.had.co.nz/pipes.html?q=magrittr#prerequisites-11">Chapter 18</a> of R for Data Science<span class="ref"><span class="refnum" onclick="footypop('ref1')">[ref]</span><span id="ref1" class="refbody"><span class="citation">Hadley Wickham (2017)</span></span></span> provides a comprehensive, ground-level review of implementing the pipe operator. More advanced R users can refer to <a href="https://adv-r.hadley.nz/functions.html#function-composition">Chapter 6</a> of Wickham’s Advanced R Book<span class="ref"><span class="refnum" onclick="footypop('ref2')">[ref]</span><span id="ref2" class="refbody"><span class="citation">Wickham (2019)</span></span></span>.</p>
 <p>Both books are freely available online, and I strongly encourage checking them out!</p>
 </div>
 </div>
-<div id="purrr-purrr" class="section level3">
-<h3><em><span style="color:red"><code>purrr</code></span></em>, <span class="citation">Henry, Wickham, and RStudio (2020)</span></h3>
-<div id="description-1" class="section level4">
-<h4>Description</h4>
+<div id="purrr-purrr" class="section level2">
+<h2><span class="header-section-number">1.2</span> <em><span style="color:red"><code>purrr</code></span></em>, <span class="citation">Henry, Wickham, and RStudio (2020)</span></h2>
+<div id="description-1" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p><em><span style="color:red"><code>purrr</code></span></em>, like <em><span style="color:red"><code>magrittr</code></span></em> previously, is a member of the tidyverse. The package implements additional tools for functional programming. I use it primarily for its additional features for mapping functions over object spaces.</p>
 </div>
-<div id="functions-used-1" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-1" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>A variety of <strong><span style="color:blue"><code>map()</code></span></strong>-related functions are used throughout my demos to efficiently iterate and apply functions over a collection of objects or multiple components within a single complicated object.</p>
 <p>Additionally, the <strong><span style="color:blue"><code>safely()</code></span></strong> was one of the most useful functions I discovered over the course of my PhD research. This allows you to run code without fear of the function outright stopping in the face of an error. When running hundreds of thousands (not joking) of models for my primary research, I really did <strong>not</strong> want my progress to halt because one round ran into an error. <strong><span style="color:blue"><code>safely()</code></span></strong> will run whatever is passed to it and produce 2-element list as a result. One list element will produce the results of a completed function, while the second list element will populate only if the function being passed runs into an error. In that case, the corresponding error message will be stored to this list element. This allows a mapped function to continue running when it hits an error on an iteration rather than completely stopping its progress.</p>
 </div>
-<div id="external-resources-1" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-1" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p><a href="https://purrr.tidyverse.org/">Tidyverse website section</a></p>
 <p>The <a href="https://r4ds.had.co.nz/iteration.html">Iteration chapter</a> of <em>R for Data Science</em> heavily features this package.</p>
 <p>The <a href="https://adv-r.hadley.nz/functionals.html">Functionals chapter</a> of <em>Advanced R</em> likewise focuses heavily on related concepts.</p>
 </div>
 </div>
-<div id="data.table-data.table" class="section level3">
-<h3><em><span style="color:red"><code>data.table</code></span></em>, <span class="citation">Dowle and Srinivasan (2019)</span></h3>
-<div id="description-2" class="section level4">
-<h4>Description</h4>
+<div id="data.table-data.table" class="section level2">
+<h2><span class="header-section-number">1.3</span> <em><span style="color:red"><code>data.table</code></span></em>, <span class="citation">Dowle and Srinivasan (2019)</span></h2>
+<div id="description-2" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>Implements the <span style="color:blue"><code>data.table</code></span> object and includes tools for managing, manipulating, and generally using them. Comparable to Python’s <em><span style="color:red"><code>numpy</code></span></em> library.</p>
 </div>
-<div id="functions-used-2" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-2" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>The package’s utility in these demos comes primarily from operations on data.tables.</p>
 </div>
-<div id="external-resources-2" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-2" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p>The package’s <a href="https://rdatatable.gitlab.io/data.table/">main web page</a>, which includes a Cheat Sheet.</p>
 <p><a href="https://www.machinelearningplus.com/data-manipulation/datatable-in-r-complete-guide/">This blog</a> was very helpful to me as I first started learning how to use <em><span style="color:red"><code>data.table</code></span></em>.</p>
 </div>
 </div>
-<div id="rlang-rlang" class="section level3">
-<h3><em><span style="color:red"><code>rlang</code></span></em>, <span class="citation">Henry and Wickham (2021)</span></h3>
-<div id="description-3" class="section level4">
-<h4>Description</h4>
+<div id="rlang-rlang" class="section level2">
+<h2><span class="header-section-number">1.4</span> <em><span style="color:red"><code>rlang</code></span></em>, <span class="citation">Henry and Wickham (2021)</span></h2>
+<div id="description-3" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>A collection of tools for interacting with R’s core language characteristics.</p>
 </div>
-<div id="functions-used-3" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-3" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>I only used one function from this package: <strong><span style="color:blue"><code>parse_expr()</code></span></strong>, which turns a character string into a code-usable expression.</p>
 </div>
-<div id="external-resources-3" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-3" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p>The package’s <a href="https://rlang.r-lib.org/">main website</a>, which includes a Cheat Sheet.</p>
-<div style="page-break-after: always;"></div>
 </div>
 </div>
+<div id="general-resources" class="section level2">
+<h2><span class="header-section-number">1.5</span> General Resources</h2>
+<p><a href="https://bookdown.org/rdpeng/RProgDA/">MSDR</a><span class="ref"><span class="refnum" onclick="footypop('ref3')">[ref]</span><span id="ref3" class="refbody"><span class="citation">Peng, Kross, and Anderson (2020)</span></span></span> and <a href="https://adv-r.hadley.nz/index.html">Advanced R</a><span class="ref"><span class="refnum" onclick="footypop('ref4')">[ref]</span><span id="ref4" class="refbody"><span class="citation">Wickham (2019)</span></span></span> each cover a variety of advanced topics in developing with and programming in R</p>
 </div>
-<div id="visualization" class="section level2">
-<h2>Visualization</h2>
-<p><a href="https://bookdown.org/rdpeng/RProgDA/building-data-visualization-tools.html">This chapter</a> provides an extensive overview of more advanced topics in visualization in R, <span class="citation">Peng, Kross, and Anderson (2020)</span>.</p>
-<div id="ggplot2-ggplot2" class="section level3">
-<h3><em><span style="color:red"><code>ggplot2</code></span></em>, <span class="citation">Wickham (2016)</span></h3>
-<div id="description-4" class="section level4">
-<h4>Description</h4>
+</div>
+<div id="visualization" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> Visualization</h1>
+<p><a href="https://bookdown.org/rdpeng/RProgDA/building-data-visualization-tools.html">This chapter</a> provides an extensive overview of more advanced topics in visualization in R<span class="ref"><span class="refnum" onclick="footypop('ref5')">[ref]</span><span id="ref5" class="refbody"><span class="citation">Peng, Kross, and Anderson (2020)</span></span></span>.</p>
+<div id="ggplot2-ggplot2" class="section level2">
+<h2><span class="header-section-number">2.1</span> <em><span style="color:red"><code>ggplot2</code></span></em>, <span class="citation">Wickham (2016)</span></h2>
+<div id="description-4" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>Another tidyverse package that provides an extensive set of tools for visualization.</p>
 </div>
-<div id="functions-used-4" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-4" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>So many, and many aesthetic mappings within functions, aka “layers” on top of created visual objects.</p>
 </div>
-<div id="external-resources-4" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-4" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p><a href="https://ggplot2.tidyverse.org/">Tidyverse website</a>, plus Cheat Sheet</p>
 <p>The <a href="https://r4ds.had.co.nz/data-visualisation.html">Visualization chapter</a> of <em>R for Data Science</em> focuses on this package.</p>
 </div>
 </div>
-<div id="gridextra-gridextra" class="section level3">
-<h3><em><span style="color:red"><code>gridExtra</code></span></em>, <span class="citation">Auguie (2017)</span></h3>
-<div id="description-5" class="section level4">
-<h4>Description</h4>
+<div id="gridextra-gridextra" class="section level2">
+<h2><span class="header-section-number">2.2</span> <em><span style="color:red"><code>gridExtra</code></span></em>, <span class="citation">Auguie (2017)</span></h2>
+<div id="description-5" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>To be honest, I only used this package to be able to create a text-based grob (grid object) for titling my multi-plot visualization.</p>
 </div>
-<div id="functions-used-5" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-5" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p><strong><span style="color:blue"><code>textGrob()</code></span></strong> makes a grid object out of a character string.</p>
 </div>
-<div id="external-resources-5" class="section level4">
-<h4>External Resources</h4>
-<p>The visualation tools chapter in MSDR, <span class="citation">Peng, Kross, and Anderson (2020)</span>, features <a href="https://bookdown.org/rdpeng/RProgDA/the-grid-package.html">a section</a> about using the package for developing your own visual objects.</p>
-<div style="page-break-after: always;"></div>
+<div id="external-resources-5" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
+<p>The visualation tools chapter in MSDR<span class="ref"><span class="refnum" onclick="footypop('ref6')">[ref]</span><span id="ref6" class="refbody"><span class="citation">Peng, Kross, and Anderson (2020)</span></span></span> features <a href="https://bookdown.org/rdpeng/RProgDA/the-grid-package.html">a section</a> about using the package for developing your own visual objects.</p>
 </div>
 </div>
 </div>
-<div id="document-presentation-creation-in-r" class="section level2">
-<h2>Document &amp; Presentation Creation in R</h2>
-<div id="xaringan-xaringan" class="section level3">
-<h3><em><span style="color:red"><code>xaringan</code></span></em>, <span class="citation">Xie (2021)</span></h3>
-<div id="description-6" class="section level4">
-<h4>Description</h4>
+<div id="document-presentation-creation-in-r" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">3</span> Document &amp; Presentation Creation in R</h1>
+<div id="xaringan-xaringan" class="section level2">
+<h2><span class="header-section-number">3.1</span> <em><span style="color:red"><code>xaringan</code></span></em>, <span class="citation">Xie (2021)</span></h2>
+<div id="description-6" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>I <em>cannot</em> extoll the virtues of the <em><span style="color:red"><code>xaringan</code></span></em> package enough. The author, Yihui Xie, will come up again in this document, as he is one of the biggest contributors to document and presentation functionality in RStudio.</p>
 <p>I don’t actively use this package all that often, but the passive support it provides while putting together Markdown reports incredible. The main benefit of this package is to allow for an actively-updating view of a compiled markdown document within RStudio itself in the View pane. The package also adds functionality for making presentations, being based heavily on remark.js.</p>
 </div>
-<div id="functions-used-6" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-6" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>No specific functions are used from this package throughout these various demos.</p>
 </div>
-<div id="external-resources-6" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-6" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p><a href="https://bookdown.org/yihui/rmarkdown/xaringan.html">Yihui Xie’s extensive R Markdown ebook</a> is absolutely free and includes an entire chapter on using <em><span style="color:red"> <code>xaringan</code></span></em>. The link leads directly to that chapter.</p>
 <p><a href="https://slides.yihui.org/xaringan/#1">Yihui also created a slide presentation using <em><span style="color:red"> <code>xaringan</code></span></em></a></p>
 </div>
-<div id="nerd-things" class="section level4">
-<h4>Nerd Things</h4>
+<div id="nerd-things" class="section level3 unnumbered unlisted">
+<h3>Nerd Things</h3>
 <p>This next section is for individuals who immediately thought <em><span style="color:red"> <code>xaringan</code></span></em> looked familiar except for <em>one</em> letter. The answers to this tickling sense of familiarity can be found in the last few slides of the slideshow presentation, where Yihui explains the naming conventions he used while developing this package.</p>
 <p>As it turns out, X in some Chinese dialects is pronounced “sh”, so the name of the package is actually read as “sharingan,” aka that thing you thought of when you first read it. Reading into some of the package functionality, the connection with the manga/anime <em>Naruto</em> becomes even more explicit. For example: the tool within <em><span style="color:red"> <code>xaringan</code></span></em> that renders the actively-updating markdown document within RStudio is named “Infinite Moon Reader,” aka the Infinite Tsukuyomi.</p>
 <p>I hope a few people get as much joy out of this revelation as I did!</p>
-<div style="page-break-after: always;"></div>
 </div>
 </div>
 </div>
-<div id="packages-for-implementing-specific-statistical-models" class="section level2">
-<h2>Packages for Implementing Specific Statistical Models</h2>
-<p>I will not spend too much time explaining the models implemented by each of the following packages. Please see <span style="color:green"><code>00A_Lasso_ENet_Adaptations</code></span> for an introduction the lasso, the elastic net, and the relevant adaptations, including rationale, mathematical formulation, and computational implementation.</p>
-<div id="glmnet-glmnet" class="section level3">
-<h3><em><span style="color:red"><code>glmnet</code></span></em>, <span class="citation">Friedman et al. (2019)</span></h3>
-<div id="description-7" class="section level4">
-<h4>Description</h4>
+<div id="packages-for-implementing-specific-statistical-models" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">4</span> Packages for Implementing Specific Statistical Models</h1>
+<p>I will not spend too much time explaining the models implemented by each of the following packages. Please see <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00A_Lasso_ENet_Adaptations.html"><span style="color:green"><code>00A_Lasso_ENet_Adaptations</code></span></a> for an introduction the lasso, the elastic net, and the relevant adaptations, including rationale, mathematical formulation, and computational implementation.</p>
+<div id="glmnet-glmnet" class="section level2">
+<h2><span class="header-section-number">4.1</span> <em><span style="color:red"><code>glmnet</code></span></em>, <span class="citation">Friedman et al. (2019)</span></h2>
+<div id="description-7" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>A package for fitting lasso- and elastic net-regularized regression models with a variety of link functions.</p>
 </div>
-<div id="functions-used-7" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-7" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>This package is mostly included because the implementation for the lasso/elastic net adaptations of interest all rely on it. Additionally, I make use of the <strong><span style="color:blue"><code>cv.glmnet()</code></span></strong> for selecting the optimatl value for the adaptive lasso tuning hyperparameter. This function conducts a cross-validation-driven regularization model.</p>
 </div>
-<div id="external-resources-7" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-7" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p><a href="https://glmnet.stanford.edu/">The main website</a> for the package.</p>
 </div>
 </div>
-<div id="hqreg-hqreg" class="section level3">
-<h3><em><span style="color:red"><code>hqreg</code></span></em>, <span class="citation">Yi (2017)</span></h3>
-<div id="description-8" class="section level4">
-<h4>Description</h4>
+<div id="hqreg-hqreg" class="section level2">
+<h2><span class="header-section-number">4.2</span> <em><span style="color:red"><code>hqreg</code></span></em>, <span class="citation">Yi (2017)</span></h2>
+<div id="description-8" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>This package adds functionality on top of the <em><span style="color:red"><code>glmnet</code></span></em> model functions to incorporate additional loss functions, including quantile/LAD loss and Huber loss.</p>
 </div>
-<div id="functions-used-8" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-8" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p><strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> implements cross-validated lasso/ridge/elastic net regression but allows the use of quantile and Huber loss functions.</p>
 </div>
-<div id="external-resources-8" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-8" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p>See the <a href="https://cran.r-project.org/web/packages/hqreg/hqreg.pdf">CRAN package guide</a> as well as the <a href="https://arxiv.org/abs/1509.02957">related paper</a> for more details.</p>
 </div>
 </div>
-<div id="msaenet-msaenet" class="section level3">
-<h3><em><span style="color:red"><code>msaenet</code></span></em>, <span class="citation">Xiao and Xu (2019)</span></h3>
-<div id="description-9" class="section level4">
-<h4>Description</h4>
+<div id="msaenet-msaenet" class="section level2">
+<h2><span class="header-section-number">4.3</span> <em><span style="color:red"><code>msaenet</code></span></em>, <span class="citation">Xiao and Xu (2019)</span></h2>
+<div id="description-9" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>Implements a multiple-step adaptive procedure for the lasso and elastic net.</p>
 </div>
-<div id="functions-used-9" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-9" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p><strong><span style="color:blue"><code>msaenet()</code></span></strong> implements the multi-step adaptive elastic net.</p>
 </div>
-<div id="external-resources-9" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-9" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p><a href="https://nanx.me/msaenet/">The main website</a> for the package.</p>
 <p><a href="https://www.tandfonline.com/doi/abs/10.1080/00949655.2015.1016944?journalCode=gscs20">The related paper</a>.</p>
-<div style="page-break-after: always;"></div>
 </div>
 </div>
 </div>
-<div id="mathematical-functionality-and-other-statistical-tools" class="section level2">
-<h2>Mathematical Functionality and Other Statistical Tools</h2>
-<div id="mvtnorm-mvtnorm" class="section level3">
-<h3><em><span style="color:red"> <code>mvtnorm</code> </span></em>, <span class="citation">Genz et al. (2019)</span></h3>
-<div id="description-10" class="section level4">
-<h4>Description</h4>
+<div id="mathematical-functionality-and-other-statistical-tools" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">5</span> Mathematical Functionality and Other Statistical Tools</h1>
+<div id="mvtnorm-mvtnorm" class="section level2">
+<h2><span class="header-section-number">5.1</span> <em><span style="color:red"> <code>mvtnorm</code> </span></em>, <span class="citation">Genz et al. (2019)</span></h2>
+<div id="description-10" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>This package deals with multivariate-normal data and relevant distributional tests and characteristics.</p>
 </div>
-<div id="functions-used-10" class="section level4">
-<h4>Functions Used</h4>
+<div id="functions-used-10" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
 <p>My data-generating function, <strong><span style="color:blue"><code>data_gen()</code></span></strong>, uses the <strong><span style="color:blue"><code>rmvnorm</code></span></strong>. I applied the function to generate data values from multivariate normal distributions with one of two characteristic sets (uncontaminated or outlier-contaminated). Three arguments were used to accomplish this:</p>
 <ul>
 <li>‘n’ = number of values to be generated</li>
@@ -1727,30 +1778,29 @@ div.tocify {
 <li>‘sigma’ = the covariance matrix used to generate the values</li>
 </ul>
 </div>
-<div id="external-resources-10" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-10" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p>The <a href="https://cran.r-project.org/web/packages/mvtnorm/mvtnorm.pdf">CRAN reference manual</a> describes the various functions in the package and their usage.</p>
 </div>
 </div>
-<div id="wrs2-wrs2" class="section level3">
-<h3><em><span style="color:red"><code>WRS2</code></span></em>, <span class="citation">Mair and Wilcox (2020)</span></h3>
-<div id="description-11" class="section level4">
-<h4>Description</h4>
+<div id="wrs2-wrs2" class="section level2">
+<h2><span class="header-section-number">5.2</span> <em><span style="color:red"><code>WRS2</code></span></em>, <span class="citation">Mair and Wilcox (2020)</span></h2>
+<div id="description-11" class="section level3 unnumbered unlisted">
+<h3>Description</h3>
 <p>A collection of functions for implementing robust hypothesis-testing techniques and procedures.</p>
 </div>
-<div id="functions-used-11" class="section level4">
-<h4>Functions Used</h4>
-<p>An adapted version of <strong><span style="color:blue"><code>gandh()</code></span></strong> for generating values from the <strong>g-and-h distribution</strong>. More details on this distribution can be found in <span style="color:green"><code>01_Data_Generation</code></span>.</p>
+<div id="functions-used-11" class="section level3 unnumbered unlisted">
+<h3>Functions Used</h3>
+<p>An adapted version of <strong><span style="color:blue"><code>gandh()</code></span></strong> for generating values from the <strong>g-and-h distribution</strong>. More details on this distribution can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/01_Data_Generation.html"><span style="color:green"><code>01_Data_Generation</code></span></a>.</p>
 </div>
-<div id="external-resources-11" class="section level4">
-<h4>External Resources</h4>
+<div id="external-resources-11" class="section level3 unnumbered unlisted">
+<h3>External Resources</h3>
 <p>A publication-length <a href="https://cran.r-project.org/web/packages/WRS2/vignettes/WRS2.pdf">series of vignettes</a> introducing the package.</p>
-<div style="page-break-after: always;"></div>
 </div>
 </div>
 </div>
-<div id="references" class="section level2 unnumbered">
-<h2>References</h2>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
 <div id="refs" class="references">
 <div id="ref-gridExtra">
 <p>Auguie, Baptiste. 2017. <em>GridExtra: Miscellaneous Functions for &quot;Grid&quot; Graphics</em>. <a href="https://CRAN.R-project.org/package=gridExtra">https://CRAN.R-project.org/package=gridExtra</a>.</p>
