@@ -7,19 +7,80 @@ output:
     toc: true
     toc_depth: 4
     toc_float: true
-    number_sections: false
+    number_sections: true
 bibliography: Component_Demos/Component_Refs.bib
 ---
 
-## Preamble and Setup {.unlisted .unnumbered}
+# Introduction, Preamble, and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
-#### A note on formatting
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
 
-This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+
+## Introduction {.unnumbered}
+
+The goal of this walkthrough is to demonstrate an ensemble lasso/elastic net modeling approach proposed in the applied chapter of my dissertation<span class="ref"><span class="refnum" onclick="footypop('ref1')">[ref]</span><span id="ref1" class="refbody">@MattDiss</span></span>. Over the course of my dissertation, I showed that with non-collinear data, no one lasso or elastic net adaptation dominates others outlier- and skew-/kurtosis-related scenarios<span class="ref"><span class="refnum" onclick="footypop('ref1')">[1]</span><span id="ref1" class="refbody">reminding us that there is no free lunch in statistics</span></span>. Some adaptations, like the **multi-step adaptive elastic net**<span class="ref"><span class="refnum" onclick="footypop('ref2')">[ref]</span><span id="ref2" class="refbody">@XiaoXu2015</span></span>, perform incredibly well at eliminating variables which were not true predictors of the outcome, even in the presence of extreme outlier contamination. This strong elimination performance unfortunately coincided with a greater tendency to remove true predictors from the model. 
+
+Other methods performed well in the opposite direction, including the **adaptive LAD lasso**<span class="ref"><span class="refnum" onclick="footypop('ref3')">[ref]</span><span id="ref3" class="refbody">@Wangetal2007</span></span>; the **adaptive LAD elastic net**<span class="ref"><span class="refnum" onclick="footypop('ref4')">[ref]</span><span id="ref4" class="refbody">currently un-proposed but possible thanks to @YiHuang2017 and @hqreg</span></span>; the **adaptive Huber lasso**<span class="ref"><span class="refnum" onclick="footypop('ref5')">[ref]</span><span id="ref5" class="refbody">@RossetZhu2007 and  @LambertLacroixZwald2011</span></span>; and the **adaptive Huber elastic net**<span class="ref"><span class="refnum" onclick="footypop('ref6')">[ref]</span><span id="ref6" class="refbody">@YiHuang2017</span></span>. These adaptations demonstrated consistently competitive performance in proper inclusion of true predictors and exclusion of non-predictors from the model. However, these adaptations typically did not show superior performance across scenarios relative to other adaptations for any given data condition.
+
+Given these various results, I proposed an ensemble approach to leverage the advantages of each adaptation while smoothing out their respective disadvantages. Semi-qualitative interpretation of the results permits us better insight into the true predictors of an unknown process by incorporating known empirical characteristics of each adaptation. 
+
+This document provides a full demonstration of this ensemble approach for improving the variable selection accuracy of lasso and elastic net adaptations. The walkthrough puts together the separate components demonstrated throughout the files in the <span style = "color:green">`` `r "Component Demonstrations"` ``</span> into a cohesive modeling machine.
+
+
+## Formatting Notes {.unnumbered}
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish references to different types of items.
 
  * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
  * _italics_ will be used primarily for emphasis.
@@ -28,18 +89,19 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
  * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
  
-Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below.
+The most important aspects of how I use spacing and line breaks are detailed below.
 
-I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the element. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
 
 Generally, I use line breaks to:
 
  * Break up separate arguments for a single command/function or chain of operations
- * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.
 
-#### Packages
 
-First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
+## Packages {.unnumbered}
+
+Let's load the necessary packages. Links to more information about each package can be found in <a href="Component_Demos/00C_Robust_Issues.html"><span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span></a>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries , warning = FALSE , message = FALSE}
 # This chunk loads the packages used in this workbook
@@ -63,44 +125,19 @@ nocite: |
   @gridExtra , @grid , @ggplot2 , @magrittr
 ---
 
-Note that if you do not have any of the listed packages, you should install them using **<span style = "color:blue">`` `r "install.packages(\"pkg-name-in-quotes-here\")"` ``</span>**.
-
-
-## Introduction
-
-This document combines components described in the various Component_Demos files to implement a combination of lasso and elastic net adaptations for improving variable selection capabilities of these adaptations.
-
-The goal of this walkthrough is to demonstrate the combined approach I propose in the applied chapter of my dissertation, @MattDiss. Over the course of my dissertation, I showed that with non-collinear data, no one lasso or elastic net adaptation dominates others across outlier- and skew-/kurtosis-related scenarios. Some adaptations, like the **multi-step adaptive elastic net**, @XiaoXu2015, perform incredibly well at eliminating variables which were not true predictors of the outcome, even in the presence of extreme outlier contamination. This strong elimination performance unfortunately coincided with a greater tendency to remove true predictors from the model. 
-
-Other methods also performed well in the opposite direction, including the adaptive LAD lasso, @Wangetal2007; the adaptive LAD elastic net, currently un-proposed but possible thanks to @YiHuang2017 and their *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg; the adaptive Huber lasso, @RossetZhu2007 and  @LambertLacroixZwald2011; and the adaptive Huber elastic net, @YiHuang2017. These adaptations demonstrated consistently competitive performance in proper inclusion of true predictors and exclusion of non-predictors form a model. However, these adaptations typically did not show superior performance across scenarios relative to other adaptations.
-
-Given these various results, I ultimately proposed a combined approach to implementing the more useful adaptations in a way that leverages their respective strengths. By taking a holistic view of the results across these methods, subjective interpretation can permit us better insight into true predictors of an unknown process.
-
-Much room exists to develop objective and empirical metrics for proper application of such an approach. **Figure 1** below presents the ideal form of this combined approach, given empirically-derived metrics for variable inclusion and exclusion. **Figure 1** also suggests relevant research questions for guiding the development of said objective selection metrics. These questions are indicated below the main diagram in orange boxes.
-
-An important note regarding one step of this process and related components of these demonstrations. While conducting my dissertation, I decided to utilize cross-validation splits as an ad-hoc resampling procedure given that out-of-sample prediction error was already a part of my metrics of interest in that research. However, an important question to add to this line of research would be:
-
- * What resampling procedure provides the most utility for improving variable selection?
-    * Furthermore: How many resamples should be taken? For Example: If using a Bootstrap method, how many bootstrap samples provides the most robust variable selection characteristics?
-    
-In the months since defending my dissertation, I completely forgot how I created these wonderful charts. Once I am able to find the website, I will update **Figure 1** to include the additional step and research question.
-
-![Figure 1: Empirically-Driven Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Method.png)
-
-**Figure 2**, meanwhile, presents a version of this approach which utilizes subjective interpretation in lieu of objective and empirically-derived metrics and until such metrics are developed. 
-
-![Figure 2: Subjective Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Qual.png)
-
-The current walkthrough presents a slimmed-down version of the subjective approach. I will not spend too much time on any of the given functions or procedures conducted in the current demontration. I focus primarily on the application and interpretation of combined model approach. Consequently, I generally set code chunks in the preliminary setup portion to **<span style = "color:blue">`` `r "echo = F"` ``</span>** so that they are not included in the compiled html file, but will be in the .Rmd file. I will also include references to the appropriate component demonstrations where appropriate; please see the files in the <span style = "color:green">`` `r "Component Demonstrations"` ``</span> section for details on any of the individual components or functions which make up the original
+If you do not have any of the listed packages, you should install them using **<span style = "color:blue">`` `r "install.packages(\"pkg-name-in-quotes-here\")"` ``</span>**.
 
 
 
 
-## Data Generation
 
-### Random Betas function and Loading **<span style = "color:blue">`` `r "data_gen()"` ``</span>**
+# Data Generation {.tabset .tabset-fade .tabset-pills}
 
-To help demonstrate the combined approach in its entirety, I'm going to generate a dataset using an adapted version of my **<span style = "color:blue">`` `r "data_gen()"` ``</span>** function. This time, however, I'm going to generate a dataset with random characteristics which we will not look at until after we've interpreted the results. That way we can mimic a true applied dataset where we do *not* know the true underlying distribution or data-generating mechanism.
+## Section Intro {.unnumbered}
+
+To help demonstrate the combined approach in its entirety, I need a dataset to analyze. I'm going to generate a dataset using an adapted version of my <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/01_Data_Generation.html">**<span style = "color:blue">`` `r "data_gen()"` ``</span>**</a> function. This time, however, I'm going to generate a dataset with random characteristics which we will not look at until after we've interpreted the results. That way we can mimic a true applied dataset where we do *not* know the true underlying distribution or data-generating mechanism.
+
+## Random Betas Function
 
 To facilitate this, I'm going to make a simple function for randomly generating beta coefficients. Note that the process essentially samples coefficients from the vector **<span style = "color:blue">`` `r "c(0.5 , 1 , 1.5 , 2 , 0 , 0 , 0 , 0)"` ``</span>**.
 
@@ -114,9 +151,11 @@ betas.rand <- function(x) {
 }
 ```
 
-The original data-generating function can be found in <span style = "color:green">`` `r "01_Data_Generation"` ``</span>.
+## Data-Generating Function
 
-```{r data-generating function , echo = F}
+A comprehensive walkthrough of the original data-generating function can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/01_Data_Generation.html"><span style = "color:green">`` `r "01_Data_Generation"` ``</span></a>.
+
+```{r data-generating function}
 data_gen <- function(n , p , eta_x , eta_y , g , h , 
                      seed , tracker) {      
   
@@ -206,26 +245,9 @@ data_gen <- function(n , p , eta_x , eta_y , g , h ,
 }
 ```
 
-### Generating the Data
+## Generating the Data
 
 I'm going to generate a dataset with a sample size of 100, 200 potential predictors, a random amount of outlier contamination in the predictors selected from $0\%$, $10\%$, and $20\%$, and a random amount of outlier contamination in the response variable selected from $0\%$, $10\%$, and $20\%$. No skew or kurtosis will be intentionally induced in the data.
-
-#### UPDATE 11/18/2021-1
-
-So it seems that with this n and p, null models (aka models with 0 coefficients) were generally being produced. It's unclear why this was happening, as even the lasso models should be at least producing some coefficients. These models have also worked in prior real-data applications with p > n when I was working on my dissertation.
-
-Probably what's going on is that the idiosyncracies of the generated data give the models trouble. Turns out, this is *not* a real dataset.
-
-In the meantime, I'm going to set the data to be generated with sample size of 100 and 50 potential predictors.
-
-#### UPDATE 11/18/2021-2
-
-Matt did another dumb when he originally wrote up the k-fold subsetting function. I made that function such that the new X objects would specifically have 8 columns - corresponding with the 8 predictors in my first first super original dataset I tested on in the early days of this repository. **<span style = "color:blue">`` `r "kfold_subsetter()"` ``</span>**, as well as the corresponding functions in various component demos, have all but updated to reflect this change. 
-
-All that said, I am still going to reduce the number of potential predictors down to 50. Dealing with dimensionality adds a huge computational burden to the model estimation process, one which makes rendering an appropriate markdown file impractical on my current hardware. When finances permit, I plan on generating those models with an AWS EC2 instance and re-compiling this walkthrough, except setting certain model-estimating code chunks to **<span style = "color:blue">`` `r "eval = F"` ``</span>** and including hidden chunks that load the AWS-generated data.
-
-
-
 
 ```{r generate single dataset , eval = F}
 wt.data <- data_gen(n = 100 , p = 50 , 
@@ -236,11 +258,19 @@ wt.data <- data_gen(n = 100 , p = 50 ,
                           )
 ```
 
-## CV-Splitting data
+# K-Fold Splitting the Data for Cross-Validation and Resampling {.tabset .tabset-fade .tabset-pills}
 
-Now we need to conduct cross-validation splits of the data. The custom k-fold subsetting functions I created and demonstrated in <span style = "color:green">`` `r "02A_KFold_Subsetter"` ``</span> and <span style = "color:green">`` `r "02B_Kfold_Multi"` ``</span> are hidden from the html file. The code for those functions can be found in the .Rmd, and further details about those functions can be found in the corresponding <span style = "color:green">`` `r "Component Demonstrations"` ``</span>.
+## Section Intro {.unnumbered}
 
-```{r kfold subsetting function , echo = F}
+Now that we've..."collected" our data or found an applied dataset to analyze, we need to split up the data for cross-validation and resampling purposes. Note that I'm primarily focusing on the resampling aspect here - my ultimate goal is variable selection accuracy rather than prediction error, and cross-validation for hyperparameter tuning is done within the model application function **<span style = "color:blue">`` `r "hqmsa.sim.fnct()"` ``</span>** found in **Section 3.XX** below. Bootstrapping would be a viable alternative approach here, since we're not interested utilizing cross-validation prediction error to select our final model. I implement the k-fold splitting procedure here in the event that prediction is of interest to other users!
+
+## K-Fold Subsetting Functions
+
+The custom k-fold subsetting functions I demonstrated in<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/02A_KFold_Subsetter.html"><span style = "color:green">`` `r "02A_KFold_Subsetter"` ``</span></a> and <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/02B_KFold_Multi.html"><span style = "color:green">`` `r "02B_Kfold_Multi"` ``</span></a> are included below. Further details about those functions can be found in the corresponding <span style = "color:green">`` `r "Component Demonstrations"` ``</span>.
+
+
+
+```{r kfold subsetting function}
 # k-fold subsetting function
 kfold_subsetter <- function(data , y_col = 1 , 
                             x_cols = c(2:ncol(data)) , 
@@ -333,7 +363,10 @@ kfold_subsetter <- function(data , y_col = 1 ,
 
 ```
 
-```{r multi-kfold wrapper , echo = F}
+
+And the wrapper for simultaneously for conducting multiple k-fold splits.
+
+```{r multi-kfold wrapper}
 kfold_multi <- function(data , ... , seed_multi = 713 , 
                         num_splits = 100 , test_percent = .2) {
         # set the seed for generating individual kfold seeds
@@ -378,11 +411,12 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 }
 ```
 
-### Create cv-split data
+## Create cv-split data
 
-I'm going to conduct 100 splits, similarly to in the component demos and in my dissertation research. First I need to extract the X's and Y's into a single data object to be split.
+I'm going to conduct 100 splits as done in the demos. First I need to extract the X's and Y's into a single data object to be split.
 
 ```{r extract X and Y for cv splitting , eval = F}
+# Bind X and Y list elements from original list object into a data.frame, then set to a data.table
 wt.data2 <- setDT(data.frame(cbind(wt.data[["Y"]] , wt.data[["X"]]
                                      )
                                )
@@ -390,13 +424,14 @@ wt.data2 <- setDT(data.frame(cbind(wt.data[["Y"]] , wt.data[["X"]]
 ```
 
 ```{r create cv-split data 100 splits , eval = F}
+# conduct 100 5-fold splits on the resulting data.table
 wtcv.100 <- kfold_multi(data = wt.data2 , num_splits = 100)
 ```
 
 
-### Save the Date-a
+## Save the Date-a
 
-Let's save the original dataset, including the conditions which generated it, as well as our cv-split data.
+Let's save the original dataset, including the conditions which generated it, as well as our cv-split/resampled data.
 
 ```{r save walkthrough data , eval = F}
 saveRDS(wt.data , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/walkthrough_data.RData")
@@ -406,9 +441,11 @@ saveRDS(wt.data , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_
 saveRDS(wtcv.100 , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/wtdata_cvsplit.RData")
 ```
 
-## Generating Lasso and Elastic Net Models
+# Generating Lasso and Elastic Net Models {.tabset .tabset-fade .tabset-pills}
 
 Let's generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <span style = "color:green">`` `r "03D_Combined_Model_Generation"` ``</span> ([Demo 3D](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html)). Additional demonstrations of the steps leading up to the full model generation can be found in <span style = "color:green">`` `r "03A_AdaLAD_SingleDemo"` ``</span> ([Demo 3A](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html)), <span style = "color:green">`` `r "03B_hqreg_generalized"` ``</span> ([Demo 3B](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html)), and <span style = "color:green">`` `r "03C_hqreg_msaenet_generalized"` ``</span> ([Demo 3C](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html)).
+
+## Model Application Function
 
 *However*, because the actual application of the model function and the subsequent processing of the model results would be a part of the actual use of my combined approach in a real setting, I *will* be including those code chunks in the current walkthrough.
 
@@ -648,15 +685,13 @@ hqmsa.sim.fnct <- function(data.list ,
 }
 ```
 
-```{r knit exit1 , echo = F , eval = F}
-knitr::knit_exit()
-```
 
-### Generating the models
+
+## Generating the models {.tabset .tabset-fade .tabset-pills}
 
 Note that the following code chunks have not been evaluated in this document. Due to the of generating these datasets on my personal computer, I opted to run these chunks on a personal AWS EC2 cluster and then import the resulting dataset. The total cost to me to do so was less than $10 after splitting up my code to run simultaneously across processors using RStudio's "Jobs" functionality. This is not necessarily the most streamlined or efficient way to accomplish this. A future goal for my return to this project is to be able automate efficient parallelization of these tasks, rather than manually splitting the code up and using Jobs. If you would like support in getting an EC2 set up, please feel free to email me: matt.multach87 at gmail dot com.
 
-#### Adaptive LAD Lasso
+### Adaptive LAD Lasso
 
 ```{r ladlasso , eval = F}
 #run across data subset
@@ -666,7 +701,7 @@ ladlasso.100 <- wtcv.100 %>%
 ```
 
 
-#### Adaptive LAD Elastic Net, Alpha = 0.5
+### Adaptive LAD Elastic Net, Alpha = 0.5
 
 ```{r ladelnet5 , eval = F}
 #run across data subset
@@ -675,7 +710,7 @@ ladelnet5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-#### Adaptive Huber Lasso
+### Adaptive Huber Lasso
 
 ```{r huberlasso , eval = F}
 #run across data subset
@@ -684,7 +719,7 @@ huberlasso.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-#### Adaptive Huber Elastic Net, Alpha = 0.5
+### Adaptive Huber Elastic Net, Alpha = 0.5
 
 ```{r huberelnet5 , eval = F}
 #run across data subset
@@ -693,7 +728,7 @@ huberelnet5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-#### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
 
 ```{r msaenet k3 , eval = F}
 #run across data subset
@@ -702,7 +737,7 @@ msaelnetk3.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-#### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
 
 ```{r msaenet k5 , eval = F}
 #run across data subset
@@ -711,7 +746,7 @@ msaelnetk5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-#### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
 
 ```{r msaenet k10 , eval = F}
 #run across data subset
@@ -720,13 +755,13 @@ msaelnetk10.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Processing the model results
+# Processing the model results {.tabset .tabset-fade .tabset-pills}
 
 Now we would like to process the resulting objects to eliminate any extra information. In this context, we're mainly interested in getting rid of the overarching 'result'/'error' list structure that is produced by **<span style = "color:blue">`` `r "safely()"` ``</span>**.
 
 Note that the model-processing code chunks have also been set to **<span style = "color:blue">`` `r "eval = F"` ``</span>**, as I conducted this processing step after generating the files in AWS EC2.
 
-#### Get rid of result/error level of each model: Function
+## Get rid of result/error level of each model: Function
 
 The following code chunk will check a data list produced by **<span style = "color:blue">`` `r "safely()"` ``</span>** and return either the 'result' element or the 'error' element, depending on which contains information.
 
@@ -746,7 +781,7 @@ res_or_err <- function(data) {
 }
 ```
 
-#### Get rid of result/error and combine
+## Get rid of result/error and combine
 
 Now, we're going to map **<span style = "color:blue">`` `r "res_or_err()"` ``</span>** across all of our 100-split model results and combine those objects into a single overarching list.
 
@@ -765,6 +800,10 @@ modelswt_all <- list(ladlasso = ladlasso.100 %>%
                        map(res_or_err) ,
                    msak10 = msaelnetk10.100 %>%
                        map(res_or_err))
+```
+
+```{r knit exit1 , echo = F , eval = F}
+knitr::knit_exit()
 ```
 
 ```{r load temp data files , eval = F , echo = F}
@@ -794,7 +833,7 @@ saveRDS(modelswt_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_L
 modelswt_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/modelswt_precoefproc.RData")
 ```
 
-## Process Model Coefficients
+## Process Model Coefficients {.tabset .tabset-fade .tabset-pills}
 
 See <span style = "color:green">`` `r "04B_Process_Coefficients_AllAdapts"` ``</span> ([Demo 4B](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html)) for a more detailed walkthrough of this step, and <span style = "color:green">`` `r "04A_Process_Coefficients_SingleAdapt"` ``</span> ([Demo 4A](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html)) for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.
 
@@ -882,7 +921,7 @@ adapts_0 <- function(data) {
 }
 ```
 
-### Coefficient processing: Initialize list
+## Coefficient processing {.tabset .tabset-fade .tabset-pills}
 
 Let's initialize our coefficient selection frequency list element.
 
@@ -949,17 +988,19 @@ Let's save the model results file which also includes our new "Frequencies" data
 saveRDS(modelswt_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100wt_plus_freqsranks.RData")
 ```
 
+# Semi-Qualitative Processing of Predictors {.tabset .tabset-fade .tabset-pills}
+
 ## Some heuristics for filtering our potential predictors
 
 In the component demos, I was working only with 8 potential predictors with known coefficients and known data characteristics. Here we have 50 potential predictors and data characteristics are unknown for now. We will revisit the true characteristics after making an attempt to reduce interpret the combined-model results. We should create some heuristics for semi-subjectively filtering out predictors which are unlikely to be true underlying predictors of the process.
 
 We'll see how well these intuitions play out later. As I'm writing this, I still do not know the true underlying zero and non-zero coefficients. Note also that many of the heuristics used below correspond with research questions specified in the empirical path illustrated in **Figure 1**.
 
-### Re: Rank
+## Re: Rank
 
 As I've been further refining the combined-model approach while working on this full walkthrough, I've realized that, at least for now, the selection ranks are not as helpful. I may return to the selection ranks later but am not considering them for now.
 
-### Heuristic: Unselected Variables and GE51's
+## Heuristic: Unselected Variables and GE51's
 
 Two selection patterns came to mind for selecting out possible predictors as true underlying predictors. If a given adaptation failed to include a particular predictor in *any* of the 100 data splits, this is likely to reflect a consistent lack of predictive capacity on that predictor's part. Similarly, if a variable was never selected at least half of the time by any of the 7 adaptations, it also likely lacks true underlying predictive capacity. 
 
@@ -990,7 +1031,7 @@ modelswt_all[["Frequencies"]][["By_Predictor51"]] <-
 
 We're now down to about 40 potential predictors, which I think is a good place to start!
 
-### Heuristics based on PhD research
+## Heuristics based on PhD research {.tabset .tabset-fade .tabset-pills}
 
 Here is where I bring to play the knowledge I've developed about these different adaptations over the course of my PhD research. 
 
@@ -1002,18 +1043,18 @@ Here we see an important pattern emerge which guided my choice of adaptations an
 
 So I don't actually have data to inform inferences re: the 3-step or 5-step elastic net, as my main research only looked at the 10-step version. We can take a guess, though, that less steps will result in more-inclusive models overall relative to the 10-step - in other words, greater tendency towards false positives but also a reduced tendency towards false negatives.
 
-#### Heuristic #1: Consistent LAD and Huber selection
+### Heuristic #1: Consistent LAD and Huber selection
 
 aka: selected frequenty by all four and little variability among these four. Let's say, all greater than 80, and average greater than 90
 
-#### Heuristic #2: Selection > 50% by both 3-step and 5-step
+### Heuristic #2: Selection > 50% by both 3-step and 5-step
 
 
-#### Heuristic #3: 
+### Heuristic #3: 
 
 
 
-## CODE-STOP NOTE
+# CODE-STOP NOTE {.unnumbered}
 
 **NOTE: All code chunks after this point this point have been set to** **<span style = "color:blue">`` `r "eval = F"` ``</span>**. As I progress through these steps and add further details, I will move this section further downward.
 
@@ -1021,7 +1062,7 @@ aka: selected frequenty by all four and little variability among these four. Let
 knitr::opts_chunk$set(echo = TRUE , eval = F)
 ```
 
-## Visualization
+# Visualization {.tabset .tabset-fade .tabset-pills}
 
 Please see <span style = "color:green">`` `r "05_Coefficient Visualization"` ``</span> ([Demo 5](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/05_Coefficient Visualization.html)) for a more detailed walkthrough of this step
 
@@ -1035,9 +1076,9 @@ There are going to be three sets of plots:
   * Plots of frequency of $100\%$ and $0\%$ selection of each predictor across adaptations
   
 
-### Visualization Setup
+## Visualization Setup {.tabset .tabset-fade .tabset-pills}
 
-#### Custom Color Palette
+### Custom Color Palette
 
 ```{r make P11 custom color palette}
 P11 <- c("#02AD24" , "#FF0000" , "#0000FF" , "#9A4D42" , 
@@ -1053,7 +1094,7 @@ P7 <- sample(x = P11 , size = 7 , replace = FALSE)
 P8 <- sample(x = P11 , size = 8 , replace = FALSE)
 ```
 
-#### Plot legend function
+### Plot legend function
 
 The **<span style = "color:blue">`` `r "0g_legend()"` ``</span>** function used to generate a plot legend object was adapted from the top-rated response to [this post](https://stackoverflow.com/questions/11883844/inserting-a-table-under-the-legend-in-a-ggplot2-histogram).
 
@@ -1066,11 +1107,11 @@ g_legend<-function(a.gplot){
        }
 ```
 
-### Visualization: All Predictors and Adaptations
+## Visualization: All Predictors and Adaptations {.tabset .tabset-fade .tabset-pills}
 
 Now, I'm going to create 7 separate plots. The plots will present the selection frequencies of each potential predictor for each of the 7 lasso/elastic net adaptations included in the combined model.
 
-#### Plot Objects
+### Plot Objects
 
 ```{r huberelnet selection frequencies}
 huberelnet.pl <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("huberelnet" , "predictor") , ] , 
@@ -1170,7 +1211,7 @@ msak5.pl <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("
   scale_fill_manual(values = P8)
 ```
 
-#### Blank Grob
+### Blank Grob
 
 ```{r blank ggplot}
 blank.pl <- ggplot() +
@@ -1178,7 +1219,7 @@ blank.pl <- ggplot() +
   theme_minimal()
 ```
 
-#### Create Plot Legend
+### Create Plot Legend
 
 ```{r plot object for first multiplot legend}
 msak5.l <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("msak5" , "predictor") , ] , 
@@ -1197,7 +1238,7 @@ msak5.l <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("m
 plotA.legend <- g_legend(msak5.l)
 ```
 
-#### Put Plot Objects Together
+### Put Plot Objects Together
 
 Let's put the plots together!
  
@@ -1212,9 +1253,9 @@ plotA <- grid.arrange(arrangeGrob(huberelnet.pl , blank.pl , huberlasso.pl ,
                       top = textGrob("Predictor Selection Frequency by Lasso/Elastic Net Adaptation Across All 100 Data Splits"))
 ```
 
-### Visualization: All/None Predictor Selection by Adaptation
+## Visualization: All/None Predictor Selection by Adaptation {.tabset .tabset-fade .tabset-pills}
 
-#### Plot Objects
+### Plot Objects
 
 Now, I'm going to create 2 separate plots. One plot will display the number of predictors selected into $100\%$ of models by each of the 7 adaptations, while the second plot will display similar information for number of predictors selected into *no* models by adaptation. We can mostly just take our previous code and make slight changes, but the structure of creating these objects is largely the same.
 
@@ -1252,7 +1293,7 @@ adapt0.pl <- ggplot(data = modelswt_all[["Frequencies"]][["By_Adaptation"]][ , c
   scale_fill_manual(values = P7)
 ```
 
-#### Create Plot Legend
+### Create Plot Legend
 
 Let's also create the legend for this multi-plot after creating an analogous plot with the legend included.
 
@@ -1275,7 +1316,7 @@ plotB.legend <- g_legend(adapt100.l)
 ```
 
 
-#### Put Plot Objects Together
+### Put Plot Objects Together
 
 ```{r multiplotB arrange}
 plotB <- grid.arrange(arrangeGrob(adapt0.pl , 
@@ -1286,11 +1327,11 @@ plotB <- grid.arrange(arrangeGrob(adapt0.pl ,
                       top = textGrob("0% and 100% Selection Frequency by Lasso/Elastic Net Adaptation"))
 ```
 
-### Visualization: All/None Predictor Selection by Predictor
+## Visualization: All/None Predictor Selection by Predictor {.tabset .tabset-fade .tabset-pills}
 
 I'm going to create analogous plots to those in the previous subsection. This time, however, the plots look at the number of adaptations for which a given predictor was _always_ or _never_ selected across the 100 data splits. 
 
-#### Plot Objects
+### Plot Objects
 
 ```{r predictor 100 plot}
 pred100.pl <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("all" , "predictor") , ] , 
@@ -1322,7 +1363,7 @@ pred0.pl <- ggplot(data = modelswt_all[["Frequencies"]][["By_Predictor"]][ , c("
   scale_fill_manual(values = P8)
 ```
 
-#### Create Plot Legend
+### Create Plot Legend
 
 Let's also create the legend for this multi-plot after creating an analogous plot with the legend included.
 
@@ -1344,7 +1385,7 @@ plotC.legend <- g_legend(pred100.l)
 ```
 
 
-#### Put Plot Objects Together
+### Put Plot Objects Together
 
 ```{r multiplotC arrange}
 plotC <- grid.arrange(arrangeGrob(pred0.pl , 
@@ -1355,4 +1396,27 @@ plotC <- grid.arrange(arrangeGrob(pred0.pl ,
                       top = textGrob("0% and 100% Selection Frequency by Potential Predictor"))
 ```
 
-## References
+## Final Plot Objects
+
+# References
+
+<!-- 
+```
+Much room exists to develop objective and empirical metrics for proper application of such an approach. **Figure 1** below presents the ideal form of this combined approach, given empirically-derived metrics for variable inclusion and exclusion. **Figure 1** also suggests relevant research questions for guiding the development of said objective selection metrics. These questions are indicated below the main diagram in orange boxes.
+
+An important note regarding one step of this process and related components of these demonstrations. While conducting my dissertation, I decided to utilize cross-validation splits as an ad-hoc resampling procedure given that out-of-sample prediction error was already a part of my metrics of interest in that research. However, an important question to add to this line of research would be:
+
+ * What resampling procedure provides the most utility for improving variable selection?
+    * Furthermore: How many resamples should be taken? For Example: If using a Bootstrap method, how many bootstrap samples provides the most robust variable selection characteristics?
+    
+In the months since defending my dissertation, I completely forgot how I created these wonderful charts. Once I am able to find the website, I will update **Figure 1** to include the additional step and research question.
+
+![Figure 1: Empirically-Driven Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Method.png)
+
+**Figure 2**, meanwhile, presents a version of this approach which utilizes subjective interpretation in lieu of objective and empirically-derived metrics and until such metrics are developed. 
+
+![Figure 2: Subjective Approach for Combined Lasso and Elastic Net Model Application for Variable Selection](Combined_Qual.png)
+
+The current walkthrough presents a slimmed-down version of the subjective approach. I will not spend too much time on any of the given functions or procedures conducted in the current demontration. I focus primarily on the application and interpretation of combined model approach. Consequently, I generally set code chunks in the preliminary setup portion to **<span style = "color:blue">`` `r "echo = F"` ``</span>** so that they are not included in the compiled html file, but will be in the .Rmd file. I will also include references to the appropriate component demonstrations where appropriate; please see the files in the <span style = "color:green">`` `r "Component Demonstrations"` ``</span> section for details on any of the individual components or functions which make up the original
+```
+-->
