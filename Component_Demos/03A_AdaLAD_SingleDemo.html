@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-15" />
+<meta name="date" content="2022-02-10" />
 
 <title>Single-Model Demo: Adaptive LAD Lasso</title>
 
@@ -1495,21 +1495,69 @@ div.tocify {
 
 <h1 class="title toc-ignore">Single-Model Demo: Adaptive LAD Lasso</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-15</h4>
+<h4 class="date">2022-02-10</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2">
+<div id="introduction-preamble-and-setup" class="section level1 unnumbered tabset tabset-fade tabset-pills">
+<h1>Introduction, Preamble, and Setup</h1>
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+<div id="introduction" class="section level2 unnumbered">
 <h2>Introduction</h2>
 <p>This file demonstrates application of the adaptive LAD lasso to a single dataset. The demo does not include holdout/testing data, although the function used to apply the adaptive LAD lasso incorporates the option.</p>
-<p>Further mathematical and statistical details on the Adaptive LAD Lasso can be found in 00A_Lasso_ENet_Adaptations.</p>
+<p>Further mathematical and statistical details on the Adaptive LAD Lasso can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00A_Lasso_ENet_Adaptations.html"><span style="color:green"><code>00A_Lasso_ENet_Adaptations</code></span></a>.</p>
 </div>
-<div id="preamble-and-setup" class="section level2">
-<h2>Preamble and Setup</h2>
-<div id="a-note-on-formatting" class="section level3">
-<h3>A note on formatting</h3>
-<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<div id="formatting-notes" class="section level2 unnumbered">
+<h2>Formatting Notes</h2>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish references to different types of items.</p>
 <ul>
 <li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
 <li><em>italics</em> will be used primarily for emphasis.</li>
@@ -1518,17 +1566,17 @@ div.tocify {
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 <li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
-<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
-<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>The most important aspects of how I use spacing and line breaks are detailed below.</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the element. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
 <p>Generally, I use line breaks to:</p>
 <ul>
 <li>Break up separate arguments for a single command/function or chain of operations</li>
-<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.</li>
 </ul>
 </div>
-<div id="packages" class="section level3">
-<h3>Packages</h3>
-<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<div id="packages" class="section level2 unnumbered">
+<h2>Packages</h2>
+<p>Let’s load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00B_Package_Descr_Refs.html"><span style="color:green"><code>00B_Package_Descr_Refs</code></span></a>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1538,25 +1586,25 @@ library(data.table) # For more streamlined data structures
 library(glmnet)     # For general lasso/elastic net functionality
 library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm</code></pre>
 </div>
-</div>
-<div id="data-loading" class="section level2">
+<div id="data-loading" class="section level2 unnumbered unlisted">
 <h2>Data Loading</h2>
 <p>Let’s load the singular, matricized dataset we created.</p>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 </div>
-<div id="model-application-function" class="section level2">
-<h2>Model-Application Function</h2>
-<div id="data-input-formatting" class="section level3">
-<h3>Data Input Formatting</h3>
-<p>Note that the function takes a list of data elements as its sole required argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in <span style="color:green"><code>02A_KFold_Subsetter</code></span>, setting the ‘list’ argument to ‘list = “traintest”’.</p>
+</div>
+<div id="model-application-function" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">1</span> Model-Application Function</h1>
+<div id="data-input-formatting" class="section level2">
+<h2><span class="header-section-number">1.1</span> Data Input Formatting</h2>
+<p>Note that the function takes a list of data elements as its sole required argument, and will read individual elements from that list named “X,” “Y,” “X_test,” and “Y_test.” If your data is not yet indexed for cross-validation training/testing, you can simply run the k-fold subsetting function <strong><span style="color:blue"><code>kfold_subsetter</code></span></strong> described in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/02A_KFold_Subsetter.html"><span style="color:green"><code>02A_KFold_Subsetter</code></span></a>, setting the ‘list’ argument to ‘list = “traintest”’.</p>
 <p>If, however, you have a dataset already including a variable indicating training/testing subsets, you should run something like the following code chunk (which will not run if you compile this document, as ‘eval = F’). You should replace inputs in ALLCAPS with the appropriate data object or cross-validation subset indicator in your dataset.</p>
 <pre class="r"><code>data_for_adalad &lt;- list(X = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
                         Y = OLDDATA[CV.INDEX != INDEX.VALUE.TESTSET , YCOL.NUMBER] , 
                         X_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , XCOL.NUMBERS] , 
                         Y_test = OLDDATA[CV.INDEX == INDEX.VALUE.TESTSET , YCOL.NUMBER])</code></pre>
 </div>
-<div id="the-function" class="section level3">
-<h3>The Function</h3>
+<div id="the-function" class="section level2">
+<h2><span class="header-section-number">1.2</span> The Function</h2>
 <p>The function in the code chunk below applies the adaptive LAD lasso to specified data for predictors and a single response. Currently, the function only works for a single response Y and is not intended for use with multiple simultaneous response variables.</p>
 <pre class="r"><code># adaptive LAD lasso application function
 ladlasso.sim.fnct &lt;- function(data.list) {
@@ -1742,27 +1790,32 @@ ladlasso.sim.fnct &lt;- function(data.list) {
 
 }</code></pre>
 </div>
-<div id="on-model-intercepts" class="section level3">
-<h3>On Model Intercepts</h3>
+<div id="on-model-intercepts" class="section level2 unnumbered unlisted">
+<h2>On Model Intercepts</h2>
 <p>Initially, this function was intended to give users the option of including or excluding a model intercept. However, the <strong><span style="color:blue"><code>hqreg()</code></span></strong> family of functions inherently include an intercept in model estimation. Consequently, the function currently only estimates models with an intercept and produces corresponding metrics.</p>
 </div>
-<div id="on-invisiblecapture.output" class="section level3">
-<h3>On <strong><span style="color:blue"><code>invisible(capture.output())</code></span></strong></h3>
+<div id="on-invisiblecapture.output" class="section level2 unnumbered unlisted">
+<h2>On <strong><span style="color:blue"><code>invisible(capture.output())</code></span></strong></h2>
 <p>Astute readers might have noticed a pair of commands outside the use of <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> above. This is to prevent an excess of model output getting printed, particularly from repeated model-application during the cross-validation process. <strong><span style="color:blue"><code>cv.hqreg()</code></span></strong> will produce a large amount of output <em>for each cv data split</em>. Although the information is useful, having it printed out on-screen whenever you run the function is impractical, especially since we will ultimately be mapping this function over many datasets with one command.</p>
 </div>
 </div>
-<div id="function-testing" class="section level2">
-<h2>Function Testing</h2>
+<div id="function-testing" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> Function Testing</h1>
+<div id="running-the-function" class="section level2">
+<h2><span class="header-section-number">2.1</span> Running the Function</h2>
 <p>Now let’s try running the model on our demo.data. Note that we’re only running the function a single time and without any holdout data.</p>
 <pre class="r"><code>ladlasso.test &lt;- ladlasso.sim.fnct(demo.data)</code></pre>
-<pre><code>## time =  22.27611</code></pre>
+<pre><code>## time =  27.77312</code></pre>
+</div>
+<div id="structure-of-resulting-object" class="section level2">
+<h2><span class="header-section-number">2.2</span> Structure of Resulting Object</h2>
 <p>Let’s explore the structure of the resulting object.</p>
 <pre class="r"><code>str(ladlasso.test)</code></pre>
 <pre><code>## List of 3
 ##  $ full.model:List of 1
 ##   ..$ :List of 7
 ##   .. ..$ cve         : num [1:100] 481 481 481 481 481 ...
-##   .. ..$ cvse        : num [1:100] 78.2 78.2 78.2 78.2 78.2 ...
+##   .. ..$ cvse        : num [1:100] 78.1 78.1 78.1 78.1 78.1 ...
 ##   .. ..$ type.measure: chr &quot;mse&quot;
 ##   .. ..$ lambda      : num [1:100] 1400 1242 1102 978 867 ...
 ##   .. ..$ fit         :List of 11
@@ -1777,21 +1830,21 @@ ladlasso.sim.fnct &lt;- function(data.list) {
 ##   .. .. ..$ alpha         : num 1
 ##   .. .. ..$ gamma         : NULL
 ##   .. .. ..$ tau           : num 0.5
-##   .. .. ..$ penalty.factor: num [1:8] 1.342 0.971 0.86 0.766 4.733 ...
+##   .. .. ..$ penalty.factor: num [1:8] 1.146 0.986 0.932 0.884 2.058 ...
 ##   .. .. ..$ method        : chr &quot;quantile&quot;
-##   .. .. ..$ nv            : int 0
+##   .. .. ..$ nv            : int 1
 ##   .. .. ..- attr(*, &quot;class&quot;)= chr &quot;hqreg&quot;
-##   .. ..$ lambda.1se  : num 0.0534
-##   .. ..$ lambda.min  : num 0.0231
+##   .. ..$ lambda.1se  : num 0.0862
+##   .. ..$ lambda.min  : num 0.01
 ##   .. ..- attr(*, &quot;class&quot;)= chr &quot;cv.hqreg&quot;
 ##  $ model.info:List of 3
-##   ..$ lambda : num 0.0231
-##   ..$ coefs  : Named num [1:9] -0.00535 0.41162 1.02333 1.48479 2.05755 ...
+##   ..$ lambda : num 0.01
+##   ..$ coefs  : Named num [1:9] -0.0385 0.4634 1.0604 1.4719 1.9888 ...
 ##   .. ..- attr(*, &quot;names&quot;)= chr [1:9] &quot;(Intercept)&quot; &quot;X1&quot; &quot;X2&quot; &quot;X3&quot; ...
-##   ..$ weights: num [1:8] 1.342 0.971 0.86 0.766 4.733 ...
+##   ..$ weights: num [1:8] 1.146 0.986 0.932 0.884 2.058 ...
 ##  $ metrics   :List of 2
 ##   ..$ n.coefs: int 4
-##   ..$ runtime: num 22.3</code></pre>
+##   ..$ runtime: num 27.8</code></pre>
 <p>A 3-element list is produced, each themselves containing various structures. The first list element contains the span of models produced <strong><span style="color:blue"><code>cv.qreg()</code></span></strong> in the cross-validated selection of the lasso tuning hyperparameter <span class="math inline">\(\lambda_1\)</span>, <em>for the cross-validation-selected minimizing scaling hyperparameter <span class="math inline">\(\nu\)</span> / <span class="math inline">\(\gamma\)</span></em>. The function itself generates a model for each potential value of this scaling hyperparameter, but ultimately only stores the minimizing model results (which are themselves a cross-validation-guided procedure for selecting another hyperparameter).</p>
 <p>The second list element contains the main model results:</p>
 <ul>
@@ -1801,8 +1854,9 @@ ladlasso.sim.fnct &lt;- function(data.list) {
 </ul>
 <p>The final list element contains metrics produced by the model-application function, which in this case were just the number of nonzero coefficients in the final model and the run.time of the model.</p>
 </div>
-<div id="references" class="section level2 unnumbered">
-<h2>References</h2>
+</div>
+<div id="references" class="section level1 unnumbered unlisted">
+<h1>References</h1>
 <div id="refs" class="references">
 <div id="ref-magrittr">
 <p>Bache, S.M., and H. Wickham. 2016. <em>Magrittr: A Forward-Pipe Operator for R</em>. <a href="https://CRAN.R-project.org/package=magrittr">https://CRAN.R-project.org/package=magrittr</a>.</p>
