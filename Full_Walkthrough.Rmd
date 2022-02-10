@@ -443,11 +443,11 @@ saveRDS(wtcv.100 , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso
 
 # Generating Lasso and Elastic Net Models {.tabset .tabset-fade .tabset-pills}
 
-Let's generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <span style = "color:green">`` `r "03D_Combined_Model_Generation"` ``</span> ([Demo 3D](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html)). Additional demonstrations of the steps leading up to the full model generation can be found in <span style = "color:green">`` `r "03A_AdaLAD_SingleDemo"` ``</span> ([Demo 3A](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html)), <span style = "color:green">`` `r "03B_hqreg_generalized"` ``</span> ([Demo 3B](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html)), and <span style = "color:green">`` `r "03C_hqreg_msaenet_generalized"` ``</span> ([Demo 3C](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html)).
+## Section Introduction {.unnumbered}
+
+Let's generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html"><span style = "color:green">`` `r "03D_Combined_Model_Generation"` ``</span></a>. Additional demonstrations of the steps leading up to the full model generation can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html"><span style = "color:green">`` `r "03A_AdaLAD_SingleDemo"` ``</span></a>, <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html"><span style = "color:green">`` `r "03B_hqreg_generalized"` ``</span></a>, and <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html"><span style = "color:green">`` `r "03C_hqreg_msaenet_generalized"` ``</span></a>.
 
 ## Model Application Function
-
-*However*, because the actual application of the model function and the subsequent processing of the model results would be a part of the actual use of my combined approach in a real setting, I *will* be including those code chunks in the current walkthrough.
 
 ```{r hqreg model application function , echo = T}
 
@@ -685,13 +685,11 @@ hqmsa.sim.fnct <- function(data.list ,
 }
 ```
 
-
-
-## Generating the models {.tabset .tabset-fade .tabset-pills}
+## Generating the models {.unlisted}
 
 Note that the following code chunks have not been evaluated in this document. Due to the of generating these datasets on my personal computer, I opted to run these chunks on a personal AWS EC2 cluster and then import the resulting dataset. The total cost to me to do so was less than $10 after splitting up my code to run simultaneously across processors using RStudio's "Jobs" functionality. This is not necessarily the most streamlined or efficient way to accomplish this. A future goal for my return to this project is to be able automate efficient parallelization of these tasks, rather than manually splitting the code up and using Jobs. If you would like support in getting an EC2 set up, please feel free to email me: matt.multach87 at gmail dot com.
 
-### Adaptive LAD Lasso
+### Adaptive LAD Lasso {.unnumbered .unlisted}
 
 ```{r ladlasso , eval = F}
 #run across data subset
@@ -701,7 +699,7 @@ ladlasso.100 <- wtcv.100 %>%
 ```
 
 
-### Adaptive LAD Elastic Net, Alpha = 0.5
+### Adaptive LAD Elastic Net, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r ladelnet5 , eval = F}
 #run across data subset
@@ -710,7 +708,7 @@ ladelnet5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Adaptive Huber Lasso
+### Adaptive Huber Lasso {.unnumbered .unlisted}
 
 ```{r huberlasso , eval = F}
 #run across data subset
@@ -719,7 +717,7 @@ huberlasso.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Adaptive Huber Elastic Net, Alpha = 0.5
+### Adaptive Huber Elastic Net, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r huberelnet5 , eval = F}
 #run across data subset
@@ -728,7 +726,7 @@ huberelnet5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k3 , eval = F}
 #run across data subset
@@ -737,7 +735,7 @@ msaelnetk3.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k5 , eval = F}
 #run across data subset
@@ -746,7 +744,7 @@ msaelnetk5.100 <- wtcv.100 %>%
             print.time = FALSE)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k10 , eval = F}
 #run across data subset
@@ -757,11 +755,15 @@ msaelnetk10.100 <- wtcv.100 %>%
 
 # Processing the model results {.tabset .tabset-fade .tabset-pills}
 
-Now we would like to process the resulting objects to eliminate any extra information. In this context, we're mainly interested in getting rid of the overarching 'result'/'error' list structure that is produced by **<span style = "color:blue">`` `r "safely()"` ``</span>**.
+## Section Intro {.unnumbered}
+
+Now we would like to process the resulting objects to eliminate any extra information. First, we'll et rid of the overarching 'result'/'error' list structure that is produced by **<span style = "color:blue">`` `r "safely()"` ``</span>** (**Section 4.1**). We'll also be processing model results (**Section 4.2**) so that we have readily-available information on coefficient selection tendencies for semi-qualitative evaluation.
 
 Note that the model-processing code chunks have also been set to **<span style = "color:blue">`` `r "eval = F"` ``</span>**, as I conducted this processing step after generating the files in AWS EC2.
 
-## Get rid of result/error level of each model: Function
+## Get rid of result/error level of each model {.tabset .tabset-fade .tabset-pills}
+
+### Function for Processing Result/Error List elements
 
 The following code chunk will check a data list produced by **<span style = "color:blue">`` `r "safely()"` ``</span>** and return either the 'result' element or the 'error' element, depending on which contains information.
 
@@ -781,7 +783,7 @@ res_or_err <- function(data) {
 }
 ```
 
-## Get rid of result/error and combine
+### Get rid of result/error and combine
 
 Now, we're going to map **<span style = "color:blue">`` `r "res_or_err()"` ``</span>** across all of our 100-split model results and combine those objects into a single overarching list.
 
@@ -835,9 +837,11 @@ modelswt_all <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_
 
 ## Process Model Coefficients {.tabset .tabset-fade .tabset-pills}
 
-See <span style = "color:green">`` `r "04B_Process_Coefficients_AllAdapts"` ``</span> ([Demo 4B](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html)) for a more detailed walkthrough of this step, and <span style = "color:green">`` `r "04A_Process_Coefficients_SingleAdapt"` ``</span> ([Demo 4A](https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html)) for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.
+### Coefficient Processing Functions
 
-### Coefficient frequency function
+See <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html"><span style = "color:green">`` `r "04B_Process_Coefficients_AllAdapts"` ``</span></a> for a more detailed walkthrough of this step, and <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html"><span style = "color:green">`` `r "04A_Process_Coefficients_SingleAdapt"` ``</span></a> for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.
+
+#### Coefficient frequency function {.unnumbered .unlisted}
 
 There are many pieces of information that might be extracted from such a rich collection of model results. Let's focus, however, on predictor selection/inclusion frequency.
 
@@ -864,7 +868,7 @@ coefs_freq <- function(models) {
 }
 ```
 
-### Coefficient selection rank function
+#### Coefficient selection rank function {.unnumbered .unlisted}
 
 The function below calculates the selection frequency rank of each potential predictor.
 
@@ -883,11 +887,13 @@ coefs_rank <- function(freqs) {
 }
 ```
 
-### Minor functions: All/No Splits/Adaptations
+#### Minor functions: All/No Splits/Adaptations {.unnumbered .unlisted}
 
 I'd like to count the number of variables with $100\%$ or $0\%$ selection for each adaptation. I'm going to create two basic functions that I can apply during piping to generate these values.
 
 ```{r all_splits function}
+# Finds predictors which were included in all CV splits 
+# # for a given lasso/elastic net adaptation
 all_splits <- function(data) {
         return(length(which(data[1:(length(data))] == 100)
                       )
@@ -896,6 +902,8 @@ all_splits <- function(data) {
 ```
 
 ```{r no_splits function}
+# Finds predictors which were never included across all CV splits
+# # for a given lasso/elastic net adaptation
 no_splits <- function(data) {
         return(length(which(data[1:(length(data))] == 0)  
                       )
@@ -906,6 +914,8 @@ no_splits <- function(data) {
 Similarly, I would like to calculate the number of adaptations which selected each variable $100\%$ and $0\%$ of the time.
 
 ```{r adapts_100 function}
+# Counts the number of lasso/elastic net adaptations which selected 
+# # a given predictor in all CV splits
 adapts_100 <- function(data) {
         return(length(which(data[1:(length(data))] == 100)  
                       )
@@ -914,6 +924,8 @@ adapts_100 <- function(data) {
 ```
 
 ```{r adapts_0 function}
+# Counts the number of lasso/elastic net adaptations which never selected
+# # a given predictor across all CV splits
 adapts_0 <- function(data) {
         return(length(which(data[1:(length(data))] == 0) 
                       )
@@ -921,7 +933,7 @@ adapts_0 <- function(data) {
 }
 ```
 
-## Coefficient processing {.tabset .tabset-fade .tabset-pills}
+### Processing the Coefficients
 
 Let's initialize our coefficient selection frequency list element.
 
@@ -929,7 +941,7 @@ Let's initialize our coefficient selection frequency list element.
 modelswt_all[["Frequencies"]] <- list()
 ```
 
-### Coefficient frequency processing: By Adaptation
+#### Coefficient frequency processing: By Adaptation {.unnumbered .unlisted}
 
 Now let's map our coefficient frequency function across all adaptations and model results to create our first data.table. 
 
@@ -947,7 +959,7 @@ modelswt_all[["Frequencies"]][["By_Adaptation"]] <- modelswt_all[1:7] %>%
 ```
 
 
-### Coefficient frequency processing: By Potential Predictor
+#### Coefficient frequency processing: By Potential Predictor {.unnumbered .unlisted}
 
 Now we're going to do the same thing, except by predictor instead of adaptation. 
 
@@ -962,7 +974,7 @@ modelswt_all[["Frequencies"]][["By_Predictor"]] <- modelswt_all[1:7] %>%
         setkey(. , predictor) 
 ```
 
-### Coefficient frequency processing - selection rank
+#### Coefficient frequency processing - selection rank {.unnumbered .unlisted}
 
 Now we're going to generate the selection ranks of each potential predictor, _by adaptation_. This will only be by adaptation. 
 
@@ -980,7 +992,7 @@ modelswt_all[["Ranks"]] <- modelswt_all[["Frequencies"]][["By_Adaptation"]][ ,
        cbind(. , modelswt_all[["Frequencies"]][["By_Adaptation"]][ , "method"])
 ```
 
-## Save the Full Models File
+## Save the Full Models File {.unnumbered .unlisted}
 
 Let's save the model results file which also includes our new "Frequencies" data.table so that we can load it during the full walkthrough.
 

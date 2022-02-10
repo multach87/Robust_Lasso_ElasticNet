@@ -1874,10 +1874,12 @@ wtcv.100 &lt;- kfold_multi(data = wt.data2 , num_splits = 100)</code></pre>
 </div>
 <div id="generating-lasso-and-elastic-net-models" class="section level1 tabset tabset-fade tabset-pills">
 <h1><span class="header-section-number">3</span> Generating Lasso and Elastic Net Models</h1>
-<p>Let’s generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <span style="color:green"><code>03D_Combined_Model_Generation</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html">Demo 3D</a>). Additional demonstrations of the steps leading up to the full model generation can be found in <span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html">Demo 3A</a>), <span style="color:green"><code>03B_hqreg_generalized</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html">Demo 3B</a>), and <span style="color:green"><code>03C_hqreg_msaenet_generalized</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html">Demo 3C</a>).</p>
+<div id="section-introduction" class="section level2 unnumbered">
+<h2>Section Introduction</h2>
+<p>Let’s generate the models for each of our lasso and elastic net adaptations and each data split. As previously, the procedural code chunks are hidden from the compiled html walkthrough; the process and custom functions used to generate the full span of adaptation models can be found primarily in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03D_Combined_Model_Generation.html"><span style="color:green"><code>03D_Combined_Model_Generation</code></span></a>. Additional demonstrations of the steps leading up to the full model generation can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03A_AdaLAD_SingleDemo.html"><span style="color:green"><code>03A_AdaLAD_SingleDemo</code></span></a>, <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03B_hqreg_generalized.html"><span style="color:green"><code>03B_hqreg_generalized</code></span></a>, and <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/03C_hqreg_msaenet_generalized.html"><span style="color:green"><code>03C_hqreg_msaenet_generalized</code></span></a>.</p>
+</div>
 <div id="model-application-function" class="section level2">
 <h2><span class="header-section-number">3.1</span> Model Application Function</h2>
-<p><em>However</em>, because the actual application of the model function and the subsequent processing of the model results would be a part of the actual use of my combined approach in a real setting, I <em>will</em> be including those code chunks in the current walkthrough.</p>
 <pre class="r"><code># adaptive LAD lasso application function
 hqmsa.sim.fnct &lt;- function(data.list , 
                            method = c(&quot;msaenet&quot; , 
@@ -2111,53 +2113,53 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 
 }</code></pre>
 </div>
-<div id="generating-the-models" class="section level2 tabset tabset-fade tabset-pills">
+<div id="generating-the-models" class="section level2 unlisted">
 <h2><span class="header-section-number">3.2</span> Generating the models</h2>
 <p>Note that the following code chunks have not been evaluated in this document. Due to the of generating these datasets on my personal computer, I opted to run these chunks on a personal AWS EC2 cluster and then import the resulting dataset. The total cost to me to do so was less than $10 after splitting up my code to run simultaneously across processors using RStudio’s “Jobs” functionality. This is not necessarily the most streamlined or efficient way to accomplish this. A future goal for my return to this project is to be able automate efficient parallelization of these tasks, rather than manually splitting the code up and using Jobs. If you would like support in getting an EC2 set up, please feel free to email me: matt.multach87 at gmail dot com.</p>
-<div id="adaptive-lad-lasso" class="section level3">
-<h3><span class="header-section-number">3.2.1</span> Adaptive LAD Lasso</h3>
+<div id="adaptive-lad-lasso" class="section level3 unnumbered unlisted">
+<h3>Adaptive LAD Lasso</h3>
 <pre class="r"><code>#run across data subset
 ladlasso.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 1 , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="adaptive-lad-elastic-net-alpha-0.5" class="section level3">
-<h3><span class="header-section-number">3.2.2</span> Adaptive LAD Elastic Net, Alpha = 0.5</h3>
+<div id="adaptive-lad-elastic-net-alpha-0.5" class="section level3 unnumbered unlisted">
+<h3>Adaptive LAD Elastic Net, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 ladelnet5.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 0.5 , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="adaptive-huber-lasso" class="section level3">
-<h3><span class="header-section-number">3.2.3</span> Adaptive Huber Lasso</h3>
+<div id="adaptive-huber-lasso" class="section level3 unnumbered unlisted">
+<h3>Adaptive Huber Lasso</h3>
 <pre class="r"><code>#run across data subset
 huberlasso.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 1 , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="adaptive-huber-elastic-net-alpha-0.5" class="section level3">
-<h3><span class="header-section-number">3.2.4</span> Adaptive Huber Elastic Net, Alpha = 0.5</h3>
+<div id="adaptive-huber-elastic-net-alpha-0.5" class="section level3 unnumbered unlisted">
+<h3>Adaptive Huber Elastic Net, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 huberelnet5.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 0.5 , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level3">
-<h3><span class="header-section-number">3.2.5</span> Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5</h3>
+<div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level3 unnumbered unlisted">
+<h3>Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk3.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 3L , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level3">
-<h3><span class="header-section-number">3.2.6</span> Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5</h3>
+<div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level3 unnumbered unlisted">
+<h3>Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk5.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 5L , 
             print.time = FALSE)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level3">
-<h3><span class="header-section-number">3.2.7</span> Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5</h3>
+<div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level3 unnumbered unlisted">
+<h3>Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk10.100 &lt;- wtcv.100 %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 10L , 
@@ -2167,10 +2169,15 @@ msaelnetk10.100 &lt;- wtcv.100 %&gt;%
 </div>
 <div id="processing-the-model-results" class="section level1 tabset tabset-fade tabset-pills">
 <h1><span class="header-section-number">4</span> Processing the model results</h1>
-<p>Now we would like to process the resulting objects to eliminate any extra information. In this context, we’re mainly interested in getting rid of the overarching ‘result’/‘error’ list structure that is produced by <strong><span style="color:blue"><code>safely()</code></span></strong>.</p>
+<div id="section-intro-2" class="section level2 unnumbered">
+<h2>Section Intro</h2>
+<p>Now we would like to process the resulting objects to eliminate any extra information. First, we’ll et rid of the overarching ‘result’/‘error’ list structure that is produced by <strong><span style="color:blue"><code>safely()</code></span></strong> (<strong>Section 4.1</strong>). We’ll also be processing model results (<strong>Section 4.2</strong>) so that we have readily-available information on coefficient selection tendencies for semi-qualitative evaluation.</p>
 <p>Note that the model-processing code chunks have also been set to <strong><span style="color:blue"><code>eval = F</code></span></strong>, as I conducted this processing step after generating the files in AWS EC2.</p>
-<div id="get-rid-of-resulterror-level-of-each-model-function" class="section level2">
-<h2><span class="header-section-number">4.1</span> Get rid of result/error level of each model: Function</h2>
+</div>
+<div id="get-rid-of-resulterror-level-of-each-model" class="section level2 tabset tabset-fade tabset-pills">
+<h2><span class="header-section-number">4.1</span> Get rid of result/error level of each model</h2>
+<div id="function-for-processing-resulterror-list-elements" class="section level3">
+<h3><span class="header-section-number">4.1.1</span> Function for Processing Result/Error List elements</h3>
 <p>The following code chunk will check a data list produced by <strong><span style="color:blue"><code>safely()</code></span></strong> and return either the ‘result’ element or the ‘error’ element, depending on which contains information.</p>
 <pre class="r"><code>#eliminate result/error level
 res_or_err &lt;- function(data) {
@@ -2186,8 +2193,8 @@ res_or_err &lt;- function(data) {
         return(temp)
 }</code></pre>
 </div>
-<div id="get-rid-of-resulterror-and-combine" class="section level2">
-<h2><span class="header-section-number">4.2</span> Get rid of result/error and combine</h2>
+<div id="get-rid-of-resulterror-and-combine" class="section level3">
+<h3><span class="header-section-number">4.1.2</span> Get rid of result/error and combine</h3>
 <p>Now, we’re going to map <strong><span style="color:blue"><code>res_or_err()</code></span></strong> across all of our 100-split model results and combine those objects into a single overarching list.</p>
 <pre class="r"><code>modelswt_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
                        map(res_or_err) , 
@@ -2204,11 +2211,14 @@ res_or_err &lt;- function(data) {
                    msak10 = msaelnetk10.100 %&gt;%
                        map(res_or_err))</code></pre>
 </div>
+</div>
 <div id="process-model-coefficients" class="section level2 tabset tabset-fade tabset-pills">
-<h2><span class="header-section-number">4.3</span> Process Model Coefficients</h2>
-<p>See <span style="color:green"><code>04B_Process_Coefficients_AllAdapts</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html">Demo 4B</a>) for a more detailed walkthrough of this step, and <span style="color:green"><code>04A_Process_Coefficients_SingleAdapt</code></span> (<a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html">Demo 4A</a>) for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.</p>
-<div id="coefficient-frequency-function" class="section level3">
-<h3><span class="header-section-number">4.3.1</span> Coefficient frequency function</h3>
+<h2><span class="header-section-number">4.2</span> Process Model Coefficients</h2>
+<div id="coefficient-processing-functions" class="section level3">
+<h3><span class="header-section-number">4.2.1</span> Coefficient Processing Functions</h3>
+<p>See <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04B_Process_Coefficients_AllAdapts.html"><span style="color:green"><code>04B_Process_Coefficients_AllAdapts</code></span></a> for a more detailed walkthrough of this step, and <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html"><span style="color:green"><code>04A_Process_Coefficients_SingleAdapt</code></span></a> for an additional step of that component. I will be including the processing functions themselves in this walkthrough, but without the detailed explanation included in the component demonstrations.</p>
+<div id="coefficient-frequency-function" class="section level4 unnumbered unlisted">
+<h4>Coefficient frequency function</h4>
 <p>There are many pieces of information that might be extracted from such a rich collection of model results. Let’s focus, however, on predictor selection/inclusion frequency.</p>
 <pre class="r"><code>coefs_freq &lt;- function(models) {
        # initialize vector of predictor selection frequency, with all values set to 0
@@ -2231,8 +2241,8 @@ res_or_err &lt;- function(data) {
        return(coefs.freq)
 }</code></pre>
 </div>
-<div id="coefficient-selection-rank-function" class="section level3">
-<h3><span class="header-section-number">4.3.2</span> Coefficient selection rank function</h3>
+<div id="coefficient-selection-rank-function" class="section level4 unnumbered unlisted">
+<h4>Coefficient selection rank function</h4>
 <p>The function below calculates the selection frequency rank of each potential predictor.</p>
 <pre class="r"><code>coefs_rank &lt;- function(freqs) {
        # initialize vector of selection rank, with all values set to NA
@@ -2247,38 +2257,46 @@ res_or_err &lt;- function(data) {
        return(coefs.rank)       
 }</code></pre>
 </div>
-<div id="minor-functions-allno-splitsadaptations" class="section level3">
-<h3><span class="header-section-number">4.3.3</span> Minor functions: All/No Splits/Adaptations</h3>
+<div id="minor-functions-allno-splitsadaptations" class="section level4 unnumbered unlisted">
+<h4>Minor functions: All/No Splits/Adaptations</h4>
 <p>I’d like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping to generate these values.</p>
-<pre class="r"><code>all_splits &lt;- function(data) {
+<pre class="r"><code># Finds predictors which were included in all CV splits 
+# # for a given lasso/elastic net adaptation
+all_splits &lt;- function(data) {
         return(length(which(data[1:(length(data))] == 100)
                       )
                )
 }</code></pre>
-<pre class="r"><code>no_splits &lt;- function(data) {
+<pre class="r"><code># Finds predictors which were never included across all CV splits
+# # for a given lasso/elastic net adaptation
+no_splits &lt;- function(data) {
         return(length(which(data[1:(length(data))] == 0)  
                       )
         )
 }</code></pre>
 <p>Similarly, I would like to calculate the number of adaptations which selected each variable <span class="math inline">\(100\%\)</span> and <span class="math inline">\(0\%\)</span> of the time.</p>
-<pre class="r"><code>adapts_100 &lt;- function(data) {
+<pre class="r"><code># Counts the number of lasso/elastic net adaptations which selected 
+# # a given predictor in all CV splits
+adapts_100 &lt;- function(data) {
         return(length(which(data[1:(length(data))] == 100)  
                       )
                )
 }</code></pre>
-<pre class="r"><code>adapts_0 &lt;- function(data) {
+<pre class="r"><code># Counts the number of lasso/elastic net adaptations which never selected
+# # a given predictor across all CV splits
+adapts_0 &lt;- function(data) {
         return(length(which(data[1:(length(data))] == 0) 
                       )
         )
 }</code></pre>
 </div>
 </div>
-<div id="coefficient-processing" class="section level2 tabset tabset-fade tabset-pills">
-<h2><span class="header-section-number">4.4</span> Coefficient processing</h2>
+<div id="processing-the-coefficients" class="section level3">
+<h3><span class="header-section-number">4.2.2</span> Processing the Coefficients</h3>
 <p>Let’s initialize our coefficient selection frequency list element.</p>
 <pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]] &lt;- list()</code></pre>
-<div id="coefficient-frequency-processing-by-adaptation" class="section level3">
-<h3><span class="header-section-number">4.4.1</span> Coefficient frequency processing: By Adaptation</h3>
+<div id="coefficient-frequency-processing-by-adaptation" class="section level4 unnumbered unlisted">
+<h4>Coefficient frequency processing: By Adaptation</h4>
 <p>Now let’s map our coefficient frequency function across all adaptations and model results to create our first data.table.</p>
 <pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]] &lt;- modelswt_all[1:7] %&gt;%
        map(coefs_freq) %&gt;%
@@ -2291,8 +2309,8 @@ res_or_err &lt;- function(data) {
        .[ , &quot;method&quot; := names(modelswt_all[-8])] %&gt;%
        setkey(. , method) </code></pre>
 </div>
-<div id="coefficient-frequency-processing-by-potential-predictor" class="section level3">
-<h3><span class="header-section-number">4.4.2</span> Coefficient frequency processing: By Potential Predictor</h3>
+<div id="coefficient-frequency-processing-by-potential-predictor" class="section level4 unnumbered unlisted">
+<h4>Coefficient frequency processing: By Potential Predictor</h4>
 <p>Now we’re going to do the same thing, except by predictor instead of adaptation.</p>
 <pre class="r"><code>modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]] &lt;- modelswt_all[1:7] %&gt;%
         map(coefs_freq) %&gt;%
@@ -2303,8 +2321,8 @@ res_or_err &lt;- function(data) {
         .[ , &quot;predictor&quot; := names(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])[1:(ncol(modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]]) - 3)]] %&gt;%
         setkey(. , predictor) </code></pre>
 </div>
-<div id="coefficient-frequency-processing---selection-rank" class="section level3">
-<h3><span class="header-section-number">4.4.3</span> Coefficient frequency processing - selection rank</h3>
+<div id="coefficient-frequency-processing---selection-rank" class="section level4 unnumbered unlisted">
+<h4>Coefficient frequency processing - selection rank</h4>
 <p>Now we’re going to generate the selection ranks of each potential predictor, <em>by adaptation</em>. This will only be by adaptation.</p>
 <pre class="r"><code>modelswt_all[[&quot;Ranks&quot;]] &lt;- modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , 
                                                                          1:length(wt.data[[&quot;betas&quot;]]) , with = F] %&gt;%
@@ -2315,8 +2333,9 @@ res_or_err &lt;- function(data) {
        cbind(. , modelswt_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , &quot;method&quot;])</code></pre>
 </div>
 </div>
-<div id="save-the-full-models-file" class="section level2">
-<h2><span class="header-section-number">4.5</span> Save the Full Models File</h2>
+</div>
+<div id="save-the-full-models-file" class="section level2 unnumbered unlisted">
+<h2>Save the Full Models File</h2>
 <p>Let’s save the model results file which also includes our new “Frequencies” data.table so that we can load it during the full walkthrough.</p>
 <pre class="r"><code>saveRDS(modelswt_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100wt_plus_freqsranks.RData&quot;)</code></pre>
 </div>
