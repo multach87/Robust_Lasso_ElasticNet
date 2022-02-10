@@ -20,6 +20,55 @@
   code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
   pre:not([class]) { background-color: white }</style>
 
+  <style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+  
+    .refnum {
+        position: relative;
+        left: 2px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+  
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+  </style>
+
+  <script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+    </script>
+
   <title>Robust Lasso and Elastic Net Walkthrough and Demonstrations</title>
 
 </head>
@@ -31,6 +80,13 @@
 <body>
 
   
+  <ul>
+    <li><strong>UPDATE: 12/02/2021</strong>
+      <p>After a couple months spent driving myself from Seattle to Miami, spending time with family, and building up momentum on job applications, I decided to read through the Full Walkthrough again. It is definitely not in a place I'm happy with. To that end, I've started reorganizing all of my files, including incorporation of collapsible footnotes and a restructuring of some file section choices. As I make my way through organizing the Full Walkthrough, I'm going to fix up or add to sections as appropriate. I'm also going to fix up the corresponding Component Demos. Relatedly, I'm also likely going to add another Component Demo or group of demos for my semi-qualitative processing procedure and heuristics so those tools are formalized like the other components.</p>
+
+      <p>Keep an eye out for updates here and in the repo more generally. I'm also going to try to slowly build up pieces of my Modeling Development Project, although right my priorities are this Full Walkthrough and job applications. 
+    </li>
+  </ul>
   
   <h2 style="margin-left: 10px">Robust Lasso and Elastic Net Walkthrough and Demonstrations: Rendered .html Walkthroughs</h2>
   
