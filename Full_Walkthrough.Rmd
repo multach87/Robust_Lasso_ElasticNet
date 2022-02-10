@@ -101,7 +101,7 @@ Generally, I use line breaks to:
 
 ## Packages {.unnumbered}
 
-Let's load the necessary packages. Links to more information about each package can be found in <a href="Component_Demos/00C_Robust_Issues.html"><span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span></a>. Appropriate references for each package can be found in the "References" section at the end of this document.
+Let's load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00C_Robust_Issues.html"><span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span></a>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries , warning = FALSE , message = FALSE}
 # This chunk loads the packages used in this workbook
