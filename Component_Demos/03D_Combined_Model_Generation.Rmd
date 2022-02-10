@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 4
     toc_float: true
-    number_sections: false
+    number_sections: true
 bibliography: Component_Refs.bib
 #output: 
 #       xaringan::infinite_moon_reader:
@@ -19,21 +19,73 @@ bibliography: Component_Refs.bib
 #              css: [default, tamu, tamu-fonts]
 ---
 
-## Introduction
 
-The primary purpose of this file is to generate full model results for all adaptations and all 100 data splits and then save those models. I have set all chunks to 'eval = F,' as the model-mapping chunks would be incredibly time-intensive when compiling the .html file. However, I'm including this file and the corresponding .html to show the process which generated the full model results used in subsequent demos.
 
-I'm going to be relatively sparse on details that have been covered in previous demos. I will mostly elaborate on the steps which generate and combine our full-model results.
-
-## Preamble and Setup
+# Introduction, Preamble, and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
 
 ```{r setup, message = FALSE , warning = FALSE , include=FALSE}
 knitr::opts_chunk$set(echo = TRUE , eval = FALSE)
 ```
 
-### A note on formatting
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
 
-This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+
+## Introduction {.unnumbered}
+
+The primary purpose of this file is to generate full model results for all adaptations and all 100 data splits and then save those models. I have set all chunks to 'eval = F,' as the model-mapping chunks would be incredibly time-intensive when compiling the .html file. However, I'm including this file and the corresponding .html to show the process which generated the full model results used in subsequent demos.
+
+I'm going to be relatively sparse on details that have been covered in previous demos. I will mostly elaborate on the steps which generate and combine our full-model results.
+
+## Formatting Notes {.unnumbered}
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish references to different types of items.
 
  * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
  * _italics_ will be used primarily for emphasis.
@@ -42,18 +94,19 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
  * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
  
-Re: spacing and line breaks - I'm pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below
+The most important aspects of how I use spacing and line breaks are detailed below.
 
-I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the code input. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the element. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
 
 Generally, I use line breaks to:
 
  * Break up separate arguments for a single command/function or chain of operations
- * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
- 
-### Packages
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.
 
-First, let's load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span>. Appropriate references for each package can be found in the "References" section at the end of this document.
+
+## Packages {.unnumbered}
+
+Let's load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00B_Package_Descr_Refs.html"><span style = "color:green">`` `r "00B_Package_Descr_Refs"` ``</span></a>. Appropriate references for each package can be found in the "References" section at the end of this document.
 
 ```{r libraries , warning = FALSE}
 # This chunk loads the packages used in this workbook
@@ -68,7 +121,7 @@ library(rlang)      # For parse_expr() to parse data name in k-fold subsetting f
 library(msaenet)    # For the multi-step adaptive elastic net
 ```
 
-### Loading and processing the data
+## Loading and processing the data {.unnumbered .unlisted}
 
 ```{r load synthetic applied dataset}
 demo.data <- readRDS("/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData")
@@ -81,9 +134,9 @@ demo.data2 <- setDT(data.frame(cbind(demo.data[["Y"]] , demo.data[["X"]]
                     )
 ```
 
-## Loading custom functions
+## CV-Splitting the Data {.unnumbered .unlisted}
 
-### Custom k-fold subsetting function
+### Custom k-fold subsetting function {.unnumbered .unlisted}
 
 ```{r kfold subsetting function , echo = F}
 # k-fold subsetting function
@@ -178,9 +231,7 @@ kfold_subsetter <- function(data , y_col = 1 ,
 
 ```
 
-### Multi-Subsetting Wrapper
-
-
+### Multi-Subsetting Wrapper {.unnumbered .unlisted}
 
 ```{r multi-kfold wrapper}
 kfold_multi <- function(data , ... , seed_multi = 713 , 
@@ -228,9 +279,7 @@ kfold_multi <- function(data , ... , seed_multi = 713 ,
 ```
 
 
-#### Splitting the Data
-
-
+### Splitting the Data {.unnumbered .unlisted}
 
 ```{r splitting data}
 demo.split <- list()
@@ -241,9 +290,18 @@ demo.split<- kfold_multi(demo.data2 , seed_multi = 999 ,
 
 
 
-### Model-Application Function
 
 
+
+
+
+
+
+# Generating The Models {.tabset .tabset-fade .tabset-pills}
+
+## Model-Application Function 
+
+This is the full version of the model-application function, which can handle **<span style = "color:blue">`` `r "glmnet()"` ``</span>**, **<span style = "color:blue">`` `r "msaenet()"` ``</span>**, and **<span style = "color:blue">`` `r "hqreg()"` ``</span>**-based functions.
 
 ```{r hqreg model application function , echo = T}
 
@@ -481,16 +539,11 @@ hqmsa.sim.fnct <- function(data.list ,
 }
 ```
 
-
-
-
-
-
-## Generating The Models
+## Mapping 
 
 The code chunks below map the model-application function **<span style = "color:blue">`` `r "hqmsa.sim.fnct()"` ``</span>** to our 100-split data. Each chunk generates 100 models from each of our different adaptations of interest using the arguments built into the function.
 
-### Adaptive LAD Lasso
+### Adaptive LAD Lasso {.unnumbered .unlisted}
 
 ```{r ladlasso}
 #run across data subset
@@ -498,7 +551,7 @@ ladlasso.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 1)
 ```
 
-### Adaptive LAD Elastic Net, Alpha = 0.5
+### Adaptive LAD Elastic Net, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r ladelnet5}
 #run across data subset
@@ -506,7 +559,7 @@ ladelnet5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "LAD" , alpha = 0.5)
 ```
 
-### Adaptive Huber Lasso
+### Adaptive Huber Lasso {.unnumbered .unlisted}
 
 ```{r huberlasso}
 #run across data subset
@@ -514,7 +567,7 @@ huberlasso.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 1)
 ```
 
-### Adaptive Huber Elastic Net, Alpha = 0.5
+### Adaptive Huber Elastic Net, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r huberelnet5}
 #run across data subset
@@ -522,7 +575,7 @@ huberelnet5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "huber" , alpha = 0.5)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k3}
 #run across data subset
@@ -530,7 +583,7 @@ msaelnetk3.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 3L)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k5}
 #run across data subset
@@ -538,7 +591,7 @@ msaelnetk5.100 <- demo.split %>%
         map(safely(hqmsa.sim.fnct) , method = "msaenet" , nsteps = 5L)
 ```
 
-### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5
+### Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5 {.unnumbered .unlisted}
 
 ```{r msaenet k10}
 #run across data subset
@@ -547,11 +600,14 @@ msaelnetk10.100 <- demo.split %>%
 ```
 
 
-## Processing the model results
+# Processing the model results {.tabset .tabset-fade .tabset-pills}
 
 Now we would like to process the resulting objects to eliminate any extra information. In this context, we're mainly interested in getting rid of the overarching 'result'/'error' list structure that is produced by **<span style = "color:blue">`` `r "safely()"` ``</span>**.
 
-### Get rid of result/error level of each model: Function
+
+
+
+## Function for Processing Result/Error List elements
 
 The following code chunk will check a data list produced by **<span style = "color:blue">`` `r "safely()"` ``</span>** and return either the 'result' element or the 'error' element, depending on which contains information.
 
@@ -571,12 +627,12 @@ res_or_err <- function(data) {
 }
 ```
 
-### Get rid of result/error and combine
+## Get rid of result/error and combine
 
 Now, we're going to map **<span style = "color:blue">`` `r "res_or_err()"` ``</span>** across all of our 100-split model results and combine those objects into a single overarching list.
 
-```{r no resulterror and combine models}
-models_all <- list(ladlasso = ladlasso.100 %>%
+```{r no resulterror and combine models , eval = F}
+modelswt_all <- list(ladlasso = ladlasso.100 %>%
                        map(res_or_err) , 
                    ladelnet = ladelnet5.100 %>%
                        map(res_or_err) , 
@@ -592,10 +648,8 @@ models_all <- list(ladlasso = ladlasso.100 %>%
                        map(res_or_err))
 ```
 
-### Save processed full object
 
-```{r save processed models}
-saveRDS(models_all , "/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData")
-```
 
+
+# References {.unnumbered .unlisted}
 

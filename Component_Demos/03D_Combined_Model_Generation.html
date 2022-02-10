@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-18" />
+<meta name="date" content="2022-02-10" />
 
 <title>Combined-Model Generation</title>
 
@@ -1495,21 +1495,69 @@ div.tocify {
 
 <h1 class="title toc-ignore">Combined-Model Generation</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-18</h4>
+<h4 class="date">2022-02-10</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2">
+<div id="introduction-preamble-and-setup" class="section level1 unnumbered tabset tabset-fade tabset-pills">
+<h1>Introduction, Preamble, and Setup</h1>
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+<div id="introduction" class="section level2 unnumbered">
 <h2>Introduction</h2>
 <p>The primary purpose of this file is to generate full model results for all adaptations and all 100 data splits and then save those models. I have set all chunks to ‘eval = F,’ as the model-mapping chunks would be incredibly time-intensive when compiling the .html file. However, I’m including this file and the corresponding .html to show the process which generated the full model results used in subsequent demos.</p>
 <p>I’m going to be relatively sparse on details that have been covered in previous demos. I will mostly elaborate on the steps which generate and combine our full-model results.</p>
 </div>
-<div id="preamble-and-setup" class="section level2">
-<h2>Preamble and Setup</h2>
-<div id="a-note-on-formatting" class="section level3">
-<h3>A note on formatting</h3>
-<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<div id="formatting-notes" class="section level2 unnumbered">
+<h2>Formatting Notes</h2>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish references to different types of items.</p>
 <ul>
 <li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
 <li><em>italics</em> will be used primarily for emphasis.</li>
@@ -1518,17 +1566,17 @@ div.tocify {
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 <li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
-<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
-<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>The most important aspects of how I use spacing and line breaks are detailed below.</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the element. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
 <p>Generally, I use line breaks to:</p>
 <ul>
 <li>Break up separate arguments for a single command/function or chain of operations</li>
-<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.</li>
 </ul>
 </div>
-<div id="packages" class="section level3">
-<h3>Packages</h3>
-<p>First, let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<div id="packages" class="section level2 unnumbered">
+<h2>Packages</h2>
+<p>Let’s load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00B_Package_Descr_Refs.html"><span style="color:green"><code>00B_Package_Descr_Refs</code></span></a>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1540,21 +1588,20 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 library(rlang)      # For parse_expr() to parse data name in k-fold subsetting functions
 library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </div>
-<div id="loading-and-processing-the-data" class="section level3">
-<h3>Loading and processing the data</h3>
+<div id="loading-and-processing-the-data" class="section level2 unnumbered unlisted">
+<h2>Loading and processing the data</h2>
 <pre class="r"><code>demo.data &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/TestingApplied_Xmtx.RData&quot;)</code></pre>
 <pre class="r"><code>demo.data2 &lt;- setDT(data.frame(cbind(demo.data[[&quot;Y&quot;]] , demo.data[[&quot;X&quot;]]
                                      )
                                )
                     )</code></pre>
 </div>
-</div>
-<div id="loading-custom-functions" class="section level2">
-<h2>Loading custom functions</h2>
-<div id="custom-k-fold-subsetting-function" class="section level3">
+<div id="cv-splitting-the-data" class="section level2 unnumbered unlisted">
+<h2>CV-Splitting the Data</h2>
+<div id="custom-k-fold-subsetting-function" class="section level3 unnumbered unlisted">
 <h3>Custom k-fold subsetting function</h3>
 </div>
-<div id="multi-subsetting-wrapper" class="section level3">
+<div id="multi-subsetting-wrapper" class="section level3 unnumbered unlisted">
 <h3>Multi-Subsetting Wrapper</h3>
 <pre class="r"><code>kfold_multi &lt;- function(data , ... , seed_multi = 713 , 
                         num_splits = 100 , test_percent = .2) {
@@ -1598,16 +1645,21 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
         # store single object of all training/testing splits
         return(full.data)
 }</code></pre>
-<div id="splitting-the-data" class="section level4">
-<h4>Splitting the Data</h4>
+</div>
+<div id="splitting-the-data" class="section level3 unnumbered unlisted">
+<h3>Splitting the Data</h3>
 <pre class="r"><code>demo.split &lt;- list()
 
 demo.split&lt;- kfold_multi(demo.data2 , seed_multi = 999 , 
                          num_splits = 100 , test_percent = 0.2)</code></pre>
 </div>
 </div>
-<div id="model-application-function" class="section level3">
-<h3>Model-Application Function</h3>
+</div>
+<div id="generating-the-models" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">1</span> Generating The Models</h1>
+<div id="model-application-function" class="section level2">
+<h2><span class="header-section-number">1.1</span> Model-Application Function</h2>
+<p>This is the full version of the model-application function, which can handle <strong><span style="color:blue"><code>glmnet()</code></span></strong>, <strong><span style="color:blue"><code>msaenet()</code></span></strong>, and <strong><span style="color:blue"><code>hqreg()</code></span></strong>-based functions.</p>
 <pre class="r"><code># adaptive LAD lasso application function
 hqmsa.sim.fnct &lt;- function(data.list , 
                            method = c(&quot;msaenet&quot; , 
@@ -1841,58 +1893,58 @@ hqmsa.sim.fnct &lt;- function(data.list ,
 
 }</code></pre>
 </div>
-</div>
-<div id="generating-the-models" class="section level2">
-<h2>Generating The Models</h2>
+<div id="mapping" class="section level2">
+<h2><span class="header-section-number">1.2</span> Mapping</h2>
 <p>The code chunks below map the model-application function <strong><span style="color:blue"><code>hqmsa.sim.fnct()</code></span></strong> to our 100-split data. Each chunk generates 100 models from each of our different adaptations of interest using the arguments built into the function.</p>
-<div id="adaptive-lad-lasso" class="section level3">
+<div id="adaptive-lad-lasso" class="section level3 unnumbered unlisted">
 <h3>Adaptive LAD Lasso</h3>
 <pre class="r"><code>#run across data subset
 ladlasso.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 1)</code></pre>
 </div>
-<div id="adaptive-lad-elastic-net-alpha-0.5" class="section level3">
+<div id="adaptive-lad-elastic-net-alpha-0.5" class="section level3 unnumbered unlisted">
 <h3>Adaptive LAD Elastic Net, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 ladelnet5.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;LAD&quot; , alpha = 0.5)</code></pre>
 </div>
-<div id="adaptive-huber-lasso" class="section level3">
+<div id="adaptive-huber-lasso" class="section level3 unnumbered unlisted">
 <h3>Adaptive Huber Lasso</h3>
 <pre class="r"><code>#run across data subset
 huberlasso.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 1)</code></pre>
 </div>
-<div id="adaptive-huber-elastic-net-alpha-0.5" class="section level3">
+<div id="adaptive-huber-elastic-net-alpha-0.5" class="section level3 unnumbered unlisted">
 <h3>Adaptive Huber Elastic Net, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 huberelnet5.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;huber&quot; , alpha = 0.5)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level3">
+<div id="multi-step-adaptive-elastic-net-k-3-alpha-0.5" class="section level3 unnumbered unlisted">
 <h3>Multi-Step Adaptive Elastic Net, k = 3, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk3.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 3L)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level3">
+<div id="multi-step-adaptive-elastic-net-k-5-alpha-0.5" class="section level3 unnumbered unlisted">
 <h3>Multi-Step Adaptive Elastic Net, k = 5, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk5.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 5L)</code></pre>
 </div>
-<div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level3">
+<div id="multi-step-adaptive-elastic-net-k-10-alpha-0.5" class="section level3 unnumbered unlisted">
 <h3>Multi-Step Adaptive Elastic Net, k = 10, Alpha = 0.5</h3>
 <pre class="r"><code>#run across data subset
 msaelnetk10.100 &lt;- demo.split %&gt;%
         map(safely(hqmsa.sim.fnct) , method = &quot;msaenet&quot; , nsteps = 10L)</code></pre>
 </div>
 </div>
-<div id="processing-the-model-results" class="section level2">
-<h2>Processing the model results</h2>
+</div>
+<div id="processing-the-model-results" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> Processing the model results</h1>
 <p>Now we would like to process the resulting objects to eliminate any extra information. In this context, we’re mainly interested in getting rid of the overarching ‘result’/‘error’ list structure that is produced by <strong><span style="color:blue"><code>safely()</code></span></strong>.</p>
-<div id="get-rid-of-resulterror-level-of-each-model-function" class="section level3">
-<h3>Get rid of result/error level of each model: Function</h3>
+<div id="function-for-processing-resulterror-list-elements" class="section level2">
+<h2><span class="header-section-number">2.1</span> Function for Processing Result/Error List elements</h2>
 <p>The following code chunk will check a data list produced by <strong><span style="color:blue"><code>safely()</code></span></strong> and return either the ‘result’ element or the ‘error’ element, depending on which contains information.</p>
 <pre class="r"><code>#eliminate result/error level
 res_or_err &lt;- function(data) {
@@ -1908,10 +1960,10 @@ res_or_err &lt;- function(data) {
         return(temp)
 }</code></pre>
 </div>
-<div id="get-rid-of-resulterror-and-combine" class="section level3">
-<h3>Get rid of result/error and combine</h3>
+<div id="get-rid-of-resulterror-and-combine" class="section level2">
+<h2><span class="header-section-number">2.2</span> Get rid of result/error and combine</h2>
 <p>Now, we’re going to map <strong><span style="color:blue"><code>res_or_err()</code></span></strong> across all of our 100-split model results and combine those objects into a single overarching list.</p>
-<pre class="r"><code>models_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
+<pre class="r"><code>modelswt_all &lt;- list(ladlasso = ladlasso.100 %&gt;%
                        map(res_or_err) , 
                    ladelnet = ladelnet5.100 %&gt;%
                        map(res_or_err) , 
@@ -1926,10 +1978,9 @@ res_or_err &lt;- function(data) {
                    msak10 = msaelnetk10.100 %&gt;%
                        map(res_or_err))</code></pre>
 </div>
-<div id="save-processed-full-object" class="section level3">
-<h3>Save processed full object</h3>
-<pre class="r"><code>saveRDS(models_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData&quot;)</code></pre>
 </div>
+<div id="references" class="section level1 unnumbered unlisted">
+<h1>References</h1>
 </div>
 
 
