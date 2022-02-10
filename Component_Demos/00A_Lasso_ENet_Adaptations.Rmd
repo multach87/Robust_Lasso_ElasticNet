@@ -14,16 +14,71 @@ output:
 bibliography: Component_Refs.bib
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# File Introduction, Preamble and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
+
+```{r setup, message = FALSE , warning = FALSE , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE , eval = TRUE)
 ```
 
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
 
-## Some Preliminary Notes
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
 
-### A note on formatting
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
 
-This document makes use of **bolding**, _italics_, and "quotations" to help distinguish different types of items being referenced.
+</style>
+
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+
+## It Came from the Deep (Darkness of My Dissertation) {.unnumbered}
+
+This document is a slimmed-down version of one chapter of my dissertation<span class="ref"><span class="refnum" onclick="footypop('ref1')">[ref]</span><span id="ref1" class="refbody">@MattDiss</span></span>. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in components being demonstrated in this page, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
+
+Due to the nature of the topics covered, this walkthrough is **Very Math Heavy**. I recommend this section only for those interested in technical details of the adaptations discussed in subsequent demonstrations or in the ensemble approach this repo proposes. Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.
+
+## Formatting Notes {.unnumbered}
+
+This document makes use of **bolding**, _italics_, and "quotations" to help distinguish references to different types of items.
 
  * **bolding** will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will _not_ be bolded.
  * _italics_ will be used primarily for emphasis.
@@ -31,19 +86,17 @@ This document makes use of **bolding**, _italics_, and "quotations" to help dist
  * Inline references to code (functions, objects, specific commands, etc.) will use **<span style = "color:blue">`` `r "code_chunk_formatting"` ``</span>** in **<span style = "color:blue">`` `r "bolded blue font"` ``</span>**
  * Inline references to packages will similarly use *<span style = "color:red">`` `r "code_chunk_formatting"` ``</span>*, except in *<span style = "color:red">`` `r "italicized red font"` ``</span>*
  * References to other documents in this repository will use <span style = "color:green">`` `r "code_chunk_formatting"` ``</span> in <span style = "color:green">`` `r "un-italicized, un-bolded, green font"` ``</span>
+ 
+The most important aspects of how I use spacing and line breaks are detailed below.
+
+I generally put spaces between code inputs I consider "sufficiently distinct". This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer **<span style = "color:blue">`` `r "<-"` ``</span>** and most logical operators, _cannot_ include spaces in between components of the element. Note also that whitespace *is* meaningful in other programming languages, and so this convention should be considered with caution in your own practice.
 
 Generally, I use line breaks to:
 
  * Break up separate arguments for a single command/function or chain of operations
- * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.
+ * To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.
 
-### It Came from the Deep (Darkness of My Dissertation)
-
-This document is a slimmed-down version of one chapter of my dissertation, @MattDiss. The chapter outlines many more concepts and lasso/elastic net adaptations, but I have cut down the material to a review of the lasso, the elastic net, the three adaptations used in components being demonstrated in this page, and a handful mathematical clarifications. The sections that are included herein are largely lifted directly from my dissertation as they were originally written, with exception of deleted sections, formatting, and some revisions made to enhance the resulting document.
-
-Due to the nature of the topics covered, this section is **Very Math Heavy**. I recommend this section only for those interested in technical details of the adaptations that I am including in a forthcoming "combined model approach." Some familiarity with the mathematical formulation and expression of OLS regression will go a long way to supporting understanding of the following content.
-
-### Notes on Mathematical Formatting
+## Notes on Mathematical Formatting {.unnumbered}
 
 Generally, an unbolded symbol (typically a letter or Greek letter) represents a singular value, while a **bolded** symbol represents a vector or piece information composed of multiple values. Some examples below:
 
@@ -52,7 +105,7 @@ Generally, an unbolded symbol (typically a letter or Greek letter) represents a 
  * $\boldsymbol{X}$ and its components are generally all bolded, as they represent a collection of predictor values for each unit of observation
    * $\boldsymbol{x}_i$, then, represents a vector of _all_ predictor values for observation $i$
 
-### A Note on Mathematical Norms
+## A Note on Mathematical Norms {.unnumbered}
 
 The descriptions provided below are simplified descriptions provided for practical clarity. They do not represent the complete formal definitions of norms more generally, nor of specific norms mentioned. Mathematical norms measure a "distance" of sorts between points along a vector, typically represented symbolically by $\ell_q$ or $\ell_p$. As a representation of abstracted distance, this value is always nonnegative. Given the use of $p$ in the current research to indicate the number of potential predictors from which a method selects model variables, $\ell_q$ represents the generalized norm throughout this research. Mathematically, the $\ell_q$-norm is:
 
@@ -66,7 +119,9 @@ for some real number $q \geq 1$, where $\cdot$ represents a vector of length $n$
 
 $\ell_q$ for $q \ge 2$ represent distance notions with less-clear practical examples. and are not used herein, and are thus not addressed further. Complex norms with $g < 1$ also exist, but are similarly left to external research for those interested.
 
-# Introduction 
+# Introduction {.tabset .tabset-fade .tabset-pills}
+
+## General Introduction
 
 This chapter reviews the lasso, elastic net, and relevant adaptations made to these techniques to improve their variable selection performance in different scenarios.
 
@@ -105,7 +160,7 @@ where $\parallel\boldsymbol{\beta}\parallel_1 \leq \textit{t}$ represents the $\
 
 for some $\lambda\geq 0$, where $\lambda$ represents a tuning hyperparameter with a direct relationship to 't' under the constraint $\parallel\boldsymbol{\beta}\parallel_1\leq\textit{t}$.
 
-For convenience with later adaptations, another formulation of the lasso criterion is as follows, see @Tibshirani1996, @Wangetal2007:
+For convenience with later adaptations, another formulation of the lasso criterion is as follows<span class="ref"><span class="refnum" onclick="footypop('ref2')">[ref]</span><span id="ref2" class="refbody">see @Tibshirani1996, @Wangetal2007</span></span>:
 
 \begin{align}
      lasso = \operatorname*{arg\,min}_{\boldsymbol{\beta}\in{R}^p} \sum_{i=1}^{n} (y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta})^2 + n\lambda\sum_{j=1}^{p}\left|\beta_j\right|
@@ -142,7 +197,7 @@ Although this initial method addressed the first and second concerns about the l
 
 The main difference between the naive and modern elastic net formulations lies in the correction term $(1 - \frac{\lambda_2}{n})$ before the rest of the objective function. The authors demonstrate the superior performance of the elastic net over the lasso and ridge regression on the three lasso concerns, with both real and simulated data.
 
-A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1** below, shown in the original proposal by @ZouHastie2005, displays the optimized solution region $\theta_{opt}$, where $\theta$ represents the parameter space for predictors $\boldsymbol{\beta}$. for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. 
+A simplified visualization of the three regularization methods mentioned so far can help illustrate the mechanical process by which they operate. **Figure 1**<span class="ref"><span class="refnum" onclick="footypop('ref3')">[ref]</span><span id="ref3" class="refbody">@ZouHastie2005</span></span>below displays the optimized solution region $\theta_{opt}$, where $\theta$ represents the parameter space for predictors $\boldsymbol{\beta}$. for two predictors determined by some arbitrary regression estimator, and the constraints placed on those regions by the $\ell_1$-norm constraint (the lasso), the $\ell_2$-norm constraint (ridge regression), and combined $\ell_1$- and $\ell_2$-norm constraint (elastic net regression), respectively. The lasso's penalty results in potentially optimal values at vertices of the constraint surface - in other words, at a point corresponding with one of the coefficient estimates set to 0. 
 
 ![**FIGURE 1: Coefficient Constraint Surfaces for Lasso, Ridge, and Elastic Net Penalization, from @ZouHastie2005 **](lassoridgeenet.png)
 
@@ -150,7 +205,7 @@ A simplified visualization of the three regularization methods mentioned so far 
 
 Meanwhile, the $\ell_2$-norm constraint in ridge regression is perfectly circular, with all points on the constraint surface equally optimal. Although in practice there exists a minimal possibility that ridge might estimate a coefficient to 0 on this surface, the theoretical probability is 0 due to the continuous nature of the constraint surface. 
 
-Finally, the elastic net constraint surface features vertices at 0-estimates \textit{and} a curvilinear surface in between these vertices. As balancing hyperparameter $\alpha$ increases from 0 to 1, the constraint surface shifts from a perfectly circular region to a perfectly square region. Not quite so evident from these plots, however, is the added benefit of selecting most or all correlated predictors into or out of the model, compared to the lasso's tendency to arbitrarily select one of a correlated group of variables and eliminating the rest of the group, see @ZouHastie2005.
+Finally, the elastic net constraint surface features vertices at 0-estimates \textit{and} a curvilinear surface in between these vertices. As balancing hyperparameter $\alpha$ increases from 0 to 1, the constraint surface shifts from a perfectly circular region to a perfectly square region. Not quite so evident from these plots, however, is the added benefit of selecting most or all correlated predictors into or out of the model, compared to the lasso's tendency to arbitrarily select one of a correlated group of variables and eliminating the rest of the group<span class="ref"><span class="refnum" onclick="footypop('ref4')">[ref]</span><span id="ref4" class="refbody">see @ZouHastie2005</span></span>.
 
 All subsequent formulations will use $\lambda_{1}$ to represent the lasso tuning hyperparameter and $\lambda_2$ to represent the ridge hyperparameter. Other tuning hyperparameters will be formulated and defined as necessary.
 
@@ -158,11 +213,11 @@ All subsequent formulations will use $\lambda_{1}$ to represent the lasso tuning
 
 
 
-# Review of Relevant Adaptations to the Lasso and Elastic Net
+# Review of Relevant Adaptations to the Lasso and Elastic Net {.tabset .tabset-fade .tabset-pills}
 
 ## Adaptive Tuning Hyperparameter
 
-One of the first proposed modifications of the lasso uses adaptive tuning hyperparameters $\lambda_{1,j}$ ; @Zou2006. The adaptive lasso, or weighted lasso, replaces the single tuning hyperparameter $\lambda_{1}$ with a weighted combination of variable-specific tuning hyperparameters. In layman's terms, the adaptive tuning parameters differentially shrinks each variable. This modification primarily attempts to address problems of inconsistent variable selection that arise from finding the optimal tuning hyperparameter $\lambda_{1}$ for best prediction accuracy, see @FanLi2001; @MeinshausenBuhlman2004:
+One of the first proposed modifications of the lasso uses adaptive tuning hyperparameters $\lambda_{1,j}$<span class="ref"><span class="refnum" onclick="footypop('ref5')">[ref]</span><span id="ref5" class="refbody">@Zou2006</span></span>. The adaptive lasso, or weighted lasso, replaces the single tuning hyperparameter $\lambda_{1}$ with a weighted combination of variable-specific tuning hyperparameters. In layman's terms, the adaptive tuning parameters differentially shrinks each variable. This modification primarily attempts to address problems of inconsistent variable selection that arise from finding the optimal tuning hyperparameter $\lambda_{1}$ for best prediction<span class="ref"><span class="refnum" onclick="footypop('ref6')">[ref]</span><span id="ref6" class="refbody">see @FanLi2001; @MeinshausenBuhlman2004</span></span>:
 
 
 \begin{equation}
@@ -204,7 +259,7 @@ The multi-step adaptive elastic net is conducted as follows:
     where $\lambda_1^{*(k)}$ and $\lambda_2^{*(k)}$ represent the optimized tuning hyperparameters at the current stage, and $\hat{w}_j^{(k-1)}$ the weights for the lasso tuning hyperparameter determined at the previous step.
 
 
-Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent indices rather than exponents for the tuning hyperparameter and tuning hyperparameter weight, respectively. $k$ in this process represents the number of elastic net estimation stages. Running the procedure with $k = 1$ stage amounts to the standard elastic net (since there can be no 0th set of weights), and with $k = 2$ stages, the result is the previously described adaptive elastic net. $k > 2$ results in a multi-step adaptive process as proposed by @XiaoXu2015. The authors do not clearly state how many steps they used for their multi-step procedure, a concern discussed in multiple subsequent chapters.
+Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent indices rather than exponents for the tuning hyperparameter and tuning hyperparameter weight, respectively. $k$ in this process represents the number of elastic net estimation stages. Running the procedure with $k = 1$ stage amounts to the standard elastic net (since there can be no 0th set of weights), and with $k = 2$ stages, the result is the previously described adaptive elastic net. $k > 2$ results in the multi-step adaptive process as proposed by @XiaoXu2015. The authors do not clearly state how many steps they used for their multi-step procedure, a concern discussed in multiple subsequent chapters.
 
 
 ## Least Absolute Deviation (LAD) Loss Function
@@ -217,7 +272,7 @@ Note that the parenthetical superscripts $^{(k)}$ and $^{(k-1)}$ a represent ind
 \end{equation}
 
 
-where $\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|$, the LAD-loss function (aka the $\ell_1$-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, @Wangetal2007 do not explicitly make use of the findings and techniques from @Zou2006. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter $\lambda_{1,j}$ and coefficient weights vector $\hat{w}_j$. $\lambda_{1,j}$ and $\hat{w}_j = 1/\left|\hat{beta}\right|^\gamma$ are as defined previously in **Section 2.1**. This method shall hereafter be referred to as "adaptive LAD lasso."
+where $\left|y_i-\boldsymbol{x_i^\prime}\boldsymbol{\beta}\right|$, the LAD-loss function (aka the $\ell_1$-norm), replaces the typical least-squares loss function. This loss function therefore penalizes the absolute value of residuals rather than the square. Due to the timing of their study, @Wangetal2007 do not explicitly make use of the findings and techniques from @Zou2006. However, their LAD-lasso technique also uses an adaptive tuning hyperparameter $\lambda_{1,j}$ and coefficient weights vector $\hat{w}_j$. $\lambda_{1,j}$ and $\hat{w}_j = 1/\left|\hat{\beta}\right|^\gamma$ are as defined previously in **Section 2.1**. This method shall hereafter be referred to as "adaptive LAD lasso."
 
 The LAD elastic net has not yet been studied in the literature and exists primarily due to related software implementation developed by @YiHuang2017. Via the *<span style = "color:red">`` `r "hqreg"` ``</span>* package from @hqreg, it is possible to simultaneously utilize the LAD loss with lasso regularization. Consequently, the package provides implementation for the elastic net with the LAD loss function. As with the lasso formulation, LAD elastic net incorporates the adaptive lasso tuning hyperparameter. The LAD elastic net formulation is as follows:
 
@@ -232,7 +287,7 @@ The LAD elastic net has not yet been studied in the literature and exists primar
 
 ## Huber Loss Function
 
-Looking towards older work in robust estimation, @RossetZhu2007 and @LambertLacroixZwald2011 adapted the lasso by using the Huber loss function (@Huber1964MEsts) rather than the squared-error loss:
+Looking towards older work in robust estimation, @RossetZhu2007 and @LambertLacroixZwald2011 adapted the lasso by using the Huber loss function<span class="ref"><span class="refnum" onclick="footypop('ref7')">[ref]</span><span id="ref7" class="refbody">see @Huber1964MEsts</span></span> rather than the squared-error loss:
 
 
 \begin{equation}
@@ -264,20 +319,20 @@ Independently of @RossetZhu2007's and @LambertLacroixZwald2011's work incorporat
 
 
 
-Their work coincided with the development of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package for handling high-dimensionality data efficiently using an innovative Semismooth Newton Coordinate Descent Algorithm; see @hqreg for more details. Theoretical considerations of the algorithm fall outside the scope of the current applied statistical research; interested readers should consider their original paper for further details. @YiHuang2017's simulations focus solely on the run-time of their SNCD-based methods compared to similar methods and not on performance metrics.
+Their work coincided with the development of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package for handling high-dimensionality data efficiently using an innovative Semismooth Newton Coordinate Descent Algorithm<span class="ref"><span class="refnum" onclick="footypop('ref8')">[ref]</span><span id="ref8" class="refbody">see @hqreg for more details</span></span>. Theoretical considerations of the algorithm fall outside the scope of the current applied statistical research; interested readers should consider their original paper for further details. @YiHuang2017's simulations focus solely on the run-time of their SNCD-based methods compared to similar methods and not on performance metrics.
 
 The Huberized lasso and elastic net both incorporate the adaptive tuning hyperparameter in the current study. They will therefore be referred to as "adaptive Huberized lasso" or "adaptive Huber lasso" and "adaptive Huberized elastic net" or "adaptive Huber elastic net." Some studies implement a non-adaptive version of the Huber lasso or elastic net, and those will be referred to simply as "Huber lasso" or "Huber elastic net."
 
 
-# Model Implementation in R
+# Model Implementation in R {.tabset .tabset-fade .tabset-pills}
 
 ## Included Models and Software Implementation
 
 The current simulations evaluate the variable selection abilities of the following methods. The next section includes further details about cross-validation procedures that are non-specific to method or implementation.
 
- * **Multi-Step Adaptive Elastic Net**: The multi-step adaptive elastic net was conducted using the **<span style = "color:blue">`` `r "msaenet()"` ``</span>** function from the *<span style = "color:red">`` `r "msaenet"` ``</span>* package, @msaenet. This function includes a built-in procedure for calculating initial coefficient estimates $\boldsymbol{\hat{\beta}}$ for subsequent weighting during the adaptive lasso process. The initial ridge estimates and subsequent weight application were thus all implemented within this function rather than through running a preliminary model, although cross-validation still needed to be incorporated for selecting optimal values for the weighting hyperparameter $\gamma$. The original study does not outline the number of stages used in their simulations, nor a recommended number of stages. Therefore, the number of stages $k$ was arbitrarily set to 3, 5, and 10. 
-  * **Adaptive LAD Lasso and Elastic Net**: The adaptive LAD lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg, by setting the 'method' argument to "quantile" and the corresponding hyperparameter 'tau' argument to 0.5 for the LAD lasso criterion. This function includes a similar "penalty.factor" argument to **<span style = "color:blue">`` `r "cv.glmnet()"` ``</span>**, which was used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. A variable screening procedure for computational optimization developed by @Tibshiranietal2012 was incorporated into the function by setting the 'screen' argument to "SR." The authors also developed a new, less computationally-intensive screening rule, which is less conservative as a result and can be found detailed in their study. The original, more conservative screening rule developed by @Tibshiranietal2012 was chosen for this study. Although the choice to use a screening rule (as opposed to none) was made at the recommendation of the developers of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, the choice of particular rule was arbitrary on my part given the lack of specific recommendations.
-  * **Adaptive Huberized Lasso and Elastic Net**: The adaptive Huberized lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, @hqreg, by setting the 'method' argument to "huber" and the corresponding transition hyperparameter 'gamma' argument to 1.345 to balance both robustness of the Huber loss as well as efficiency under ideal data conditions, per recommendations by @Huber1981. The 'penalty.factor' argument was again used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. The same screening rule was used as described in the adaptive LAD lasso and elastic net.
+ * **Multi-Step Adaptive Elastic Net**: The multi-step adaptive elastic net was conducted using the **<span style = "color:blue">`` `r "msaenet()"` ``</span>** function from the *<span style = "color:red">`` `r "msaenet"` ``</span>* package<span class="ref"><span class="refnum" onclick="footypop('ref9')">[ref]</span><span id="ref9" class="refbody">@msaenet</span></span>. This function includes a built-in procedure for calculating initial coefficient estimates $\boldsymbol{\hat{\beta}}$ for subsequent weighting during the adaptive lasso process. The initial ridge estimates and subsequent weight application were thus all implemented within this function rather than through running a preliminary model, although cross-validation still needed to be incorporated for selecting optimal values for the weighting hyperparameter $\gamma$. The original study does not outline the number of stages used in their simulations, nor a recommended number of stages. Therefore, the number of stages $k$ was arbitrarily set to 3, 5, and 10. 
+  * **Adaptive LAD Lasso and Elastic Net**: The adaptive LAD lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package<span class="ref"><span class="refnum" onclick="footypop('ref10')">[ref]</span><span id="ref10" class="refbody">@hqreg</span></span> by setting the 'method' argument to "quantile" and the corresponding hyperparameter 'tau' argument to 0.5 for the LAD lasso criterion. This function includes a similar "penalty.factor" argument to **<span style = "color:blue">`` `r "cv.glmnet()"` ``</span>**, which was used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. A variable screening procedure for computational optimization developed by @Tibshiranietal2012 was incorporated into the function by setting the 'screen' argument to "SR." The authors also developed a new, less computationally-intensive screening rule, which is less conservative as a result and can be found detailed in their study. The original, more conservative screening rule developed by @Tibshiranietal2012 was chosen for this study. Although the choice to use a screening rule (as opposed to none) was made at the recommendation of the developers of the *<span style = "color:red">`` `r "hqreg"` ``</span>* package, the choice of particular rule was arbitrary on my part given the lack of specific recommendations.
+  * **Adaptive Huberized Lasso and Elastic Net**: The adaptive Huberized lasso and elastic net were implemented using the **<span style = "color:blue">`` `r "cv.hqreg()"` ``</span>** function from the *<span style = "color:red">`` `r "hqreg"` ``</span>* package<span class="ref"><span class="refnum" onclick="footypop('ref11')">[ref]</span><span id="ref11" class="refbody">@hqreg</span></span> by setting the 'method' argument to "huber" and the corresponding transition hyperparameter 'gamma' argument to 1.345 to balance both robustness of the Huber loss as well as efficiency under ideal data conditions, per recommendations by @Huber1981. The 'penalty.factor' argument was again used to apply weights during the adaptive lasso process. An additional cross-validation procedure needed to be incorporated to determine optimal weighting hyperparameter $\gamma$. The same screening rule was used as described in the adaptive LAD lasso and elastic net.
   
 
 
