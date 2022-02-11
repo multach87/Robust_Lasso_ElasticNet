@@ -11,7 +11,7 @@
 
 <meta name="author" content="Matt Multach" />
 
-<meta name="date" content="2021-11-23" />
+<meta name="date" content="2022-02-11" />
 
 <title>Process Coefficients from All Adaptations and Data Splits</title>
 
@@ -1495,20 +1495,68 @@ div.tocify {
 
 <h1 class="title toc-ignore">Process Coefficients from All Adaptations and Data Splits</h1>
 <h4 class="author">Matt Multach</h4>
-<h4 class="date">2021-11-23</h4>
+<h4 class="date">2022-02-11</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2">
+<div id="introduction-preamble-and-setup" class="section level1 unnumbered tabset tabset-fade tabset-pills">
+<h1>Introduction, Preamble, and Setup</h1>
+<style>
+    .ref {
+        position: relative;
+        vertical-align: baseline;
+    }
+
+    .refnum {
+        position: relative;
+        left: -1px;
+        bottom: 1ex;
+        font-family: Verdana, sans-serif;
+        color: #005994;
+        font-size: .7em;
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;        
+    }
+
+    .refbody {
+        font-family: Verdana, sans-serif;
+        font-size: .7em;
+        line-height: 1.1;
+        display: none;
+        min-width: 20em;
+        position: absolute;
+        left: 25px;
+        bottom: 5px ;
+        border: 1px solid;
+        padding: 5px;
+        background-color: #fff;
+        word-wrap: break-word;
+        z-index: 9999;
+        overflow: auto;
+    }
+
+</style>
+<script>
+    function footypop(id) {
+        var el = document.getElementById(id) ;
+  
+        if (el.style.display == "none") {
+            el.style.display = "block" ;
+        } else {
+            el.style.display = "none" ;
+        }
+        
+    }
+</script>
+<div id="introduction" class="section level2 unnumbered">
 <h2>Introduction</h2>
-<p>This document demonstrates the processing of model coefficients from a list of multiple model objects produced by the previous <strong><span style="color:blue"><code>hqmsa.sim.funct()</code></span></strong> function. Note that this document walks through the processing of coefficient results from <em>all</em> lasso and elastic net adaptations applied to the 100 data splits. There are therefore a few more steps involved compared to 04A_Process_Coefficients_SingleAdapt. Furthermore, the final results will be stored to save time for future demos.</p>
+<p>This document demonstrates the processing of model coefficients from a list of multiple model objects produced by the previous <strong><span style="color:blue"><code>hqmsa.sim.funct()</code></span></strong> function. Note that this document walks through the processing of coefficient results from <em>all</em> lasso and elastic net adaptations applied to the 100 data splits. There are therefore a few more steps involved compared to <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/04A_Process_Coefficients_SingleAdapt.html"><span style="color:green"><code>04A_Process_Coefficients_SingleAdapt</code></span></a>. Furthermore, the final results will be stored to save time for future demos.</p>
 </div>
-<div id="preamble-and-setup" class="section level2">
-<h2>Preamble and Setup</h2>
-<div id="a-note-on-formatting" class="section level3">
-<h3>A note on formatting</h3>
-<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish different types of items being referenced.</p>
+<div id="formatting-notes" class="section level2 unnumbered">
+<h2>Formatting Notes</h2>
+<p>This document makes use of <strong>bolding</strong>, <em>italics</em>, and “quotations” to help distinguish references to different types of items.</p>
 <ul>
 <li><strong>bolding</strong> will be used when referencing a new term or concept for the first time. Subsequent references to each term/concept will <em>not</em> be bolded.</li>
 <li><em>italics</em> will be used primarily for emphasis.</li>
@@ -1517,17 +1565,17 @@ div.tocify {
 <li>Inline references to packages will similarly use <em><span style="color:red"><code>code_chunk_formatting</code></span></em>, except in <em><span style="color:red"><code>italicized red font</code></span></em></li>
 <li>References to other documents in this repository will use <span style="color:green"><code>code_chunk_formatting</code></span> in <span style="color:green"><code>un-italicized, un-bolded, green font</code></span></li>
 </ul>
-<p>Re: spacing and line breaks - I’m pretty heterogeneous in my application of line breaks and spacing, in a way that is idiosyncratic to my own code practice. The most important aspects of my spacing and line breaks are detailed below</p>
-<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code inputs in R, although this is not universally the case. Multi-character code inputs, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the code input. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
+<p>The most important aspects of how I use spacing and line breaks are detailed below.</p>
+<p>I generally put spaces between code inputs I consider “sufficiently distinct”. This improves readability generally, but I find it particularly helpful for debugging. Note, however, that spaces are generally trivial in between distinct code elements in R, although this is not universally the case. Multi-character code elements, such as the pointer <strong><span style="color:blue"><code>&lt;-</code></span></strong> and most logical operators, <em>cannot</em> include spaces in between components of the element. Note also that whitespace <em>is</em> meaningful in other programming languages, and so this convention should be considered with caution in your own practice.</p>
 <p>Generally, I use line breaks to:</p>
 <ul>
 <li>Break up separate arguments for a single command/function or chain of operations</li>
-<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to match its opener.</li>
+<li>To clearly distinguish between different closing parentheses, brackets, squigglies, etc., since RStudio will automatically tab each closing piece to align with its opening segment.</li>
 </ul>
 </div>
-<div id="packages" class="section level3">
-<h3>Packages</h3>
-<p>Let’s load the necessary packages. Links to more information about each packages and helpful guides (where applicable) can be found in <span style="color:green"><code>00B_Package_Descr_Refs</code></span>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
+<div id="packages" class="section level2 unnumbered">
+<h2>Packages</h2>
+<p>Let’s load the necessary packages. Links to more information about each package can be found in <a href="https://multach87.github.io/Robust_Lasso_ElasticNet/Component_Demos/00B_Package_Descr_Refs.html"><span style="color:green"><code>00B_Package_Descr_Refs</code></span></a>. Appropriate references for each package can be found in the “References” section at the end of this document.</p>
 <pre class="r"><code># This chunk loads the packages used in this workbook
 library(xaringan)   # Allows active preview of report in RStudio
 library(mvtnorm)    # Generates multivariate-normal data
@@ -1539,16 +1587,16 @@ library(hqreg)      # For LAD/Huber-loss regularization with SNCD algorithm
 library(rlang)      # For parse_expr() to parse data name in k-fold subsetting functions
 library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </div>
-<div id="load-and-process-10-split-model-data" class="section level3">
-<h3>Load and Process 10-Split Model Data</h3>
+<div id="load-and-process-10-split-model-data" class="section level2 unnumbered unlisted">
+<h2>Load and Process 10-Split Model Data</h2>
 <p>Let’s also load our model data. Note that this is a collection of all adaptations run</p>
 <pre class="r"><code>models_all &lt;- readRDS(&quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100.RData&quot;)</code></pre>
 </div>
 </div>
-<div id="extracting-coefficient-information" class="section level2">
-<h2>Extracting Coefficient Information</h2>
-<div id="coefficient-frequency-function" class="section level3">
-<h3>Coefficient frequency function</h3>
+<div id="extracting-coefficient-information" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">1</span> Extracting Coefficient Information</h1>
+<div id="coefficient-frequency-function" class="section level2">
+<h2><span class="header-section-number">1.1</span> Coefficient Frequency Function</h2>
 <p>There are many pieces of information that might be extracted from such a rich collection of model results. Let’s focus, however, on predictor selection/inclusion frequency.</p>
 <p>I’d like to add a list element that contains information about the adaptive LAD lasso models across all data splits, particularly with respect to coefficient inclusion frequency. Note that this does <em>not</em> include intercepts, given that some models do not include them.</p>
 <p>Also note that this function relies on a list with a comparable structure to my processed models:</p>
@@ -1583,8 +1631,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
        return(coefs.freq)
 }</code></pre>
 </div>
-<div id="coefficient-selection-rank-function" class="section level3">
-<h3>Coefficient selection rank function</h3>
+<div id="coefficient-selection-rank-function" class="section level2">
+<h2><span class="header-section-number">1.2</span> Coefficient Selection Rank Function</h2>
 <p>The function below calculates the selection frequency rank of each potential predictor.</p>
 <pre class="r"><code>coefs_rank &lt;- function(freqs) {
        # initialize vector of selection rank, with all values set to NA
@@ -1599,8 +1647,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
        return(coefs.rank)       
 }</code></pre>
 </div>
-<div id="minor-functions" class="section level3">
-<h3>Minor functions</h3>
+<div id="minor-functions" class="section level2">
+<h2><span class="header-section-number">1.3</span> Minor Functions</h2>
 <p>I’d like to count the number of variables with <span class="math inline">\(100\%\)</span> or <span class="math inline">\(0\%\)</span> selection for each adaptation. I’m going to create two basic functions that I can apply during piping to generate these values.</p>
 <pre class="r"><code>all_splits &lt;- function(data) {
         return(length(which(data[1:length(data)] == 100) #8
@@ -1628,8 +1676,11 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
         ifelse(TRUE %in% (sort(data) &gt; 50) , return(1) , return(0))
 }</code></pre>
 </div>
-<div id="coefficient-processing-initialize-list" class="section level3">
-<h3>Coefficient processing: Initialize list</h3>
+</div>
+<div id="example-processing-procedure" class="section level1 tabset tabset-fade tabset-pills">
+<h1><span class="header-section-number">2</span> Example Processing Procedure</h1>
+<div id="coefficient-processing-initialize-list" class="section level2">
+<h2><span class="header-section-number">2.1</span> Coefficient Processing: Initialize List</h2>
 <p>Our new list element will have two data.tables:</p>
 <ul>
 <li>A data.table of selection frequencies by adaptation (rows = lasso/elastic net adaptation)</li>
@@ -1638,8 +1689,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 <p>Let’s initialize that list.</p>
 <pre class="r"><code>models_all[[&quot;Frequencies&quot;]] &lt;- list()</code></pre>
 </div>
-<div id="coefficient-frequency-processing-by-adaptation" class="section level3">
-<h3>Coefficient frequency processing: By Adaptation</h3>
+<div id="coefficient-frequency-processing-by-adaptation" class="section level2">
+<h2><span class="header-section-number">2.2</span> Coefficient Frequency Processing: By Adaptation</h2>
 <p>Now let’s map our coefficient frequency function across all adaptations and model results to create our first data.table. Rather than include # comments in the code itself to describe each step, I will walk through the operations line-by-line below.</p>
 <pre class="r"><code>models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]] &lt;- models_all[1:7] %&gt;%
        map(coefs_freq) %&gt;%
@@ -1671,6 +1722,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 </ul>
 <p>Because I’m currently learning about keys, the last operation of the pipe sets a key for the <strong><span style="color:blue"><code>&quot;Frequencies&quot;</code></span></strong> data.table based on the method/adaptation. (If you don’t know what this means, don’t worry too much about it. It won’t generally come up for the purposes of demonstrating my combined model. Right now its only practical significance is alphabetically sorting <strong><span style="color:blue"><code>&quot;Frequencies&quot;</code></span></strong> by method/adaptation).</p>
 <p>Let’s take a quick look at the structure of our coefficient frequencies object. Note that if we had not set the key, the final line would not be present. This tells us that the data.table is sorted by the character values in <strong><span style="color:blue"><code>&quot;method&quot;</code></span></strong>.</p>
+<div id="structure-of-resulting-object" class="section level3 unnumbered unlisted">
+<h3>Structure of Resulting Object</h3>
 <pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]])</code></pre>
 <pre><code>## Classes 'data.table' and 'data.frame':   7 obs. of  11 variables:
 ##  $ X1    : num  100 100 100 100 100 100 99
@@ -1687,8 +1740,9 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;method&quot;</code></pre>
 </div>
-<div id="coefficient-frequency-processing-by-potential-predictor" class="section level3">
-<h3>Coefficient frequency processing: By Potential Predictor</h3>
+</div>
+<div id="coefficient-frequency-processing-by-potential-predictor" class="section level2">
+<h2><span class="header-section-number">2.3</span> Coefficient Frequency Processing: By Potential Predictor</h2>
 <p>Now we’re going to do the same thing, except by predictor instead of adaptation. This is actually pretty easily adapted from the script used to generate a data.table by adaptation. We can just eliminate the transpose ( <strong><span style="color:blue"><code>t()</code></span></strong> ) step of the pipe. As a result, we can also get rid of the initial <strong><span style="color:blue"><code>setDT()</code></span></strong> step, as it is now redundant. The only other meaningful changes:</p>
 <ul>
 <li>change ‘all’/‘none’ columns to map the <strong><span style="color:blue"><code>adapts_100()</code></span></strong> &amp; <strong><span style="color:blue"><code>adapts_0()</code></span></strong> functions instead of the previous <strong><span style="color:blue"><code>all_splits()</code></span></strong> &amp; <strong><span style="color:blue"><code>no_splits()</code></span></strong> functions</li>
@@ -1704,6 +1758,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
         .[ , &quot;ge51&quot; := apply(.[ , !c(&quot;all&quot; , &quot;none&quot; , &quot;predictor&quot;)] , 
                              1 , ge51)] %&gt;%
         setkey(. , predictor) </code></pre>
+<div id="structure-of-resulting-object-1" class="section level3 unnumbered unlisted">
+<h3>Structure of Resulting Object</h3>
 <p>Let’s take a look at the new data.table using <strong><span style="color:blue"><code>str()</code></span></strong>.</p>
 <pre class="r"><code>str(models_all[[&quot;Frequencies&quot;]][[&quot;By_Predictor&quot;]])</code></pre>
 <pre><code>## Classes 'data.table' and 'data.frame':   8 obs. of  11 variables:
@@ -1721,8 +1777,9 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  - attr(*, &quot;.internal.selfref&quot;)=&lt;externalptr&gt; 
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;predictor&quot;</code></pre>
 </div>
-<div id="coefficient-frequency-processing---selection-rank" class="section level3">
-<h3>Coefficient frequency processing - selection rank</h3>
+</div>
+<div id="coefficient-frequency-processing---selection-rank" class="section level2">
+<h2><span class="header-section-number">2.4</span> Coefficient Frequency Processing - Selection Rank</h2>
 <p>Now we’re going to generate the selection ranks of each potential predictor, <em>by adaptation</em>. This will only be by adaptation. The interpretation of the results made in the full walkthrough will make use of information regarding false positive inclusion rates by the adaptations studied. By combining selection rank with this information about each adaptation, we can refine our view of which potential predictors are valid and which are false positives.</p>
 <pre class="r"><code>models_all[[&quot;Ranks&quot;]] &lt;- models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , 
                                                                          1:8 , 
@@ -1732,6 +1789,8 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
        as.data.frame %&gt;%
        setDT %&gt;%
        cbind(. , models_all[[&quot;Frequencies&quot;]][[&quot;By_Adaptation&quot;]][ , &quot;method&quot;])</code></pre>
+<div id="structure-of-resulting-object-2" class="section level3 unnumbered unlisted">
+<h3>Structure of Resulting Object</h3>
 <p>Let’s take a look at the new data.table using <strong><span style="color:blue"><code>str()</code></span></strong>.</p>
 <pre class="r"><code>str(models_all[[&quot;Ranks&quot;]])</code></pre>
 <pre><code>## Classes 'data.table' and 'data.frame':   7 obs. of  9 variables:
@@ -1748,13 +1807,14 @@ library(msaenet)    # For the multi-step adaptive elastic net</code></pre>
 ##  - attr(*, &quot;sorted&quot;)= chr &quot;method&quot;</code></pre>
 </div>
 </div>
-<div id="save-the-last-dance-file" class="section level2">
+<div id="save-the-last-dance-file" class="section level2 unnumbered unlisted">
 <h2>Save the Last <del>Dance</del> File</h2>
 <p>Let’s save the model results file which also includes our new “Frequencies” data.table so that we can load it during the full walkthrough.</p>
 <pre class="r"><code>saveRDS(models_all , &quot;/Users/Matt/Desktop/GitHub_Dissertation_Scripts/Robust_Lasso_ElasticNet/Datasets/models100_plus_freqsranks.RData&quot;)</code></pre>
 </div>
-<div id="references" class="section level2 unnumbered">
-<h2>References</h2>
+</div>
+<div id="references" class="section level1 unnumbered unlisted">
+<h1>References</h1>
 <div id="refs" class="references">
 <div id="ref-magrittr">
 <p>Bache, S.M., and H. Wickham. 2016. <em>Magrittr: A Forward-Pipe Operator for R</em>. <a href="https://CRAN.R-project.org/package=magrittr">https://CRAN.R-project.org/package=magrittr</a>.</p>
