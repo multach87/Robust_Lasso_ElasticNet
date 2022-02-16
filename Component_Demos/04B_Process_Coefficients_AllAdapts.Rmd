@@ -8,7 +8,7 @@ output:
     toc_depth: 4
     toc_float: true
     number_sections: true
-bibliography: Component_Refs.bib
+bibliography: ../References/Refs_Main.bib
 #output: 
 #       xaringan::infinite_moon_reader:
 #              lib_dir: lib

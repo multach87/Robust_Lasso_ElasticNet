@@ -8,7 +8,7 @@ output:
     toc_depth: 4
     toc_float: true
     number_sections: false
-bibliography: Component_Refs.bib
+bibliography: ../References/Refs_Main.bib
 ---
 
 ## Preamble and Setup {.unlisted .unnumbered}

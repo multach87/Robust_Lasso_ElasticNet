@@ -11,7 +11,7 @@ output:
        smooth_scroll: true
     number_sections: true
     #pandoc_args: --top-level-division=section
-bibliography: Component_Refs.bib
+bibliography: ../References/Refs_Main.bib
 ---
 
 # File Introduction, Preamble and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
