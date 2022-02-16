@@ -8,7 +8,7 @@ output:
     toc_depth: 4
     toc_float: true
     number_sections: true
-bibliography: Component_Demos/Component_Refs.bib
+bibliography: ../References/Refs_Main.bib
 ---
 
 # Introduction, Preamble, and Setup {.unnumbered .tabset .tabset-fade .tabset-pills}
