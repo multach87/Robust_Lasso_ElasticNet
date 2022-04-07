@@ -1,3 +1,7 @@
+# [<img align="left" alt="R" width="26px" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/r/r-original.svg" style="padding-right:10px;" />]()
+
+
+
 # <span style = "color:green">`` `r "([^!.?\s]+)_([^!.?\s]+)"` ``</span>
 
 # ([^!.?\s]+)_([^!.?\s]+)
